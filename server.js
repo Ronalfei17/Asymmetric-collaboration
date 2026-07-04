@@ -10,7 +10,7 @@ const wss = new WebSocket.Server({ server, path: "/ws" });
 const PORT = process.env.PORT || 3000;
 const VERSION = "relay-presence-v3";
 
-const HEADSET_TIMEOUT_MS = 900;
+const HEADSET_TIMEOUT_MS = 2200;
 const PRESENCE_CHECK_MS = 100;
 
 const rooms = new Map();
