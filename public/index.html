@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stage Light Control</title>
+  <style>
+    body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #111; color: white; }
+    h1 { font-size: 24px; margin: 0 0 20px; }
+    .status { padding: 12px; border-radius: 6px; background: #333; margin-bottom: 20px; }
+    .connected { background: #145c2e; }
+    .disconnected { background: #6b1f1f; }
+    button, input { width: 100%; font-size: 18px; padding: 12px; margin-top: 12px; box-sizing: border-box; }
+    label { display: block; margin-top: 18px; }
+  </style>
+</head>
+<body>
+  <h1>Stage Light Control</h1>
+
+  <div id="status" class="status disconnected">Headset disconnected</div>
+
+  <h2>Profile Light</h2>
+  <label>Profile Light ID</label>
+  <input type="number" value="48">
+
+  <label>Intensity</label>
+  <input type="range" min="0" max="1" step="0.01" value="1">
+
+  <button>Apply Profile Light</button>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const room = params.get("room") || "gp9";
+    const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+    const socketUrl = `${protocol}//${location.host}/ws?role=controller&room=${encodeURIComponent(room)}`;
+
+    const statusEl = document.getElementById("status");
+    const socket = new WebSocket(socketUrl);
+
+    function setHeadsetStatus(connected) {
+      statusEl.textContent = connected ? "Headset connected" : "Headset disconnected";
+      statusEl.className = connected ? "status connected" : "status disconnected";
+    }
+
+    socket.onopen = () => {
+      console.log("Controller websocket connected");
+    };
+
+    socket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+
+      if (message.type === "headset-status") {
+        setHeadsetStatus(message.connected);
+      }
+    };
+
+    socket.onclose = () => {
+      statusEl.textContent = "Relay disconnected";
+      statusEl.className = "status disconnected";
+    };
+  </script>
+</body>
+</html>
