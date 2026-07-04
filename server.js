@@ -1,48 +1,66 @@
-import express from "express";
-import http from "http";
-import { WebSocketServer } from "ws";
+const express = require("express");
+const http = require("http");
+const path = require("path");
+const WebSocket = require("ws");
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server, path: "/ws" });
+const wss = new WebSocket.Server({ server, path: "/ws" });
 
-app.use(express.static("public"));
-
+const PORT = process.env.PORT || 3000;
 const rooms = new Map();
 
-function getRoom(roomCode) {
-  if (!rooms.has(roomCode)) {
-    rooms.set(roomCode, { headset: null, controllers: new Set() });
+app.use(express.static(path.join(__dirname, "public")));
+
+function getRoom(roomId) {
+  if (!rooms.has(roomId)) {
+    rooms.set(roomId, {
+      headset: null,
+      controllers: new Set()
+    });
   }
-  return rooms.get(roomCode);
+
+  return rooms.get(roomId);
 }
 
-function send(ws, data) {
-  if (ws && ws.readyState === ws.OPEN) {
-    ws.send(JSON.stringify(data));
+function send(ws, payload) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    return;
   }
+
+  ws.send(payload);
 }
 
-function broadcastHeadsetStatus(roomCode) {
-  const room = getRoom(roomCode);
-  const connected = room.headset !== null && room.headset.readyState === room.headset.OPEN;
+function sendJson(ws, obj) {
+  send(ws, JSON.stringify(obj));
+}
 
-  for (const controller of room.controllers) {
-    send(controller, {
+function broadcastHeadsetStatus(room, connected) {
+  room.controllers.forEach((controller) => {
+    sendJson(controller, {
       type: "headset-status",
       connected
     });
+  });
+}
+
+function disconnectHeadset(room, ws) {
+  if (room.headset !== ws) {
+    return;
   }
+
+  room.headset = null;
+  broadcastHeadsetStatus(room, false);
 }
 
 wss.on("connection", (ws, req) => {
-  const url = new URL(req.url, "http://localhost");
-  const role = url.searchParams.get("role");
-  const roomCode = url.searchParams.get("room") || "gp9";
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const role = url.searchParams.get("role") || "controller";
+  const roomId = url.searchParams.get("room") || "gp9";
+  const room = getRoom(roomId);
 
-  const room = getRoom(roomCode);
-  ws.roomCode = roomCode;
   ws.role = role;
+  ws.roomId = roomId;
   ws.isAlive = true;
 
   ws.on("pong", () => {
@@ -50,61 +68,118 @@ wss.on("connection", (ws, req) => {
   });
 
   if (role === "headset") {
-    if (room.headset && room.headset.readyState === room.headset.OPEN) {
-      room.headset.close();
+    if (room.headset && room.headset.readyState === WebSocket.OPEN) {
+      try {
+        room.headset.close();
+      } catch {}
     }
 
     room.headset = ws;
-    console.log(`[relay] Headset connected. room=${roomCode}`);
-    broadcastHeadsetStatus(roomCode);
+    broadcastHeadsetStatus(room, true);
+
+    sendJson(ws, {
+      type: "relay-ready",
+      role: "headset",
+      room: roomId
+    });
   } else {
     room.controllers.add(ws);
-    console.log(`[relay] Controller connected. room=${roomCode}`);
-    broadcastHeadsetStatus(roomCode);
+
+    sendJson(ws, {
+      type: "relay-ready",
+      role: "controller",
+      room: roomId
+    });
+
+    sendJson(ws, {
+      type: "headset-status",
+      connected: !!room.headset && room.headset.readyState === WebSocket.OPEN
+    });
   }
 
-  ws.on("message", (raw) => {
-    let message;
+  ws.on("message", (data) => {
+    const message = data.toString();
 
+    let parsed = null;
     try {
-      message = JSON.parse(raw.toString());
-    } catch {
+      parsed = JSON.parse(message);
+    } catch {}
+
+    if (ws.role === "headset" && parsed && parsed.type === "headset-disconnect") {
+      disconnectHeadset(room, ws);
       return;
     }
 
-    if (ws.role === "controller" && room.headset) {
-      send(room.headset, message);
+    if (ws.role === "controller") {
+      if (room.headset && room.headset.readyState === WebSocket.OPEN) {
+        send(room.headset, message);
+      } else {
+        sendJson(ws, {
+          type: "headset-status",
+          connected: false
+        });
+      }
+
+      return;
+    }
+
+    if (ws.role === "headset") {
+      room.controllers.forEach((controller) => {
+        send(controller, message);
+      });
     }
   });
 
   ws.on("close", () => {
-    if (ws.role === "headset" && room.headset === ws) {
-      room.headset = null;
-      console.log(`[relay] Headset disconnected. room=${roomCode}`);
-    }
-
-    if (ws.role !== "headset") {
+    if (ws.role === "controller") {
       room.controllers.delete(ws);
-      console.log(`[relay] Controller disconnected. room=${roomCode}`);
+      return;
     }
 
-    broadcastHeadsetStatus(roomCode);
+    if (ws.role === "headset") {
+      disconnectHeadset(room, ws);
+    }
+  });
+
+  ws.on("error", () => {
+    if (ws.role === "headset") {
+      disconnectHeadset(room, ws);
+    }
+
+    if (ws.role === "controller") {
+      room.controllers.delete(ws);
+    }
   });
 });
 
 setInterval(() => {
-  for (const ws of wss.clients) {
-    if (!ws.isAlive) {
-      ws.terminate();
-      continue;
+  wss.clients.forEach((ws) => {
+    if (ws.isAlive === false) {
+      const room = getRoom(ws.roomId);
+
+      if (ws.role === "headset") {
+        disconnectHeadset(room, ws);
+      }
+
+      if (ws.role === "controller") {
+        room.controllers.delete(ws);
+      }
+
+      try {
+        ws.terminate();
+      } catch {}
+
+      return;
     }
 
     ws.isAlive = false;
-    ws.ping();
-  }
-}, 10000);
 
-const port = process.env.PORT || 3000;
-server.listen(port, () => {
-  console.log(`[relay] Server running on port ${port}`);
+    try {
+      ws.ping();
+    } catch {}
+  });
+}, 1000);
+
+server.listen(PORT, () => {
+  console.log(`Relay server running on port ${PORT}`);
 });
