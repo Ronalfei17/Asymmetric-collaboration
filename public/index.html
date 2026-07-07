@@ -245,6 +245,7 @@
 <script>
     const DEFAULT_ROOM = "gp9";
     const FALLBACK_RELAY_URL = "wss://asymmetric-collaboration.onrender.com/ws";
+    const CLIENT_VERSION = "viewer-webrtc-v5";
 
     const statusBox = document.getElementById("status");
     const logBox = document.getElementById("log");
@@ -266,6 +267,7 @@
     let hasRemoteVideoTrack = false;
     let retryCount = 0;
     let trackWatchdog = null;
+    let pendingRemoteCandidates = [];
     const MAX_AUTO_RETRIES = 3;
 
     function log(message) {
@@ -455,11 +457,56 @@
 
             log("Received answer from Quest.");
             log(`Answer video direction: ${getVideoDirection(data.sdp) || "none"}`);
+            await flushPendingRemoteCandidates();
 
             if (!answerCanSendVideo(data.sdp)) {
-                scheduleRestart("Unity answer does not include a sending video track.");
+                log("Unity answer is inactive; waiting for Unity renegotiation offer.");
+                startTrackWatchdog("No Unity renegotiation/video track arrived after inactive answer.");
             } else {
-                startTrackWatchdog();
+                startTrackWatchdog("No video track arrived after answer.");
+            }
+
+            updateCombinedStatus();
+            return;
+        }
+
+        if (message.type === "offer") {
+            const data = message.data || message;
+
+            if (!data.sdp) {
+                return;
+            }
+
+            connectionId = message.from || data.connectionId || connectionId;
+
+            if (!peer) {
+                peer = createPeer();
+            }
+
+            await waitForStablePeer();
+            await peer.setRemoteDescription({
+                type: "offer",
+                sdp: data.sdp
+            });
+
+            log("Received offer from Quest.");
+            log(`Offer video direction: ${getVideoDirection(data.sdp) || "none"}`);
+            await flushPendingRemoteCandidates();
+
+            const answer = await peer.createAnswer();
+            await peer.setLocalDescription(answer);
+
+            sendRoutedSignal("answer", {
+                type: "answer",
+                sdp: peer.localDescription.sdp
+            });
+
+            log("Sent WebRTC answer to Quest.");
+
+            if (answerCanSendVideo(data.sdp)) {
+                startTrackWatchdog("No video track arrived after Quest offer.");
+            } else {
+                scheduleRestart("Unity offer does not include a sending video track.");
             }
 
             updateCombinedStatus();
@@ -473,15 +520,7 @@
                 return;
             }
 
-            try {
-                await peer.addIceCandidate({
-                    candidate: data.candidate,
-                    sdpMid: data.sdpMid,
-                    sdpMLineIndex: data.sdpMLineIndex
-                });
-            } catch (error) {
-                log(`ICE candidate failed: ${error.message}`);
-            }
+            await addRemoteCandidate(data);
 
             return;
         }
@@ -582,6 +621,50 @@
         return direction === "sendrecv" || direction === "sendonly";
     }
 
+    async function waitForStablePeer(timeoutMs = 3000) {
+        const startedAt = Date.now();
+
+        while (peer && peer.signalingState !== "stable" && Date.now() - startedAt < timeoutMs) {
+            await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+
+        if (peer && peer.signalingState !== "stable") {
+            log(`Peer signaling state is ${peer.signalingState}; applying remote offer anyway.`);
+        }
+    }
+
+    async function addRemoteCandidate(data) {
+        const candidate = {
+            candidate: data.candidate,
+            sdpMid: data.sdpMid,
+            sdpMLineIndex: data.sdpMLineIndex
+        };
+
+        if (!peer.remoteDescription) {
+            pendingRemoteCandidates.push(candidate);
+            return;
+        }
+
+        try {
+            await peer.addIceCandidate(candidate);
+        } catch (error) {
+            log(`ICE candidate failed: ${error.message}`);
+        }
+    }
+
+    async function flushPendingRemoteCandidates() {
+        const candidates = pendingRemoteCandidates;
+        pendingRemoteCandidates = [];
+
+        for (const candidate of candidates) {
+            try {
+                await peer.addIceCandidate(candidate);
+            } catch (error) {
+                log(`Queued ICE candidate failed: ${error.message}`);
+            }
+        }
+    }
+
     function clearTrackWatchdog() {
         if (trackWatchdog) {
             clearTimeout(trackWatchdog);
@@ -589,12 +672,12 @@
         }
     }
 
-    function startTrackWatchdog() {
+    function startTrackWatchdog(reason = "No video track arrived after answer.") {
         clearTrackWatchdog();
 
         trackWatchdog = setTimeout(() => {
             if (!hasRemoteVideoTrack) {
-                scheduleRestart("No video track arrived after answer.");
+                scheduleRestart(reason);
             }
         }, 3500);
     }
@@ -676,6 +759,7 @@
         connectionId = null;
         remoteStream = null;
         hasRemoteVideoTrack = false;
+        pendingRemoteCandidates = [];
         remoteVideo.srcObject = null;
         emptyState.style.display = "grid";
         updateCombinedStatus();
@@ -694,6 +778,7 @@
     roomInput.value = new URLSearchParams(location.search).get("room") || DEFAULT_ROOM;
     relayInput.value = getDefaultRelayUrl();
     updateQuestUrl();
+    log(`Client version: ${CLIENT_VERSION}`);
     connectRelay();
 </script>
 </body>
