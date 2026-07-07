@@ -26,17 +26,9 @@
         .status {
             padding: 12px;
             border-radius: 6px;
-            background: #333;
+            background: #6b1f1f;
             margin-bottom: 20px;
             font-size: 16px;
-        }
-
-        .connected {
-            background: #145c2e;
-        }
-
-        .disconnected {
-            background: #6b1f1f;
         }
 
         .panel {
@@ -99,10 +91,6 @@
             cursor: pointer;
         }
 
-            button:active {
-                transform: scale(0.99);
-            }
-
         label {
             display: block;
             margin-top: 18px;
@@ -132,7 +120,9 @@
 <body>
     <h1>Stage Light Control</h1>
 
-    <div id="status" class="status disconnected">Headset disconnected</div>
+    <div id="status" class="status">
+        Headset connection status is disabled in local file mode
+    </div>
 
     <div class="panel">
         <h2>Live View Feed</h2>
@@ -143,7 +133,8 @@
         </iframe>
 
         <p class="hint">
-            This panel loads the Unity Render Streaming page. By default it uses the same IP as this control page, but port 8081.
+            This panel loads the Unity Render Streaming page. For local testing, use:
+            http://localhost:8081/videoplayer/index.html
         </p>
 
         <div class="small-row">
@@ -171,43 +162,41 @@
         <input id="profileIntensityInput" type="range" min="0" max="1" step="0.01" value="1">
 
         <button id="applyProfileButton">Apply Profile Light</button>
+
+        <p class="hint">
+            Light control is disabled in this local test version because Node.js is not running.
+        </p>
     </div>
 
     <script>
-        const params = new URLSearchParams(location.search);
-        const room = params.get("room") || "gp9";
-
-        const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-        const socketUrl = `${protocol}//${location.host}/ws?role=controller&room=${encodeURIComponent(room)}`;
-
-        const statusEl = document.getElementById("status");
-
         const liveViewFrame = document.getElementById("liveViewFrame");
         const streamUrlInput = document.getElementById("streamUrlInput");
         const reloadStreamButton = document.getElementById("reloadStreamButton");
         const openStreamLink = document.getElementById("openStreamLink");
 
-        const profileLightIdInput = document.getElementById("profileLightIdInput");
         const profileIntensityInput = document.getElementById("profileIntensityInput");
         const profileIntensityValue = document.getElementById("profileIntensityValue");
         const applyProfileButton = document.getElementById("applyProfileButton");
 
-        /*
-          Important:
-          If you open this page on iPad as:
-          http://172.20.10.9:3000
+        function getDefaultStreamUrl() {
+            /*
+              If this file is opened directly by double clicking:
+              file:///C:/.../public/index.html
 
-          then this automatically loads Render Streaming from:
-          http://172.20.10.9:8081/videoplayer/index.html
+              then location.hostname is empty.
+              So we manually use localhost:8081.
+            */
+            if (location.protocol === "file:") {
+                return "http://localhost:8081/videoplayer/index.html";
+            }
 
-          Do not use localhost on iPad.
-        */
-        const defaultStreamUrl =
-            `${location.protocol}//${location.hostname}:8081/videoplayer/index.html`;
+            /*
+              If this page is served by any local server:
+              http://192.168.x.x:3000
 
-        function setHeadsetStatus(connected) {
-            statusEl.textContent = connected ? "Headset connected" : "Headset disconnected";
-            statusEl.className = connected ? "status connected" : "status disconnected";
+              then load Render Streaming from the same computer IP but port 8081.
+            */
+            return `${location.protocol}//${location.hostname}:8081/videoplayer/index.html`;
         }
 
         function loadStreamPage(url) {
@@ -216,16 +205,7 @@
             openStreamLink.href = url;
         }
 
-        function sendToHeadset(message) {
-            if (!socket || socket.readyState !== WebSocket.OPEN) {
-                console.warn("WebSocket is not open. Message not sent:", message);
-                return;
-            }
-
-            socket.send(JSON.stringify(message));
-        }
-
-        loadStreamPage(defaultStreamUrl);
+        loadStreamPage(getDefaultStreamUrl());
 
         reloadStreamButton.addEventListener("click", () => {
             const url = streamUrlInput.value.trim();
@@ -239,61 +219,8 @@
         });
 
         applyProfileButton.addEventListener("click", () => {
-            const lightId = Number(profileLightIdInput.value);
-            const intensity = Number(profileIntensityInput.value);
-
-            sendToHeadset({
-                type: "profile-light",
-                lightId: lightId,
-                intensity: intensity
-            });
-
-            console.log("Sent profile light command:", {
-                type: "profile-light",
-                lightId: lightId,
-                intensity: intensity
-            });
+            alert("This local test version only checks the live view feed. Light control needs the Node.js server.");
         });
-
-        const socket = new WebSocket(socketUrl);
-
-        socket.onopen = () => {
-            console.log("Controller websocket connected:", socketUrl);
-        };
-
-        socket.onmessage = (event) => {
-            let message = null;
-
-            try {
-                message = JSON.parse(event.data);
-            } catch (error) {
-                console.warn("Received non-JSON message:", event.data);
-                return;
-            }
-
-            if (message.type === "relay-ready") {
-                console.log("Relay ready:", message);
-                return;
-            }
-
-            if (message.type === "headset-status") {
-                setHeadsetStatus(message.connected);
-                return;
-            }
-
-            console.log("Message from headset:", message);
-        };
-
-        socket.onclose = () => {
-            statusEl.textContent = "Relay disconnected";
-            statusEl.className = "status disconnected";
-        };
-
-        socket.onerror = (error) => {
-            console.error("WebSocket error:", error);
-            statusEl.textContent = "Relay error";
-            statusEl.className = "status disconnected";
-        };
     </script>
 </body>
 </html>
