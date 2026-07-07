@@ -263,6 +263,10 @@
     let remoteStream = null;
     let streamerOnline = false;
     let headsetOnline = false;
+    let hasRemoteVideoTrack = false;
+    let retryCount = 0;
+    let trackWatchdog = null;
+    const MAX_AUTO_RETRIES = 3;
 
     function log(message) {
         const time = new Date().toLocaleTimeString();
@@ -353,8 +357,13 @@
             return;
         }
 
+        if (hasRemoteVideoTrack) {
+            setStatus("Video track received.", "ok");
+            return;
+        }
+
         if (peer && peer.connectionState === "connected") {
-            setStatus("Video stream connected.", "ok");
+            setStatus("WebRTC connected, waiting for Unity video track.", "warn");
             return;
         }
 
@@ -425,8 +434,8 @@
             log(`Streamer status: ${streamerOnline ? "online" : "offline"}`);
             updateCombinedStatus();
 
-            if (streamerOnline && !peer) {
-                await startVideo();
+            if (streamerOnline && !hasRemoteVideoTrack) {
+                await startVideo("streamer-online");
             }
 
             return;
@@ -445,6 +454,14 @@
             });
 
             log("Received answer from Quest.");
+            log(`Answer video direction: ${getVideoDirection(data.sdp) || "none"}`);
+
+            if (!answerCanSendVideo(data.sdp)) {
+                scheduleRestart("Unity answer does not include a sending video track.");
+            } else {
+                startTrackWatchdog();
+            }
+
             updateCombinedStatus();
             return;
         }
@@ -502,8 +519,12 @@
             }
 
             emptyState.style.display = "none";
+            hasRemoteVideoTrack = true;
+            retryCount = 0;
+            clearTrackWatchdog();
             remoteVideo.play().catch(() => {});
             log(`Remote ${event.track.kind} track received.`);
+            updateCombinedStatus();
         };
 
         rtc.onicecandidate = (event) => {
@@ -530,7 +551,77 @@
         return rtc;
     }
 
-    async function startVideo() {
+    function getVideoDirection(sdp) {
+        const videoSection = getVideoSection(sdp);
+
+        if (!videoSection) {
+            return null;
+        }
+
+        const match = videoSection.match(/^a=(sendrecv|sendonly|recvonly|inactive)$/m);
+        return match ? match[1] : null;
+    }
+
+    function getVideoSection(sdp) {
+        if (!sdp) {
+            return "";
+        }
+
+        const videoStart = sdp.indexOf("m=video");
+
+        if (videoStart < 0) {
+            return "";
+        }
+
+        const nextMedia = sdp.indexOf("\nm=", videoStart + 1);
+        return nextMedia < 0 ? sdp.substring(videoStart) : sdp.substring(videoStart, nextMedia);
+    }
+
+    function answerCanSendVideo(sdp) {
+        const direction = getVideoDirection(sdp);
+        return direction === "sendrecv" || direction === "sendonly";
+    }
+
+    function clearTrackWatchdog() {
+        if (trackWatchdog) {
+            clearTimeout(trackWatchdog);
+            trackWatchdog = null;
+        }
+    }
+
+    function startTrackWatchdog() {
+        clearTrackWatchdog();
+
+        trackWatchdog = setTimeout(() => {
+            if (!hasRemoteVideoTrack) {
+                scheduleRestart("No video track arrived after answer.");
+            }
+        }, 3500);
+    }
+
+    function scheduleRestart(reason) {
+        if (hasRemoteVideoTrack || !streamerOnline) {
+            return;
+        }
+
+        if (retryCount >= MAX_AUTO_RETRIES) {
+            log(`${reason} Auto retry limit reached. Check Unity VideoStreamSender source/camera.`);
+            setStatus("Connected, but Unity is not sending a video track.", "bad");
+            return;
+        }
+
+        retryCount += 1;
+        log(`${reason} Retrying video negotiation ${retryCount}/${MAX_AUTO_RETRIES}...`);
+
+        setTimeout(() => {
+            if (streamerOnline && !hasRemoteVideoTrack) {
+                startVideo("retry");
+            }
+        }, 1000);
+    }
+
+    async function startVideo(reason = "manual") {
+        log(`Starting video (${reason})...`);
         connectRelay();
 
         if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -546,10 +637,14 @@
 
         stopVideo(false);
 
+        hasRemoteVideoTrack = false;
         connectionId = `viewer-${Date.now()}-${Math.random().toString(16).slice(2)}`;
         peer = createPeer();
 
-        const offer = await peer.createOffer();
+        const offer = await peer.createOffer({
+            offerToReceiveVideo: true,
+            offerToReceiveAudio: false
+        });
         await peer.setLocalDescription(offer);
 
         sendRoutedSignal("offer", {
@@ -562,6 +657,8 @@
     }
 
     function stopVideo(notifyQuest = true) {
+        clearTrackWatchdog();
+
         if (notifyQuest && connectionId) {
             sendJson({
                 type: "disconnect",
@@ -578,6 +675,7 @@
         peer = null;
         connectionId = null;
         remoteStream = null;
+        hasRemoteVideoTrack = false;
         remoteVideo.srcObject = null;
         emptyState.style.display = "grid";
         updateCombinedStatus();
