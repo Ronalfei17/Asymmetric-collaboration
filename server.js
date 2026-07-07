@@ -8,7 +8,7 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server, path: "/ws" });
 
 const PORT = process.env.PORT || 3000;
-const VERSION = "relay-presence-v3";
+const VERSION = "relay-webrtc-v4";
 
 const HEADSET_TIMEOUT_MS = 2200;
 const PRESENCE_CHECK_MS = 100;
@@ -22,7 +22,8 @@ app.get("/health", (req, res) => {
     ok: true,
     version: VERSION,
     headsetTimeoutMs: HEADSET_TIMEOUT_MS,
-    presenceCheckMs: PRESENCE_CHECK_MS
+    presenceCheckMs: PRESENCE_CHECK_MS,
+    rooms: rooms.size
   });
 });
 
@@ -30,17 +31,24 @@ function getRoom(roomId) {
   if (!rooms.has(roomId)) {
     rooms.set(roomId, {
       headset: null,
-      headsetOnline: false,
+      streamer: null,
       lastHeadsetSeen: 0,
-      controllers: new Set()
+      publishedHeadsetOnline: false,
+      controllers: new Set(),
+      viewers: new Set(),
+      viewersByConnectionId: new Map()
     });
   }
 
   return rooms.get(roomId);
 }
 
+function isOpen(ws) {
+  return ws && ws.readyState === WebSocket.OPEN;
+}
+
 function send(ws, payload) {
-  if (ws && ws.readyState === WebSocket.OPEN) {
+  if (isOpen(ws)) {
     ws.send(payload);
   }
 }
@@ -49,31 +57,53 @@ function sendJson(ws, obj) {
   send(ws, JSON.stringify(obj));
 }
 
-function broadcastHeadsetStatus(room) {
-  room.controllers.forEach((controller) => {
-    sendJson(controller, {
-      type: "headset-status",
-      connected: room.headsetOnline
-    });
-  });
+function closeQuietly(ws) {
+  try {
+    if (ws) {
+      ws.terminate();
+    }
+  } catch {}
 }
 
-function setHeadsetOnline(room, ws, online) {
-  if (room.headset !== ws) {
+function isPresenceOnline(room) {
+  return isOpen(room.headset) && Date.now() - room.lastHeadsetSeen <= HEADSET_TIMEOUT_MS;
+}
+
+function isStreamerOnline(room) {
+  return isOpen(room.streamer);
+}
+
+function isHeadsetAvailable(room) {
+  return isPresenceOnline(room) || isStreamerOnline(room);
+}
+
+function broadcastHeadsetStatus(room, force = false) {
+  const connected = isHeadsetAvailable(room);
+
+  if (!force && room.publishedHeadsetOnline === connected) {
     return;
   }
 
-  const changed = room.headsetOnline !== online;
-  room.headsetOnline = online;
+  room.publishedHeadsetOnline = connected;
 
-  if (online) {
-    room.lastHeadsetSeen = Date.now();
-  }
+  const payload = {
+    type: "headset-status",
+    connected
+  };
 
-  if (changed) {
-    broadcastHeadsetStatus(room);
-    console.log(`[${VERSION}] headset ${online ? "online" : "offline"}`);
-  }
+  room.controllers.forEach((controller) => sendJson(controller, payload));
+  room.viewers.forEach((viewer) => sendJson(viewer, payload));
+
+  console.log(`[${VERSION}] headset ${connected ? "online" : "offline"}`);
+}
+
+function broadcastStreamStatus(room) {
+  const payload = {
+    type: "stream-status",
+    connected: isStreamerOnline(room)
+  };
+
+  room.viewers.forEach((viewer) => sendJson(viewer, payload));
 }
 
 function removeHeadset(room, ws) {
@@ -81,9 +111,114 @@ function removeHeadset(room, ws) {
     return;
   }
 
-  setHeadsetOnline(room, ws, false);
   room.headset = null;
   room.lastHeadsetSeen = 0;
+  broadcastHeadsetStatus(room);
+}
+
+function removeStreamer(room, ws) {
+  if (room.streamer !== ws) {
+    return;
+  }
+
+  room.streamer = null;
+  broadcastStreamStatus(room);
+  broadcastHeadsetStatus(room);
+}
+
+function getConnectionId(parsed) {
+  if (!parsed || typeof parsed !== "object") {
+    return null;
+  }
+
+  if (typeof parsed.from === "string" && parsed.from.length > 0) {
+    return parsed.from;
+  }
+
+  if (typeof parsed.connectionId === "string" && parsed.connectionId.length > 0) {
+    return parsed.connectionId;
+  }
+
+  if (parsed.data && typeof parsed.data.connectionId === "string" && parsed.data.connectionId.length > 0) {
+    return parsed.data.connectionId;
+  }
+
+  return null;
+}
+
+function registerViewerConnection(room, ws, connectionId) {
+  if (!connectionId) {
+    return;
+  }
+
+  ws.connectionIds.add(connectionId);
+  room.viewersByConnectionId.set(connectionId, ws);
+}
+
+function notifyStreamerDisconnect(room, connectionId) {
+  if (!connectionId || !isStreamerOnline(room)) {
+    return;
+  }
+
+  sendJson(room.streamer, {
+    type: "disconnect",
+    connectionId
+  });
+}
+
+function unregisterViewer(room, ws) {
+  if (!room.viewers.has(ws)) {
+    return;
+  }
+
+  room.viewers.delete(ws);
+
+  ws.connectionIds.forEach((connectionId) => {
+    if (room.viewersByConnectionId.get(connectionId) === ws) {
+      room.viewersByConnectionId.delete(connectionId);
+      notifyStreamerDisconnect(room, connectionId);
+    }
+  });
+
+  ws.connectionIds.clear();
+}
+
+function parseJson(message) {
+  try {
+    return JSON.parse(message);
+  } catch {
+    return null;
+  }
+}
+
+function routeStreamerMessage(room, message, parsed) {
+  const connectionId = getConnectionId(parsed);
+
+  if (connectionId) {
+    const viewer = room.viewersByConnectionId.get(connectionId);
+
+    if (isOpen(viewer)) {
+      send(viewer, message);
+      return;
+    }
+  }
+
+  room.viewers.forEach((viewer) => send(viewer, message));
+}
+
+function routeViewerMessage(room, ws, message, parsed) {
+  const connectionId = getConnectionId(parsed);
+  registerViewerConnection(room, ws, connectionId);
+
+  if (!isStreamerOnline(room)) {
+    sendJson(ws, {
+      type: "stream-status",
+      connected: false
+    });
+    return;
+  }
+
+  send(room.streamer, message);
 }
 
 wss.on("connection", (ws, req) => {
@@ -94,22 +229,58 @@ wss.on("connection", (ws, req) => {
 
   ws.role = role;
   ws.roomId = roomId;
+  ws.connectionIds = new Set();
 
   if (role === "headset") {
-    if (room.headset && room.headset.readyState === WebSocket.OPEN) {
-      try {
-        room.headset.terminate();
-      } catch {}
+    if (isOpen(room.headset)) {
+      closeQuietly(room.headset);
     }
 
     room.headset = ws;
-    setHeadsetOnline(room, ws, true);
+    room.lastHeadsetSeen = Date.now();
 
     sendJson(ws, {
       type: "relay-ready",
       role: "headset",
       room: roomId,
       version: VERSION
+    });
+
+    broadcastHeadsetStatus(room);
+  } else if (role === "streamer") {
+    if (isOpen(room.streamer)) {
+      closeQuietly(room.streamer);
+    }
+
+    room.streamer = ws;
+
+    sendJson(ws, {
+      type: "relay-ready",
+      role: "streamer",
+      room: roomId,
+      version: VERSION
+    });
+
+    broadcastStreamStatus(room);
+    broadcastHeadsetStatus(room);
+  } else if (role === "viewer") {
+    room.viewers.add(ws);
+
+    sendJson(ws, {
+      type: "relay-ready",
+      role: "viewer",
+      room: roomId,
+      version: VERSION
+    });
+
+    sendJson(ws, {
+      type: "headset-status",
+      connected: isHeadsetAvailable(room)
+    });
+
+    sendJson(ws, {
+      type: "stream-status",
+      connected: isStreamerOnline(room)
     });
   } else {
     room.controllers.add(ws);
@@ -123,20 +294,17 @@ wss.on("connection", (ws, req) => {
 
     sendJson(ws, {
       type: "headset-status",
-      connected: room.headsetOnline
+      connected: isHeadsetAvailable(room)
     });
   }
 
   ws.on("message", (data) => {
     const message = data.toString();
-
-    let parsed = null;
-    try {
-      parsed = JSON.parse(message);
-    } catch {}
+    const parsed = parseJson(message);
 
     if (ws.role === "headset") {
-      setHeadsetOnline(room, ws, true);
+      room.lastHeadsetSeen = Date.now();
+      broadcastHeadsetStatus(room);
 
       if (parsed && parsed.type === "heartbeat") {
         return;
@@ -147,15 +315,39 @@ wss.on("connection", (ws, req) => {
         return;
       }
 
-      room.controllers.forEach((controller) => {
-        send(controller, message);
-      });
+      room.controllers.forEach((controller) => send(controller, message));
+      return;
+    }
 
+    if (ws.role === "streamer") {
+      if (parsed && parsed.type === "heartbeat") {
+        return;
+      }
+
+      if (parsed && parsed.type === "streamer-disconnect") {
+        removeStreamer(room, ws);
+        return;
+      }
+
+      routeStreamerMessage(room, message, parsed);
+      return;
+    }
+
+    if (ws.role === "viewer") {
+      if (!parsed) {
+        sendJson(ws, {
+          type: "error",
+          message: "Viewer messages must be JSON."
+        });
+        return;
+      }
+
+      routeViewerMessage(room, ws, message, parsed);
       return;
     }
 
     if (ws.role === "controller") {
-      if (room.headsetOnline && room.headset && room.headset.readyState === WebSocket.OPEN) {
+      if (isOpen(room.headset)) {
         send(room.headset, message);
       } else {
         sendJson(ws, {
@@ -171,8 +363,16 @@ wss.on("connection", (ws, req) => {
       room.controllers.delete(ws);
     }
 
+    if (ws.role === "viewer") {
+      unregisterViewer(room, ws);
+    }
+
     if (ws.role === "headset") {
       removeHeadset(room, ws);
+    }
+
+    if (ws.role === "streamer") {
+      removeStreamer(room, ws);
     }
   });
 
@@ -181,8 +381,16 @@ wss.on("connection", (ws, req) => {
       room.controllers.delete(ws);
     }
 
+    if (ws.role === "viewer") {
+      unregisterViewer(room, ws);
+    }
+
     if (ws.role === "headset") {
       removeHeadset(room, ws);
+    }
+
+    if (ws.role === "streamer") {
+      removeStreamer(room, ws);
     }
   });
 });
@@ -191,17 +399,14 @@ setInterval(() => {
   const now = Date.now();
 
   rooms.forEach((room) => {
-    if (!room.headsetOnline || !room.headset) {
+    if (!room.headset) {
       return;
     }
 
     if (now - room.lastHeadsetSeen > HEADSET_TIMEOUT_MS) {
       const oldHeadset = room.headset;
       removeHeadset(room, oldHeadset);
-
-      try {
-        oldHeadset.terminate();
-      } catch {}
+      closeQuietly(oldHeadset);
     }
   });
 }, PRESENCE_CHECK_MS);
