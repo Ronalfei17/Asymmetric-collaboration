@@ -367,14 +367,14 @@
                                             <div class="text-[11px] text-gray-200 mb-2">Pan (Horizontal)</div>
                                             <div class="flex items-center gap-3">
                                                 <div class="flex-grow">
-                                                    <input id="panSlider" type="range" min="-540" max="540" value="-35" class="w-full accent-blue-500">
+                                                    <input id="panSlider" type="range" min="-270" max="270" value="0" class="w-full accent-blue-500">
                                                     <div class="flex justify-between text-[11px] text-gray-300 mt-1">
-                                                        <span>-540°</span>
+                                                        <span>-270°</span>
                                                         <span>0°</span>
-                                                        <span>540°</span>
+                                                        <span>270°</span>
                                                     </div>
                                                 </div>
-                                                <div id="panValue" class="w-11 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">-35&deg;</div>
+                                                <div id="panValue" class="w-11 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">0&deg;</div>
                                             </div>
                                         </div>
 
@@ -382,14 +382,14 @@
                                             <div class="text-[11px] text-gray-200 mb-2">Tilt (Vertical)</div>
                                             <div class="flex items-center gap-3">
                                                 <div class="flex-grow">
-                                                    <input id="tiltSlider" type="range" min="-270" max="270" value="15" class="w-full accent-blue-500">
+                                                    <input id="tiltSlider" type="range" min="-144.5" max="144.5" step="0.5" value="0" class="w-full accent-blue-500">
                                                     <div class="flex justify-between text-[11px] text-gray-300 mt-1">
-                                                        <span>-270°</span>
+                                                        <span>-144.5°</span>
                                                         <span>0°</span>
-                                                        <span>270°</span>
+                                                        <span>144.5°</span>
                                                     </div>
                                                 </div>
-                                                <div id="tiltValue" class="w-11 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">15&deg;</div>
+                                                <div id="tiltValue" class="w-11 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">0&deg;</div>
                                             </div>
                                         </div>
                                     </div>
@@ -869,6 +869,21 @@
             const tiltValue = document.getElementById('tiltValue');
             const resetAnglesBtn = document.getElementById('resetAnglesBtn');
 
+            let selectedLightId = 1;
+
+            function sendMovingLightState() {
+                sendControlMessage('moving-light', {
+                    lightId: selectedLightId,
+                    isOn: powerToggle ? powerToggle.dataset.on === 'true' : true,
+                    intensity: intensitySlider ? Number(intensitySlider.value) / 100 : 0,
+                    pan: panSlider ? Number(panSlider.value) : 0,
+                    tilt: tiltSlider ? Number(tiltSlider.value) : 0,
+                    r: redSlider ? Number(redSlider.value) / 255 : 1,
+                    g: greenSlider ? Number(greenSlider.value) / 255 : 1,
+                    b: blueSlider ? Number(blueSlider.value) / 255 : 1
+                });
+            }
+
             function toHex(value) {
                 return Number(value).toString(16).padStart(2, '0').toUpperCase();
             }
@@ -1024,17 +1039,24 @@
                 powerToggle.addEventListener('click', () => {
                     const nextState = powerToggle.dataset.on !== 'true';
                     setPowerState(nextState);
+                    sendMovingLightState();
                 });
             }
 
             if (intensitySlider && intensityValue) {
                 intensitySlider.addEventListener('input', () => {
                     intensityValue.innerText = `${intensitySlider.value}%`;
+                    sendMovingLightState();
                 });
             }
 
             [redSlider, greenSlider, blueSlider].forEach(slider => {
-                if (slider) slider.addEventListener('input', updateRGB);
+                if (slider) {
+                    slider.addEventListener('input', () => {
+                        updateRGB();
+                        sendMovingLightState();
+                    });
+                }
             });
 
             let isDraggingColorWheel = false;
@@ -1044,11 +1066,13 @@
                     isDraggingColorWheel = true;
                     colorWheel.setPointerCapture(event.pointerId);
                     updateRGBFromWheel(event);
+                    sendMovingLightState();
                 });
 
                 colorWheel.addEventListener('pointermove', (event) => {
                     if (!isDraggingColorWheel) return;
                     updateRGBFromWheel(event);
+                    sendMovingLightState();
                 });
 
                 colorWheel.addEventListener('pointerup', () => {
@@ -1063,12 +1087,14 @@
             if (panSlider && panValue) {
                 panSlider.addEventListener('input', () => {
                     panValue.innerHTML = `${panSlider.value}&deg;`;
+                    sendMovingLightState();
                 });
             }
 
             if (tiltSlider && tiltValue) {
                 tiltSlider.addEventListener('input', () => {
                     tiltValue.innerHTML = `${tiltSlider.value}&deg;`;
+                    sendMovingLightState();
                 });
             }
 
@@ -1078,11 +1104,13 @@
                     tiltSlider.value = 0;
                     panValue.innerHTML = '0&deg;';
                     tiltValue.innerHTML = '0&deg;';
+                    sendMovingLightState();
                 });
             }
 
             setPowerState(true);
             updateRGB();
+            sendMovingLightState();//网页一打开就改变 Unity 灯光，后期如果要开关/拖动slider发送，可以注释掉这一行
         }
 
         function setupTeleportMap() {
