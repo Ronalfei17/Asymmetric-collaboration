@@ -7,6 +7,8 @@ import { setupSidebar } from './sidebar.js';
 import { setupStatus } from './status.js';
 import { CONTROL_CONFIG } from './config.js';
 
+console.log('[MAIN] loaded');
+
 function createIcons() {
     if (window.lucide) {
         window.lucide.createIcons();
@@ -41,3 +43,5 @@ window.addEventListener('beforeunload', () => {
 });
 
 createIcons();
+
+console.log('[MAIN] initialized');
