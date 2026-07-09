@@ -1,0 +1,35 @@
+import { connectControlServer, closeControlServer, sendControlMessage } from './control-channel.js';
+import { connectVideoRelay, closeVideoRelay, startVideoStream, stopVideoStream } from './video-stream.js';
+import { setupLightingControl } from './lighting-control.js';
+import { setupTeleportMap } from './teleport-map.js';
+import { setupCueList } from './cue-list.js';
+import { setupSidebar } from './sidebar.js';
+import { setupStatus } from './status.js';
+import { CONTROL_CONFIG } from './config.js';
+
+lucide.createIcons();
+
+setupStatus();
+setupSidebar();
+setupLightingControl(sendControlMessage);
+setupTeleportMap(sendControlMessage);
+setupCueList(sendControlMessage);
+
+connectControlServer();
+connectVideoRelay();
+
+document.getElementById('startVideoButton')?.addEventListener('click', startVideoStream);
+document.getElementById('stopVideoButton')?.addEventListener('click', () => stopVideoStream(true));
+
+setInterval(() => {
+    if (CONTROL_CONFIG.mode !== 'mock') {
+        sendControlMessage('heartbeat');
+    }
+}, 1000);
+
+window.addEventListener('beforeunload', () => {
+    closeVideoRelay();
+    closeControlServer();
+});
+
+lucide.createIcons();
