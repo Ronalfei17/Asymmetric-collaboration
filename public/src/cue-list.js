@@ -1,4 +1,4 @@
-function setupCueList() {
+export function setupCueList(sendControlMessage) {
     const cueButtons = document.querySelectorAll('.cue-btn');
     const image = document.getElementById('theatrePlanImage');
     const mapViewport = document.getElementById('mapViewport');
