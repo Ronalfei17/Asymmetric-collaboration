@@ -7,7 +7,15 @@ import { setupSidebar } from './sidebar.js';
 import { setupStatus } from './status.js';
 import { CONTROL_CONFIG } from './config.js';
 
-lucide.createIcons();
+function createIcons() {
+    if (window.lucide) {
+        window.lucide.createIcons();
+    } else {
+        console.warn('[UI] lucide is not loaded yet');
+    }
+}
+
+createIcons();
 
 setupStatus();
 setupSidebar();
@@ -32,4 +40,4 @@ window.addEventListener('beforeunload', () => {
     closeControlServer();
 });
 
-lucide.createIcons();
+createIcons();
