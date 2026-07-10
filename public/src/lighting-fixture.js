@@ -50,7 +50,7 @@ export const FIXTURE_MODEL_LABELS = {
     [PROFILE_MODELS.CANTATA_18_32]: 'Cantata 18/32',
 
     // LED
-    [LED_MODELS.COLORBLAZE]: 'Color Kinetics ColorBlaze',
+    [LED_MODELS.COLORBLAZE]: 'Color Kinetics ColorBlaze 48',
     [LED_MODELS.LUSTR_D60]: 'Lustr+ D60',
     [LED_MODELS.LUSTR_25_50]: 'Lustr+ 25–50°',
     [LED_MODELS.LUSTR2_36]: 'Lustr2+ 36°',
@@ -106,46 +106,62 @@ export const PROFILE_MODEL_PRESETS = {
 
 export const LED_MODEL_PRESETS = {
     [LED_MODELS.COLORBLAZE]: {
-        defaultFieldAngle: 60,
+        fieldAngleMin: 10,
+        fieldAngleMax: 10,
+        defaultFieldAngle: 10,
         supportsRGB: true,
-        supportsStrobe: false
+        supportsStrobe: false,
     },
 
     [LED_MODELS.LUSTR_D60]: {
-        defaultFieldAngle: 60,
+        fieldAngleMin: 17,
+        fieldAngleMax: 17,
+        defaultFieldAngle: 17,
         supportsRGB: true,
-        supportsStrobe: true
+        supportsStrobe: true,
     },
 
     [LED_MODELS.LUSTR_25_50]: {
+        fieldAngleMin: 25,
+        fieldAngleMax: 50,
         defaultFieldAngle: 35,
         supportsRGB: true,
         supportsStrobe: true
     },
 
     [LED_MODELS.LUSTR2_36]: {
+        fieldAngleMin: 36,
+        fieldAngleMax: 36,
         defaultFieldAngle: 36,
         supportsRGB: true,
         supportsStrobe: true
     },
 
     [LED_MODELS.FLORRIE_TUBE]: {
+        fieldAngleMin: 90,
+        fieldAngleMax: 90,
         defaultFieldAngle: 90,
         supportsRGB: true,
-        supportsStrobe: false
+        supportsStrobe: false,
     }
 };
 
 export const FRESNEL_MODEL_PRESETS = {
     [FRESNEL_MODELS.SELECON_RAMA_7_FRESNEL]: {
+        beamSizeMin: 7,
+        beamSizeMax: 50,
         defaultBeamSize: 45,
         defaultSoftness: 0.8
     },
     [FRESNEL_MODELS.STRAND_CANTATA_F]: {
+        beamSizeMin: 8.7,
+        beamSizeMax: 50.7,
         defaultBeamSize: 45,
         defaultSoftness: 0.75
     },
     [FRESNEL_MODELS.STARLETTE_FR]: {
+        beamSizeMin: 6,
+        beamSizeMax: 57,
         defaultBeamSize: 40,
         defaultSoftness: 0.75
     }
@@ -153,18 +169,18 @@ export const FRESNEL_MODEL_PRESETS = {
 
 export const MOVING_MODEL_PRESETS = {
     [MOVING_MODELS.JB_A7]: {
-        panMin: -270,
-        panMax: 270,
-        tiltMin: -144.5,
-        tiltMax: 144.5,
+        panMin: -225,
+        panMax: 225,
+        tiltMin: -166,
+        tiltMax: 166,
         defaultPan: 0,
         defaultTilt: 0
     },
     [MOVING_MODELS.MARTIN_MAC_250]: {
         panMin: -270,
         panMax: 270,
-        tiltMin: -135,
-        tiltMax: 135,
+        tiltMin: -144.5,
+        tiltMax: 144.5,
         defaultPan: 0,
         defaultTilt: 0
     }
@@ -219,12 +235,12 @@ function createFixture({
     };
 }
 
+
 export const FIXTURES = [
-    // Profile
+    // Profile - Selecon Acclaim Condenser 18–32° - lightId / channel: 7, 8, 9, 10, 11
     createFixture({
-        lightId: 20,
-        displayId: 'CH 20',
-        label: 'Profile - Channel 20',
+        lightId: 7,
+        label: 'Selecon Acclaim Condenser 18–32° - CH 7',
         fixtureType: FIXTURE_TYPES.PROFILE,
         fixtureModel: PROFILE_MODELS.SELECON_ACCLAIM_CONDENSER_18_32,
         defaultState: {
@@ -234,20 +250,8 @@ export const FIXTURES = [
     }),
 
     createFixture({
-        lightId: 21,
-        displayId: 'CH 21',
-        label: 'Profile - Channel 21',
-        fixtureType: FIXTURE_TYPES.PROFILE,
-        fixtureModel: PROFILE_MODELS.PRELUDE_16_30,
-        defaultState: {
-            intensity: 0.75,
-            fieldAngle: 24
-        }
-    }),
-
-    createFixture({
-        lightId: 22,
-        label: 'Profile - CH 22',
+        lightId: 8,
+        label: 'Selecon Acclaim Condenser 18–32° - CH 8',
         fixtureType: FIXTURE_TYPES.PROFILE,
         fixtureModel: PROFILE_MODELS.SELECON_ACCLAIM_CONDENSER_18_32,
         defaultState: {
@@ -257,8 +261,72 @@ export const FIXTURES = [
     }),
 
     createFixture({
-        lightId: 23,
-        label: 'Profile - CH 23',
+        lightId: 9,
+        label: 'Selecon Acclaim Condenser 18–32° - CH 9',
+        fixtureType: FIXTURE_TYPES.PROFILE,
+        fixtureModel: PROFILE_MODELS.SELECON_ACCLAIM_CONDENSER_18_32,
+        defaultState: {
+            intensity: 0.75,
+            fieldAngle: 25
+        }
+    }),
+
+    createFixture({
+        lightId: 10,
+        label: 'Selecon Acclaim Condenser 18–32° - CH 10',
+        fixtureType: FIXTURE_TYPES.PROFILE,
+        fixtureModel: PROFILE_MODELS.SELECON_ACCLAIM_CONDENSER_18_32,
+        defaultState: {
+            intensity: 0.75,
+            fieldAngle: 25
+        }
+    }),
+
+    createFixture({
+        lightId: 11,
+        label: 'Selecon Acclaim Condenser 18–32° - CH 11',
+        fixtureType: FIXTURE_TYPES.PROFILE,
+        fixtureModel: PROFILE_MODELS.SELECON_ACCLAIM_CONDENSER_18_32,
+        defaultState: {
+            intensity: 0.75,
+            fieldAngle: 25
+        }
+    }),
+    // Profile - Selecon SPX 15–35° - lightId / channel: 12, 13, 37
+    createFixture({
+        lightId: 12,
+        label: 'Selecon SPX 15–35° - CH 12',
+        fixtureType: FIXTURE_TYPES.PROFILE,
+        fixtureModel: PROFILE_MODELS.SELECON_SPX_15_35,
+        defaultState: {
+            intensity: 0.75,
+            fieldAngle: 25
+        }
+    }), 
+    createFixture({
+        lightId: 13,
+        label: 'Selecon SPX 15–35° - CH 13',
+        fixtureType: FIXTURE_TYPES.PROFILE,
+        fixtureModel: PROFILE_MODELS.SELECON_SPX_15_35,
+        defaultState: {
+            intensity: 0.75,
+            fieldAngle: 25
+        }
+    }),
+    createFixture({
+        lightId: 37,
+        label: 'Selecon SPX 15–35° - CH 37',
+        fixtureType: FIXTURE_TYPES.PROFILE,
+        fixtureModel: PROFILE_MODELS.SELECON_SPX_15_35,
+        defaultState: {
+            intensity: 0.75,
+            fieldAngle: 25
+        }
+    }), 
+    // Profile - Prelude 16/30 - lightId / channel: 1, 2, 3, 4, 5, 6
+    createFixture({
+        lightId: 1,
+        label: 'Prelude 16/30 - CH 1',
         fixtureType: FIXTURE_TYPES.PROFILE,
         fixtureModel: PROFILE_MODELS.PRELUDE_16_30,
         defaultState: {
@@ -268,8 +336,8 @@ export const FIXTURES = [
     }),
 
     createFixture({
-        lightId: 24,
-        label: 'Profile - CH 24',
+        lightId: 2,
+        label: 'Prelude 16/30 - CH 2',
         fixtureType: FIXTURE_TYPES.PROFILE,
         fixtureModel: PROFILE_MODELS.PRELUDE_16_30,
         defaultState: {
@@ -279,8 +347,52 @@ export const FIXTURES = [
     }),
 
     createFixture({
-        lightId: 25,
-        label: 'Profile - CH 25',
+        lightId: 3,
+        label: 'Prelude 16/30 - CH 3',
+        fixtureType: FIXTURE_TYPES.PROFILE,
+        fixtureModel: PROFILE_MODELS.PRELUDE_16_30,
+        defaultState: {
+            intensity: 0.75,
+            fieldAngle: 24
+        }
+    }),
+
+    createFixture({
+        lightId: 4,
+        label: 'Prelude 16/30 - CH 4',
+        fixtureType: FIXTURE_TYPES.PROFILE,
+        fixtureModel: PROFILE_MODELS.PRELUDE_16_30,
+        defaultState: {
+            intensity: 0.75,
+            fieldAngle: 24
+        }
+    }),
+
+    createFixture({
+        lightId: 5,
+        label: 'Prelude 16/30 - CH 5',
+        fixtureType: FIXTURE_TYPES.PROFILE,
+        fixtureModel: PROFILE_MODELS.PRELUDE_16_30,
+        defaultState: {
+            intensity: 0.75,
+            fieldAngle: 24
+        }
+    }),
+
+    createFixture({
+        lightId: 6,
+        label: 'Prelude 16/30 - CH 6',
+        fixtureType: FIXTURE_TYPES.PROFILE,
+        fixtureModel: PROFILE_MODELS.PRELUDE_16_30,
+        defaultState: {
+            intensity: 0.75,
+            fieldAngle: 24
+        }
+    }),
+    // Profile - ETC Source 4 Zoom 15–30° - lightId / channel: 48, 49, 50, 51
+    createFixture({
+        lightId: 48,
+        label: 'ETC Source 4 Zoom 15–30° - CH 48',
         fixtureType: FIXTURE_TYPES.PROFILE,
         fixtureModel: PROFILE_MODELS.ETC_SOURCE4_ZOOM_15_30,
         defaultState: {
@@ -290,8 +402,8 @@ export const FIXTURES = [
     }),
 
     createFixture({
-        lightId: 27,
-        label: 'Profile - CH 27',
+        lightId: 49,
+        label: 'ETC Source 4 Zoom 15–30° - CH 49',
         fixtureType: FIXTURE_TYPES.PROFILE,
         fixtureModel: PROFILE_MODELS.ETC_SOURCE4_ZOOM_15_30,
         defaultState: {
@@ -301,10 +413,10 @@ export const FIXTURES = [
     }),
 
     createFixture({
-        lightId: 28,
-        label: 'Profile - CH 28',
+        lightId: 50,
+        label: 'ETC Source 4 Zoom 15–30° - CH 50',
         fixtureType: FIXTURE_TYPES.PROFILE,
-        fixtureModel: PROFILE_MODELS.SELECON_ACCLAIM_CONDENSER_18_32,
+        fixtureModel: PROFILE_MODELS.ETC_SOURCE4_ZOOM_15_30,
         defaultState: {
             intensity: 0.75,
             fieldAngle: 25
@@ -312,44 +424,109 @@ export const FIXTURES = [
     }),
 
     createFixture({
-        lightId: 29,
-        label: 'Profile - CH 29',
+        lightId: 51,
+        label: 'ETC Source 4 Zoom 15–30° - CH 51',
         fixtureType: FIXTURE_TYPES.PROFILE,
-        fixtureModel: PROFILE_MODELS.SELECON_ACCLAIM_CONDENSER_18_32,
+        fixtureModel: PROFILE_MODELS.ETC_SOURCE4_ZOOM_15_30,
         defaultState: {
             intensity: 0.75,
             fieldAngle: 25
         }
     }),
+    // Profile - ETC Source 4 Jr Zoom 25–50° - lightId / channel: 14, 15, 16, 17, 18, 19, 34
+    createFixture({
+        lightId: 14,
+        label: 'ETC Source 4 Jr Zoom 25–50° - CH 14',
+        fixtureType: FIXTURE_TYPES.PROFILE,
+        fixtureModel: PROFILE_MODELS.ETC_SOURCE4_JR_ZOOM_25_50,
+        defaultState: {
+            intensity: 0.75,
+            fieldAngle: 35
+        }
+    }),
 
+    createFixture({
+        lightId: 15,
+        label: 'ETC Source 4 Jr Zoom 25–50° - CH 15',
+        fixtureType: FIXTURE_TYPES.PROFILE,
+        fixtureModel: PROFILE_MODELS.ETC_SOURCE4_JR_ZOOM_25_50,
+        defaultState: {
+            intensity: 0.75,
+            fieldAngle: 35
+        }
+    }),
+
+    createFixture({
+        lightId: 16,
+        label: 'ETC Source 4 Jr Zoom 25–50° - CH 16',
+        fixtureType: FIXTURE_TYPES.PROFILE,
+        fixtureModel: PROFILE_MODELS.ETC_SOURCE4_JR_ZOOM_25_50,
+        defaultState: {
+            intensity: 0.75,
+            fieldAngle: 35
+        }
+    }),
+
+    createFixture({
+        lightId: 17,
+        label: 'ETC Source 4 Jr Zoom 25–50° - CH 17',
+        fixtureType: FIXTURE_TYPES.PROFILE,
+        fixtureModel: PROFILE_MODELS.ETC_SOURCE4_JR_ZOOM_25_50,
+        defaultState: {
+            intensity: 0.75,
+            fieldAngle: 35
+        }
+    }),
+
+    createFixture({
+        lightId: 18,
+        label: 'ETC Source 4 Jr Zoom 25–50° - CH 18',
+        fixtureType: FIXTURE_TYPES.PROFILE,
+        fixtureModel: PROFILE_MODELS.ETC_SOURCE4_JR_ZOOM_25_50,
+        defaultState: {
+            intensity: 0.75,
+            fieldAngle: 35
+        }
+    }),
+
+    createFixture({
+        lightId: 19,
+        label: 'ETC Source 4 Jr Zoom 25–50° - CH 19',
+        fixtureType: FIXTURE_TYPES.PROFILE,
+        fixtureModel: PROFILE_MODELS.ETC_SOURCE4_JR_ZOOM_25_50,
+        defaultState: {
+            intensity: 0.75,
+            fieldAngle: 35
+        }
+    }),
+
+    createFixture({
+        lightId: 34,
+        label: 'ETC Source 4 Jr Zoom 25–50° - CH 34',
+        fixtureType: FIXTURE_TYPES.PROFILE,
+        fixtureModel: PROFILE_MODELS.ETC_SOURCE4_JR_ZOOM_25_50,
+        defaultState: {
+            intensity: 0.75,
+            fieldAngle: 35
+        }
+    }),
+    // Profile - Cantata 18/32 - lightId / channel: 30, 31, 41
     createFixture({
         lightId: 30,
-        label: 'Profile - CH 30',
+        label: 'Cantata 18/32 - CH 30',
         fixtureType: FIXTURE_TYPES.PROFILE,
-        fixtureModel: PROFILE_MODELS.PRELUDE_16_30,
+        fixtureModel: PROFILE_MODELS.CANTATA_18_32,
         defaultState: {
             intensity: 0.75,
-            fieldAngle: 24
+            fieldAngle: 25
         }
     }),
 
     createFixture({
         lightId: 31,
-        label: 'Profile - CH 31',
+        label: 'Cantata 18/32 - CH 31',
         fixtureType: FIXTURE_TYPES.PROFILE,
-        fixtureModel: PROFILE_MODELS.PRELUDE_16_30,
-        defaultState: {
-            intensity: 0.75,
-            fieldAngle: 24
-        }
-    }),
-
-    createFixture({
-        lightId: 32,
-        label: 'Profile - CH 32',
-        fixtureType: FIXTURE_TYPES.PROFILE,
-        fixtureModel: PROFILE_MODELS.ETC_SOURCE4_ZOOM_15_30,
-        notes: 'Need to verify fixture model from clearer drawing.',
+        fixtureModel: PROFILE_MODELS.CANTATA_18_32,
         defaultState: {
             intensity: 0.75,
             fieldAngle: 25
@@ -357,152 +534,20 @@ export const FIXTURES = [
     }),
 
     createFixture({
-        lightId: 33,
-        label: 'Profile - CH 33',
+        lightId: 41,
+        label: 'Cantata 18/32 - CH 41',
         fixtureType: FIXTURE_TYPES.PROFILE,
-        fixtureModel: PROFILE_MODELS.ETC_SOURCE4_ZOOM_15_30,
-        notes: 'Need to verify fixture model from clearer drawing.',
+        fixtureModel: PROFILE_MODELS.CANTATA_18_32,
         defaultState: {
             intensity: 0.75,
             fieldAngle: 25
         }
     }),
 
+    // LED - Lustr2+ 36° - Light ID / Channel: 401, 402, 403, 404, 405, 406
     createFixture({
-        lightId: 42,
-        label: 'Profile - CH 42',
-        fixtureType: FIXTURE_TYPES.PROFILE,
-        fixtureModel: PROFILE_MODELS.ETC_SOURCE4_JR_ZOOM_25_50,
-        defaultState: {
-            intensity: 0.75,
-            fieldAngle: 35
-        }
-    }),
-
-    createFixture({
-        lightId: 43,
-        label: 'Profile - CH 43',
-        fixtureType: FIXTURE_TYPES.PROFILE,
-        fixtureModel: PROFILE_MODELS.ETC_SOURCE4_JR_ZOOM_25_50,
-        defaultState: {
-            intensity: 0.75,
-            fieldAngle: 35
-        }
-    }),
-
-    createFixture({
-        lightId: 44,
-        label: 'Profile - CH 44',
-        fixtureType: FIXTURE_TYPES.PROFILE,
-        fixtureModel: PROFILE_MODELS.ETC_SOURCE4_ZOOM_15_30,
-        defaultState: {
-            intensity: 0.75,
-            fieldAngle: 25
-        }
-    }),
-
-    createFixture({
-        lightId: 45,
-        label: 'Profile - CH 45',
-        fixtureType: FIXTURE_TYPES.PROFILE,
-        fixtureModel: PROFILE_MODELS.SELECON_ACCLAIM_CONDENSER_18_32,
-        defaultState: {
-            intensity: 0.75,
-            fieldAngle: 25
-        }
-    }),
-
-    createFixture({
-        lightId: 46,
-        label: 'Profile - CH 46',
-        fixtureType: FIXTURE_TYPES.PROFILE,
-        fixtureModel: PROFILE_MODELS.ETC_SOURCE4_ZOOM_15_30,
-        defaultState: {
-            intensity: 0.75,
-            fieldAngle: 25
-        }
-    }),
-
-    createFixture({
-        lightId: 47,
-        label: 'Profile - CH 47',
-        fixtureType: FIXTURE_TYPES.PROFILE,
-        fixtureModel: PROFILE_MODELS.SELECON_ACCLAIM_CONDENSER_18_32,
-        defaultState: {
-            intensity: 0.75,
-            fieldAngle: 25
-        }
-    }),
-
-    createFixture({
-        lightId: 52,
-        label: 'Profile - CH 52',
-        fixtureType: FIXTURE_TYPES.PROFILE,
-        fixtureModel: PROFILE_MODELS.ETC_SOURCE4_ZOOM_15_30,
-        defaultState: {
-            intensity: 0.75,
-            fieldAngle: 25
-        }
-    }),
-
-    createFixture({
-        lightId: 53,
-        label: 'Profile - CH 53',
-        fixtureType: FIXTURE_TYPES.PROFILE,
-        fixtureModel: PROFILE_MODELS.SELECON_ACCLAIM_CONDENSER_18_32,
-        defaultState: {
-            intensity: 0.75,
-            fieldAngle: 25
-        }
-    }),
-
-    createFixture({
-        lightId: 54,
-        label: 'Profile - CH 54',
-        fixtureType: FIXTURE_TYPES.PROFILE,
-        fixtureModel: PROFILE_MODELS.SELECON_ACCLAIM_CONDENSER_18_32,
-        defaultState: {
-            intensity: 0.75,
-            fieldAngle: 25
-        }
-    }),
-
-    createFixture({
-        lightId: 56,
-        label: 'Profile - CH 56',
-        fixtureType: FIXTURE_TYPES.PROFILE,
-        fixtureModel: PROFILE_MODELS.ETC_SOURCE4_ZOOM_15_30,
-        defaultState: {
-            intensity: 0.75,
-            fieldAngle: 25
-        }
-    }),
-
-    createFixture({
-        lightId: 64,
-        label: 'Profile - CH 64',
-        fixtureType: FIXTURE_TYPES.PROFILE,
-        fixtureModel: PROFILE_MODELS.ETC_SOURCE4_ZOOM_15_30,
-        defaultState: {
-            intensity: 0.75,
-            fieldAngle: 25
-        }
-    }),
-
-    createFixture({
-        lightId: 65,
-        label: 'Profile - CH 65',
-        fixtureType: FIXTURE_TYPES.PROFILE,
-        fixtureModel: PROFILE_MODELS.ETC_SOURCE4_ZOOM_15_30,
-        defaultState: {
-            intensity: 0.75,
-            fieldAngle: 25
-        }
-    }),
-    // Led
-    createFixture({
-        lightId: 73,
-        label: 'LED - CH 73',
+        lightId: 401,
+        label: 'Lustr2+ 36° - CH 401',
         fixtureType: FIXTURE_TYPES.LED,
         fixtureModel: LED_MODELS.LUSTR2_36,
         defaultState: {
@@ -516,8 +561,173 @@ export const FIXTURES = [
     }),
 
     createFixture({
-        lightId: 88,
-        label: 'LED - CH 88',
+        lightId: 402,
+        label: 'Lustr2+ 36° - CH 402',
+        fixtureType: FIXTURE_TYPES.LED,
+        fixtureModel: LED_MODELS.LUSTR2_36,
+        defaultState: {
+            intensity: 0.8,
+            r: 255,
+            g: 128,
+            b: 64,
+            fieldAngle: 36,
+            strobe: 0
+        }
+    }),
+
+    createFixture({
+        lightId: 403,
+        label: 'Lustr2+ 36° - CH 403',
+        fixtureType: FIXTURE_TYPES.LED,
+        fixtureModel: LED_MODELS.LUSTR2_36,
+        defaultState: {
+            intensity: 0.8,
+            r: 255,
+            g: 128,
+            b: 64,
+            fieldAngle: 36,
+            strobe: 0
+        }
+    }),
+
+    createFixture({
+        lightId: 404,
+        label: 'Lustr2+ 36° - CH 404',
+        fixtureType: FIXTURE_TYPES.LED,
+        fixtureModel: LED_MODELS.LUSTR2_36,
+        defaultState: {
+            intensity: 0.8,
+            r: 255,
+            g: 128,
+            b: 64,
+            fieldAngle: 36,
+            strobe: 0
+        }
+    }),
+
+    createFixture({
+        lightId: 405,
+        label: 'Lustr2+ 36° - CH 405',
+        fixtureType: FIXTURE_TYPES.LED,
+        fixtureModel: LED_MODELS.LUSTR2_36,
+        defaultState: {
+            intensity: 0.8,
+            r: 255,
+            g: 128,
+            b: 64,
+            fieldAngle: 36,
+            strobe: 0
+        }
+    }),
+
+    createFixture({
+        lightId: 406,
+        label: 'Lustr2+ 36° - CH 406',
+        fixtureType: FIXTURE_TYPES.LED,
+        fixtureModel: LED_MODELS.LUSTR2_36,
+        defaultState: {
+            intensity: 0.8,
+            r: 255,
+            g: 128,
+            b: 64,
+            fieldAngle: 36,
+            strobe: 0
+        }
+    }),
+    // LED - Lustr+ 25–50° - Light ID / Channel: 407, 408, 409, 410, 411, 412
+    createFixture({
+        lightId: 407,
+        label: 'Lustr+ 25–50° - CH 407',
+        fixtureType: FIXTURE_TYPES.LED,
+        fixtureModel: LED_MODELS.LUSTR_25_50,
+        defaultState: {
+            intensity: 0.8,
+            r: 255,
+            g: 128,
+            b: 64,
+            fieldAngle: 35,
+            strobe: 0
+        }
+    }),
+
+    createFixture({
+        lightId: 408,
+        label: 'Lustr+ 25–50° - CH 408',
+        fixtureType: FIXTURE_TYPES.LED,
+        fixtureModel: LED_MODELS.LUSTR_25_50,
+        defaultState: {
+            intensity: 0.8,
+            r: 255,
+            g: 128,
+            b: 64,
+            fieldAngle: 35,
+            strobe: 0
+        }
+    }),
+
+    createFixture({
+        lightId: 409,
+        label: 'Lustr+ 25–50° - CH 409',
+        fixtureType: FIXTURE_TYPES.LED,
+        fixtureModel: LED_MODELS.LUSTR_25_50,
+        defaultState: {
+            intensity: 0.8,
+            r: 255,
+            g: 128,
+            b: 64,
+            fieldAngle: 35,
+            strobe: 0
+        }
+    }),
+
+    createFixture({
+        lightId: 410,
+        label: 'Lustr+ 25–50° - CH 410',
+        fixtureType: FIXTURE_TYPES.LED,
+        fixtureModel: LED_MODELS.LUSTR_25_50,
+        defaultState: {
+            intensity: 0.8,
+            r: 255,
+            g: 128,
+            b: 64,
+            fieldAngle: 35,
+            strobe: 0
+        }
+    }),
+
+    createFixture({
+        lightId: 411,
+        label: 'Lustr+ 25–50° - CH 411',
+        fixtureType: FIXTURE_TYPES.LED,
+        fixtureModel: LED_MODELS.LUSTR_25_50,
+        defaultState: {
+            intensity: 0.8,
+            r: 255,
+            g: 128,
+            b: 64,
+            fieldAngle: 35,
+            strobe: 0
+        }
+    }),
+
+    createFixture({
+        lightId: 412,
+        label: 'Lustr+ 25–50° - CH 412',
+        fixtureType: FIXTURE_TYPES.LED,
+        fixtureModel: LED_MODELS.LUSTR_25_50,
+        defaultState: {
+            intensity: 0.8,
+            r: 255,
+            g: 128,
+            b: 64,
+            fieldAngle: 35,
+            strobe: 0
+        }
+    }),
+    // LED - Lustr+ D60 - Light ID / Channel: 201, 202, 203, 204
+    createFixture({
+        lightId: 201,
+        label: 'Lustr+ D60 - CH 201',
         fixtureType: FIXTURE_TYPES.LED,
         fixtureModel: LED_MODELS.LUSTR_D60,
         notes: 'Need to verify fixture model from clearer drawing.',
@@ -526,14 +736,14 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 60,
+            fieldAngle: 17,
             strobe: 0
         }
     }),
 
     createFixture({
-        lightId: 96,
-        label: 'LED - CH 96',
+        lightId: 202,
+        label: 'Lustr+ D60 - CH 202',
         fixtureType: FIXTURE_TYPES.LED,
         fixtureModel: LED_MODELS.LUSTR_D60,
         notes: 'Need to verify fixture model from clearer drawing.',
@@ -542,14 +752,14 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 60,
+            fieldAngle: 17,
             strobe: 0
         }
     }),
 
     createFixture({
-        lightId: 99,
-        label: 'LED - CH 99',
+        lightId: 203,
+        label: 'Lustr+ D60 - CH 203',
         fixtureType: FIXTURE_TYPES.LED,
         fixtureModel: LED_MODELS.LUSTR_D60,
         notes: 'Need to verify fixture model from clearer drawing.',
@@ -558,55 +768,40 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 60,
+            fieldAngle: 17,
             strobe: 0
         }
     }),
 
     createFixture({
-        lightId: 101,
-        displayId: 'CH 101-108',
-        label: 'ColorBlaze - CH 101–108',
+        lightId: 204,
+        label: 'Lustr+ D60 - CH 204',
         fixtureType: FIXTURE_TYPES.LED,
-        fixtureModel: LED_MODELS.COLORBLAZE,
+        fixtureModel: LED_MODELS.LUSTR_D60,
+        notes: 'Need to verify fixture model from clearer drawing.',
         defaultState: {
             intensity: 0.8,
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 60,
+            fieldAngle: 17,
             strobe: 0
         }
     }),
-
-    createFixture({
-        lightId: 109,
-        displayId: 'CH 109-116',
-        label: 'ColorBlaze - CH 109–116',
-        fixtureType: FIXTURE_TYPES.LED,
-        fixtureModel: LED_MODELS.COLORBLAZE,
-        defaultState: {
-            intensity: 0.8,
-            r: 255,
-            g: 128,
-            b: 64,
-            fieldAngle: 60,
-            strobe: 0
-        }
-    }),
-
+    // LED - Color Kinetics ColorBlaze 48 - Light ID / Channel: 117-124, 125-132, 133-140, 141-148, 149-156, 157-164, 101-108, 109-116
     createFixture({
         lightId: 117,
         displayId: 'CH 117-124',
-        label: 'ColorBlaze - CH 117–124',
+        label: 'Color Kinetics ColorBlaze 48 - CH 117–124',
         fixtureType: FIXTURE_TYPES.LED,
         fixtureModel: LED_MODELS.COLORBLAZE,
+        notes: 'Range fixture. Starting channel is used as lightId.',
         defaultState: {
             intensity: 0.8,
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 60,
+            fieldAngle: 10,
             strobe: 0
         }
     }),
@@ -614,15 +809,16 @@ export const FIXTURES = [
     createFixture({
         lightId: 125,
         displayId: 'CH 125-132',
-        label: 'ColorBlaze - CH 125–132',
+        label: 'Color Kinetics ColorBlaze 48 - CH 125–132',
         fixtureType: FIXTURE_TYPES.LED,
         fixtureModel: LED_MODELS.COLORBLAZE,
+        notes: 'Range fixture. Starting channel is used as lightId.',
         defaultState: {
             intensity: 0.8,
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 60,
+            fieldAngle: 10,
             strobe: 0
         }
     }),
@@ -630,15 +826,16 @@ export const FIXTURES = [
     createFixture({
         lightId: 133,
         displayId: 'CH 133-140',
-        label: 'ColorBlaze - CH 133–140',
+        label: 'Color Kinetics ColorBlaze 48 - CH 133–140',
         fixtureType: FIXTURE_TYPES.LED,
         fixtureModel: LED_MODELS.COLORBLAZE,
+        notes: 'Range fixture. Starting channel is used as lightId.',
         defaultState: {
             intensity: 0.8,
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 60,
+            fieldAngle: 10,
             strobe: 0
         }
     }),
@@ -646,15 +843,16 @@ export const FIXTURES = [
     createFixture({
         lightId: 141,
         displayId: 'CH 141-148',
-        label: 'ColorBlaze - CH 141–148',
+        label: 'Color Kinetics ColorBlaze 48 - CH 141–148',
         fixtureType: FIXTURE_TYPES.LED,
         fixtureModel: LED_MODELS.COLORBLAZE,
+        notes: 'Range fixture. Starting channel is used as lightId.',
         defaultState: {
             intensity: 0.8,
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 60,
+            fieldAngle: 10,
             strobe: 0
         }
     }),
@@ -662,15 +860,16 @@ export const FIXTURES = [
     createFixture({
         lightId: 149,
         displayId: 'CH 149-156',
-        label: 'ColorBlaze - CH 149–156',
+        label: 'Color Kinetics ColorBlaze 48 - CH 149–156',
         fixtureType: FIXTURE_TYPES.LED,
         fixtureModel: LED_MODELS.COLORBLAZE,
+        notes: 'Range fixture. Starting channel is used as lightId.',
         defaultState: {
             intensity: 0.8,
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 60,
+            fieldAngle: 10,
             strobe: 0
         }
     }),
@@ -678,22 +877,102 @@ export const FIXTURES = [
     createFixture({
         lightId: 157,
         displayId: 'CH 157-164',
-        label: 'ColorBlaze - CH 157–164',
+        label: 'Color Kinetics ColorBlaze 48 - CH 157–164',
         fixtureType: FIXTURE_TYPES.LED,
         fixtureModel: LED_MODELS.COLORBLAZE,
+        notes: 'Range fixture. Starting channel is used as lightId.',
         defaultState: {
             intensity: 0.8,
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 60,
+            fieldAngle: 10,
             strobe: 0
         }
     }),
-    // Fresnel
+
     createFixture({
-        lightId: 1,
-        label: 'Fresnel - CH 1',
+        lightId: 101,
+        displayId: 'CH 101-108',
+        label: 'Color Kinetics ColorBlaze 48 - CH 101–108',
+        fixtureType: FIXTURE_TYPES.LED,
+        fixtureModel: LED_MODELS.COLORBLAZE,
+        notes: 'Range fixture. Starting channel is used as lightId.',
+        defaultState: {
+            intensity: 0.8,
+            r: 255,
+            g: 128,
+            b: 64,
+            fieldAngle: 10,
+            strobe: 0
+        }
+    }),
+
+    createFixture({
+        lightId: 109,
+        displayId: 'CH 109-116',
+        label: 'Color Kinetics ColorBlaze 48 - CH 109–116',
+        fixtureType: FIXTURE_TYPES.LED,
+        fixtureModel: LED_MODELS.COLORBLAZE,
+        notes: 'Range fixture. Starting channel is used as lightId.',
+        defaultState: {
+            intensity: 0.8,
+            r: 255,
+            g: 128,
+            b: 64,
+            fieldAngle: 10,
+            strobe: 0
+        }
+    }),
+    // LED - Florrie Tube - Light ID / Channel: 27, 28, 29
+    createFixture({
+        lightId: 27,
+        label: 'Florrie Tube - CH 27',
+        fixtureType: FIXTURE_TYPES.LED,
+        fixtureModel: LED_MODELS.FLORRIE_TUBE,
+        defaultState: {
+            intensity: 0.8,
+            r: 255,
+            g: 128,
+            b: 64,
+            fieldAngle: 90,
+            strobe: 0
+        }
+    }),
+
+    createFixture({
+        lightId: 28,
+        label: 'Florrie Tube - CH 28',
+        fixtureType: FIXTURE_TYPES.LED,
+        fixtureModel: LED_MODELS.FLORRIE_TUBE,
+        defaultState: {
+            intensity: 0.8,
+            r: 255,
+            g: 128,
+            b: 64,
+            fieldAngle: 90,
+            strobe: 0
+        }
+    }),
+
+    createFixture({
+        lightId: 29,
+        label: 'Florrie Tube - CH 29',
+        fixtureType: FIXTURE_TYPES.LED,
+        fixtureModel: LED_MODELS.FLORRIE_TUBE,
+        defaultState: {
+            intensity: 0.8,
+            r: 255,
+            g: 128,
+            b: 64,
+            fieldAngle: 90,
+            strobe: 0
+        }
+    }),
+    // Fresnel - Selecon Rama 7" Fresnel - Light ID / Channel: 20, 22, 25, 26, 32, 33
+    createFixture({
+        lightId: 20,
+        label: 'Selecon Rama 7" Fresnel - CH 20',
         fixtureType: FIXTURE_TYPES.FRESNEL,
         fixtureModel: FRESNEL_MODELS.SELECON_RAMA_7_FRESNEL,
         defaultState: {
@@ -704,8 +983,8 @@ export const FIXTURES = [
     }),
 
     createFixture({
-        lightId: 2,
-        label: 'Fresnel - CH 2',
+        lightId: 22,
+        label: 'Selecon Rama 7" Fresnel - CH 22',
         fixtureType: FIXTURE_TYPES.FRESNEL,
         fixtureModel: FRESNEL_MODELS.SELECON_RAMA_7_FRESNEL,
         defaultState: {
@@ -716,8 +995,8 @@ export const FIXTURES = [
     }),
 
     createFixture({
-        lightId: 3,
-        label: 'Fresnel - CH 3',
+        lightId: 25,
+        label: 'Selecon Rama 7" Fresnel - CH 25',
         fixtureType: FIXTURE_TYPES.FRESNEL,
         fixtureModel: FRESNEL_MODELS.SELECON_RAMA_7_FRESNEL,
         defaultState: {
@@ -728,8 +1007,8 @@ export const FIXTURES = [
     }),
 
     createFixture({
-        lightId: 4,
-        label: 'Fresnel - CH 4',
+        lightId: 26,
+        label: 'Selecon Rama 7" Fresnel - CH 26',
         fixtureType: FIXTURE_TYPES.FRESNEL,
         fixtureModel: FRESNEL_MODELS.SELECON_RAMA_7_FRESNEL,
         defaultState: {
@@ -740,8 +1019,8 @@ export const FIXTURES = [
     }),
 
     createFixture({
-        lightId: 6,
-        label: 'Fresnel - CH 6',
+        lightId: 32,
+        label: 'Selecon Rama 7" Fresnel - CH 32',
         fixtureType: FIXTURE_TYPES.FRESNEL,
         fixtureModel: FRESNEL_MODELS.SELECON_RAMA_7_FRESNEL,
         defaultState: {
@@ -752,82 +1031,120 @@ export const FIXTURES = [
     }),
 
     createFixture({
-        lightId: 7,
-        label: 'Fresnel - CH 7',
+        lightId: 33,
+        label: 'Selecon Rama 7" Fresnel - CH 33',
         fixtureType: FIXTURE_TYPES.FRESNEL,
         fixtureModel: FRESNEL_MODELS.SELECON_RAMA_7_FRESNEL,
         defaultState: {
             intensity: 0.7,
             beamSize: 45,
             softness: 0.8
+        }
+    }),
+    // Fresnel - Strand Cantata F - Light ID / Channel: 42, 43, 44, 45, 46, 47
+    createFixture({
+        lightId: 42,
+        label: 'Strand Cantata F - CH 42',
+        fixtureType: FIXTURE_TYPES.FRESNEL,
+        fixtureModel: FRESNEL_MODELS.STRAND_CANTATA_F,
+        defaultState: {
+            intensity: 0.7,
+            beamSize: 45,
+            softness: 0.75
         }
     }),
 
     createFixture({
-        lightId: 8,
-        label: 'Fresnel - CH 8',
+        lightId: 43,
+        label: 'Strand Cantata F - CH 43',
         fixtureType: FIXTURE_TYPES.FRESNEL,
-        fixtureModel: FRESNEL_MODELS.SELECON_RAMA_7_FRESNEL,
+        fixtureModel: FRESNEL_MODELS.STRAND_CANTATA_F,
         defaultState: {
             intensity: 0.7,
             beamSize: 45,
-            softness: 0.8
+            softness: 0.75
         }
     }),
 
     createFixture({
-        lightId: 10,
-        label: 'Fresnel - CH 10',
+        lightId: 44,
+        label: 'Strand Cantata F - CH 44',
         fixtureType: FIXTURE_TYPES.FRESNEL,
-        fixtureModel: FRESNEL_MODELS.SELECON_RAMA_7_FRESNEL,
+        fixtureModel: FRESNEL_MODELS.STRAND_CANTATA_F,
         defaultState: {
             intensity: 0.7,
             beamSize: 45,
-            softness: 0.8
+            softness: 0.75
         }
     }),
 
     createFixture({
-        lightId: 11,
-        label: 'Fresnel - CH 11',
+        lightId: 45,
+        label: 'Strand Cantata F - CH 45',
         fixtureType: FIXTURE_TYPES.FRESNEL,
-        fixtureModel: FRESNEL_MODELS.SELECON_RAMA_7_FRESNEL,
+        fixtureModel: FRESNEL_MODELS.STRAND_CANTATA_F,
         defaultState: {
             intensity: 0.7,
             beamSize: 45,
-            softness: 0.8
+            softness: 0.75
         }
     }),
 
     createFixture({
-        lightId: 12,
-        label: 'Fresnel - CH 12',
+        lightId: 46,
+        label: 'Strand Cantata F - CH 46',
         fixtureType: FIXTURE_TYPES.FRESNEL,
-        fixtureModel: FRESNEL_MODELS.SELECON_RAMA_7_FRESNEL,
+        fixtureModel: FRESNEL_MODELS.STRAND_CANTATA_F,
         defaultState: {
             intensity: 0.7,
             beamSize: 45,
-            softness: 0.8
+            softness: 0.75
         }
     }),
 
     createFixture({
-        lightId: 13,
-        label: 'Fresnel - CH 13',
+        lightId: 47,
+        label: 'Strand Cantata F - CH 47',
         fixtureType: FIXTURE_TYPES.FRESNEL,
-        fixtureModel: FRESNEL_MODELS.SELECON_RAMA_7_FRESNEL,
+        fixtureModel: FRESNEL_MODELS.STRAND_CANTATA_F,
         defaultState: {
             intensity: 0.7,
             beamSize: 45,
-            softness: 0.8
+            softness: 0.75
         }
     }),
-    // Moving
+
+    // Fresnel - Starlette Fr - Light ID / Channel: 35, 36
+    createFixture({
+        lightId: 35,
+        label: 'Starlette Fr - CH 35',
+        fixtureType: FIXTURE_TYPES.FRESNEL,
+        fixtureModel: FRESNEL_MODELS.STARLETTE_FR,
+        defaultState: {
+            intensity: 0.7,
+            beamSize: 40,
+            softness: 0.75
+        }
+    }),
+
+    createFixture({
+        lightId: 36,
+        label: 'Starlette Fr - CH 36',
+        fixtureType: FIXTURE_TYPES.FRESNEL,
+        fixtureModel: FRESNEL_MODELS.STARLETTE_FR,
+        defaultState: {
+            intensity: 0.7,
+            beamSize: 40,
+            softness: 0.75
+        }
+    }),
+
+    // Moving - JB A7 - Light ID / Channel: 301, 302
     createFixture({
         lightId: 301,
-        label: 'Moving Light - CH 301',
+        label: 'JB A7 - CH 301',
         fixtureType: FIXTURE_TYPES.MOVING,
-        fixtureModel: MOVING_MODELS.MARTIN_MAC_250,
+        fixtureModel: MOVING_MODELS.JB_A7,
         defaultState: {
             intensity: 0.8,
             r: 255,
@@ -840,9 +1157,9 @@ export const FIXTURES = [
 
     createFixture({
         lightId: 302,
-        label: 'Moving Light - CH 302',
+        label: 'JB A7 - CH 302',
         fixtureType: FIXTURE_TYPES.MOVING,
-        fixtureModel: MOVING_MODELS.MARTIN_MAC_250,
+        fixtureModel: MOVING_MODELS.JB_A7,
         defaultState: {
             intensity: 0.8,
             r: 255,
@@ -852,10 +1169,10 @@ export const FIXTURES = [
             tilt: 0
         }
     }),
-
+    // Moving - Martin MAC 250 - Light ID / Channel: 303, 304
     createFixture({
         lightId: 303,
-        label: 'Moving Light - CH 303',
+        label: 'Martin MAC 250 - CH 303',
         fixtureType: FIXTURE_TYPES.MOVING,
         fixtureModel: MOVING_MODELS.MARTIN_MAC_250,
         defaultState: {
@@ -870,99 +1187,9 @@ export const FIXTURES = [
 
     createFixture({
         lightId: 304,
-        label: 'Moving Light - CH 304',
+        label: 'Martin MAC 250 - CH 304',
         fixtureType: FIXTURE_TYPES.MOVING,
         fixtureModel: MOVING_MODELS.MARTIN_MAC_250,
-        defaultState: {
-            intensity: 0.8,
-            r: 255,
-            g: 255,
-            b: 255,
-            pan: 0,
-            tilt: 0
-        }
-    }),
-
-    createFixture({
-        lightId: 401,
-        label: 'Moving Light - CH 401',
-        fixtureType: FIXTURE_TYPES.MOVING,
-        fixtureModel: MOVING_MODELS.JB_A7,
-        defaultState: {
-            intensity: 0.8,
-            r: 255,
-            g: 255,
-            b: 255,
-            pan: 0,
-            tilt: 0
-        }
-    }),
-
-    createFixture({
-        lightId: 402,
-        label: 'Moving Light - CH 402',
-        fixtureType: FIXTURE_TYPES.MOVING,
-        fixtureModel: MOVING_MODELS.JB_A7,
-        defaultState: {
-            intensity: 0.8,
-            r: 255,
-            g: 255,
-            b: 255,
-            pan: 0,
-            tilt: 0
-        }
-    }),
-
-    createFixture({
-        lightId: 403,
-        label: 'Moving Light - CH 403',
-        fixtureType: FIXTURE_TYPES.MOVING,
-        fixtureModel: MOVING_MODELS.JB_A7,
-        defaultState: {
-            intensity: 0.8,
-            r: 255,
-            g: 255,
-            b: 255,
-            pan: 0,
-            tilt: 0
-        }
-    }),
-
-    createFixture({
-        lightId: 404,
-        label: 'Moving Light - CH 404',
-        fixtureType: FIXTURE_TYPES.MOVING,
-        fixtureModel: MOVING_MODELS.JB_A7,
-        defaultState: {
-            intensity: 0.8,
-            r: 255,
-            g: 255,
-            b: 255,
-            pan: 0,
-            tilt: 0
-        }
-    }),
-
-    createFixture({
-        lightId: 405,
-        label: 'Moving Light - CH 405',
-        fixtureType: FIXTURE_TYPES.MOVING,
-        fixtureModel: MOVING_MODELS.JB_A7,
-        defaultState: {
-            intensity: 0.8,
-            r: 255,
-            g: 255,
-            b: 255,
-            pan: 0,
-            tilt: 0
-        }
-    }),
-
-    createFixture({
-        lightId: 406,
-        label: 'Moving Light - CH 406',
-        fixtureType: FIXTURE_TYPES.MOVING,
-        fixtureModel: MOVING_MODELS.JB_A7,
         defaultState: {
             intensity: 0.8,
             r: 255,
