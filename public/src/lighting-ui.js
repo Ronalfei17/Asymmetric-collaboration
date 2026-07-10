@@ -11,7 +11,7 @@ import {
     getLedModelPreset,
     getFresnelModelPreset,
     getMovingModelPreset
-} from './lighting-fixtures.js';
+} from './lighting-fixture.js';
 
 function getElement(id) {
     return document.getElementById(id);
@@ -141,18 +141,35 @@ export function renderFixtureIdDropdown({
     };
 }
 // [新增] 根据灯具大类显示 / 隐藏对应面板
+// [修改] 显示隐藏逻辑
 export function updatePanelVisibility(fixtureType) {
     const profilePanel = getElement('profilePanel');
     const ledPanel = getElement('ledPanel');
     const fresnelPanel = getElement('fresnelPanel');
     const movingPanel = getElement('movingPanel');
 
+    const fieldAngleBlock = getElement('fieldAngleBlock');
+    const strobeBlock = getElement('strobeBlock');
+
     profilePanel?.classList.toggle('hidden', fixtureType !== FIXTURE_TYPES.PROFILE);
     ledPanel?.classList.toggle('hidden', fixtureType !== FIXTURE_TYPES.LED);
     fresnelPanel?.classList.toggle('hidden', fixtureType !== FIXTURE_TYPES.FRESNEL);
     movingPanel?.classList.toggle('hidden', fixtureType !== FIXTURE_TYPES.MOVING);
+
+    fieldAngleBlock?.classList.toggle(
+        'hidden',
+        fixtureType !== FIXTURE_TYPES.PROFILE &&
+        fixtureType !== FIXTURE_TYPES.LED
+    );
+
+    strobeBlock?.classList.toggle(
+        'hidden',
+        fixtureType !== FIXTURE_TYPES.LED &&
+        fixtureType !== FIXTURE_TYPES.MOVING
+    );
 }
-// [扩展] 根据具体灯具型号设置 UI 参数范围
+// [扩展] 根据具体灯具型号设置 UI 参数范围 
+//默认值不要在这里写，切换时会覆盖state，已修改
 export function applyFixturePresetToUI(fixture) {
     if (!fixture) return;
 
@@ -172,7 +189,8 @@ export function applyFixturePresetToUI(fixture) {
         const strobeBlock = getElement('strobeBlock');
 
         if (preset && fieldAngleSlider) {
-            fieldAngleSlider.value = preset.defaultFieldAngle;
+            fieldAngleSlider.min = preset.fieldAngleMin;
+            fieldAngleSlider.max = preset.fieldAngleMax;
         }
 
         if (strobeBlock && preset) {
@@ -186,11 +204,14 @@ export function applyFixturePresetToUI(fixture) {
         const softnessSlider = getElement('softnessSlider');
 
         if (preset && beamSizeSlider) {
-            beamSizeSlider.value = preset.defaultBeamSize;
+            beamSizeSlider.min = preset.beamSizeMin;
+            beamSizeSlider.max = preset.beamSizeMax;
         }
 
-        if (preset && softnessSlider) {
-            softnessSlider.value = preset.defaultSoftness;
+        if (softnessSlider) {
+            softnessSlider.min = 0;
+            softnessSlider.max = 1;
+            softnessSlider.step = 0.01;
         }
     }
 
@@ -375,29 +396,46 @@ function updatePanTiltUI() {
     }
 }
 
-// [新增待完成]后续需要新增 Profile、Fresnel、LED 参数 UI 更新
+// [新增待完成]后续需要新增 Profile、Fresnel、LED 参数 UI 更新（finished)
 function updateFieldAngleUI() {
-    // TODO:
-    // Update #fieldAngleValue based on #fieldAngleSlider
+    const slider = getElement('fieldAngleSlider');
+    const value = getElement('fieldAngleValue');
+
+    if (slider && value) {
+        value.innerText = `${slider.value}°`;
+    }
 }
 
 function updateBeamSizeUI() {
-    // TODO:
-    // Update #beamSizeValue based on #beamSizeSlider
+    const slider = getElement('beamSizeSlider');
+    const value = getElement('beamSizeValue');
+
+    if (slider && value) {
+        value.innerText = `${slider.value}°`;
+    }
 }
 
 function updateSoftnessUI() {
-    // TODO:
-    // Update #softnessValue based on #softnessSlider
+    const slider = getElement('softnessSlider');
+    const value = getElement('softnessValue');
+
+    if (slider && value) {
+        value.innerText = `${Math.round(Number(slider.value) * 100)}%`;
+    }
 }
 
+//对其state里的strobe: safeNumber(state.strobe, 0) / 100
 function updateStrobeUI() {
-    // TODO:
-    // Update #strobeValue based on #strobeSlider
+    const slider = getElement('strobeSlider');
+    const value = getElement('strobeValue');
+
+    if (slider && value) {
+        value.innerText = `${slider.value}%`;
+    }
 }
 
 // [迁移完成 + 新增待完成] Read / Write UI State
-// 迁移部分已经写好；新增参数留空
+// 迁移部分已经写好；新增参数留空 (finished)
 export function readLightingValuesFromUI() {
     const powerToggle = getElement('powerToggle');
 
@@ -408,6 +446,11 @@ export function readLightingValuesFromUI() {
 
     const panSlider = getElement('panSlider');
     const tiltSlider = getElement('tiltSlider');
+
+    const fieldAngleSlider = getElement('fieldAngleSlider');
+    const beamSizeSlider = getElement('beamSizeSlider');
+    const softnessSlider = getElement('softnessSlider');
+    const strobeSlider = getElement('strobeSlider');
 
     return {
         isOn: powerToggle ? powerToggle.dataset.on === 'true' : true,
@@ -421,12 +464,10 @@ export function readLightingValuesFromUI() {
         pan: panSlider ? Number(panSlider.value) : 0,
         tilt: tiltSlider ? Number(tiltSlider.value) : 0,
 
-        // [新增待完成] Profile / Fresnel / LED 参数
-        // TODO:
-        // fieldAngle:
-        // beamSize:
-        // softness:
-        // strobe:
+        fieldAngle: fieldAngleSlider ? Number(fieldAngleSlider.value) : undefined,
+        beamSize: beamSizeSlider ? Number(beamSizeSlider.value) : undefined,
+        softness: softnessSlider ? Number(softnessSlider.value) : undefined,
+        strobe: strobeSlider ? Number(strobeSlider.value) : undefined,
     };
 }
 
@@ -436,42 +477,52 @@ export function writeLightingValuesToUI(state) {
     setPowerState(Boolean(state.isOn));
 
     const intensitySlider = getElement('intensitySlider');
-
-    if (intensitySlider) {
-        intensitySlider.value = Math.round((state.intensity ?? 0) * 100);
+    if (intensitySlider && state.intensity !== undefined) {
+        intensitySlider.value = Math.round(Number(state.intensity) * 100);
     }
 
     const redSlider = getElement('redSlider');
     const greenSlider = getElement('greenSlider');
     const blueSlider = getElement('blueSlider');
 
-    if (redSlider) redSlider.value = state.r ?? 255;
-    if (greenSlider) greenSlider.value = state.g ?? 255;
-    if (blueSlider) blueSlider.value = state.b ?? 255;
+    if (redSlider && state.r !== undefined) redSlider.value = state.r;
+    if (greenSlider && state.g !== undefined) greenSlider.value = state.g;
+    if (blueSlider && state.b !== undefined) blueSlider.value = state.b;
 
     const panSlider = getElement('panSlider');
     const tiltSlider = getElement('tiltSlider');
 
-    if (panSlider) panSlider.value = state.pan ?? 0;
-    if (tiltSlider) tiltSlider.value = state.tilt ?? 0;
+    if (panSlider && state.pan !== undefined) panSlider.value = state.pan;
+    if (tiltSlider && state.tilt !== undefined) tiltSlider.value = state.tilt;
 
-    // [新增待完成] 写入 Profile / Fresnel / LED 参数
-    // TODO:
-    // fieldAngleSlider.value =
-    // beamSizeSlider.value =
-    // softnessSlider.value =
-    // strobeSlider.value =
+    const fieldAngleSlider = getElement('fieldAngleSlider');
+    const beamSizeSlider = getElement('beamSizeSlider');
+    const softnessSlider = getElement('softnessSlider');
+    const strobeSlider = getElement('strobeSlider');
+
+    if (fieldAngleSlider && state.fieldAngle !== undefined) {
+        fieldAngleSlider.value = state.fieldAngle;
+    }
+
+    if (beamSizeSlider && state.beamSize !== undefined) {
+        beamSizeSlider.value = state.beamSize;
+    }
+
+    if (softnessSlider && state.softness !== undefined) {
+        softnessSlider.value = state.softness;
+    }
+
+    if (strobeSlider && state.strobe !== undefined) {
+        strobeSlider.value = state.strobe;
+    }
 
     updateIntensityUI();
     updateRGB();
     updatePanTiltUI();
-
-    // [新增待完成] Refresh new UI values
-    // TODO:
-    // updateFieldAngleUI();
-    // updateBeamSizeUI();
-    // updateSoftnessUI();
-    // updateStrobeUI();
+    updateFieldAngleUI();
+    updateBeamSizeUI();
+    updateSoftnessUI();
+    updateStrobeUI();
 }
 
 
@@ -565,31 +616,40 @@ export function setupLightingInputListeners(onInput) {
         });
     }
 
-    // [新增待完成] Profile fieldAngle input event
-    // TODO:
-    // const fieldAngleSlider = getElement('fieldAngleSlider');
-    // fieldAngleSlider?.addEventListener('input', () => {
-    //     updateFieldAngleUI();
-    //     onInput();
-    // });
+    const fieldAngleSlider = getElement('fieldAngleSlider');
 
-    // [新增待完成] Fresnel beamSize input event
-    // TODO:
+    fieldAngleSlider?.addEventListener('input', () => {
+        updateFieldAngleUI();
+        onInput();
+    });
 
-    // [新增待完成] Fresnel softness input event
-    // TODO:
+    const beamSizeSlider = getElement('beamSizeSlider');
 
-    // [新增待完成] LED / Moving strobe input event
-    // TODO:
+    beamSizeSlider?.addEventListener('input', () => {
+        updateBeamSizeUI();
+        onInput();
+    });
+
+    const softnessSlider = getElement('softnessSlider');
+
+    softnessSlider?.addEventListener('input', () => {
+        updateSoftnessUI();
+        onInput();
+    });
+
+    const strobeSlider = getElement('strobeSlider');
+
+    strobeSlider?.addEventListener('input', () => {
+        updateStrobeUI();
+        onInput();
+    });
 
     updateIntensityUI();
     updateRGB();
     updatePanTiltUI();
 
-    // [新增待完成] Init new UI display
-    // TODO:
-    // updateFieldAngleUI();
-    // updateBeamSizeUI();
-    // updateSoftnessUI();
-    // updateStrobeUI();
+    updateFieldAngleUI();
+    updateBeamSizeUI();
+    updateSoftnessUI();
+    updateStrobeUI();
 }

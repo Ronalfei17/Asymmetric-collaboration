@@ -7,7 +7,7 @@ import {
     getFixtureState,
     updateFixtureState,
     buildLightingPayload
-} from './lighting-state.js'
+} from './lighting-state.js';
 
 import {
     renderFixtureTypeCapsules,
@@ -18,7 +18,7 @@ import {
     readLightingValuesFromUI,
     writeLightingValuesToUI,
     setupLightingInputListeners
-} from './lighting-ui.js'
+} from './lighting-ui.js';
 
 export function setupLightingControl(sendControlMessage) {
     let selectedFixtureType = FIXTURE_TYPES.PROFILE;
@@ -42,37 +42,39 @@ export function setupLightingControl(sendControlMessage) {
         if (!selectedFixture) return;
 
         applyFixturePresetToUI(selectedFixture);
+
+        const fixtureState = getFixtureState(selectedFixture);
+        writeLightingValuesToUI(fixtureState);
+
         updateSelectedInfoPanel(selectedFixture);
     }
 
     function handleSelectType(nextType) {
         selectedFixtureType = nextType;
-
         selectedFixture = getFixturesByType(nextType)[0] || null;
         renderAll();
-
-        sendCurrentFixtureState();
     }
 
     function handleSelectFixture(fixture) {
         selectedFixture = fixture;
         renderAll();
-
-        sendCurrentFixtureState();
     }
 
     function sendCurrentFixtureState() {
-        if(!selectedFixture) return;
+        if (!selectedFixture) return;
 
         const uiState = readLightingValuesFromUI();
+
         const nextState = updateFixtureState(
             selectedFixture,
             uiState
         );
+
         const payload = buildLightingPayload(
             selectedFixture,
             nextState
         );
+
         sendControlMessage('lighting-fixture', payload);
     }
 
@@ -98,5 +100,4 @@ export function setupLightingControl(sendControlMessage) {
     });
 
     renderAll();
-    sendCurrentFixtureState();
 }
