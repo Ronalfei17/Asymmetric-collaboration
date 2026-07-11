@@ -152,26 +152,28 @@ export function updatePanelVisibility(fixtureType) {
     const fresnelPanel = getElement('fresnelPanel');
     const movingPanel = getElement('movingPanel');
 
+    const sharedLightingBlocks = getElement('sharedLightingBlocks');
     const fieldAngleBlock = getElement('fieldAngleBlock');
     const strobeBlock = getElement('strobeBlock');
+
+    const showFieldAngle =
+        fixtureType === FIXTURE_TYPES.PROFILE ||
+        fixtureType === FIXTURE_TYPES.LED;
+
+    const showStrobe =
+        fixtureType === FIXTURE_TYPES.LED ||
+        fixtureType === FIXTURE_TYPES.MOVING;
 
     profilePanel?.classList.toggle('hidden', fixtureType !== FIXTURE_TYPES.PROFILE);
     ledPanel?.classList.toggle('hidden', fixtureType !== FIXTURE_TYPES.LED);
     fresnelPanel?.classList.toggle('hidden', fixtureType !== FIXTURE_TYPES.FRESNEL);
     movingPanel?.classList.toggle('hidden', fixtureType !== FIXTURE_TYPES.MOVING);
 
-    fieldAngleBlock?.classList.toggle(
-        'hidden',
-        fixtureType !== FIXTURE_TYPES.PROFILE &&
-        fixtureType !== FIXTURE_TYPES.LED
-    );
-
-    strobeBlock?.classList.toggle(
-        'hidden',
-        fixtureType !== FIXTURE_TYPES.LED &&
-        fixtureType !== FIXTURE_TYPES.MOVING
-    );
+    sharedLightingBlocks?.classList.toggle('hidden', !showFieldAngle && !showStrobe);
+    fieldAngleBlock?.classList.toggle('hidden', !showFieldAngle);
+    strobeBlock?.classList.toggle('hidden', !showStrobe);
 }
+
 // [扩展] 根据具体灯具型号设置 UI 参数范围 
 //默认值不要在这里写，切换时会覆盖state，已修改
 export function applyFixturePresetToUI(fixture) {

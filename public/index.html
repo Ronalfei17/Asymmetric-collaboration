@@ -243,7 +243,8 @@
                                 </button>
                             </div>
                         </div>
-                        <div class="col-span-6 bg-[#11141c] border border-gray-800/40 rounded-xl p-3 flex flex-col">
+                        
+                        <div class="col-span-6 bg-[#11141c] border border-gray-800/40 rounded-xl p-3 flex flex-col min-h-0 overflow-hidden">
                             <div class="flex items-center justify-between gap-3 mb-3">
                                 <span class="text-xs font-bold tracking-wider text-gray-300">LIGHTING CONTROL</span>
 
@@ -260,200 +261,193 @@
                                 </div>
                             </div>
 
-                            <div id="basicLightingPanel" class="grid grid-cols-8 gap-2 min-h-0">
-                                <!-- 1D POWER -->
-                                <div class="col-span-2 bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3 flex flex-col items-center justify-between">
-                                    <div class="text-center">
-                                        <div class="text-blue-400 text-[11px] font-bold mb-5">1D POWER</div>
-                                        <div class="text-gray-200 text-[11px] mb-5">ON / OFF</div>
+                            <div class="flex-1 min-h-0 overflow-y-auto pr-1 space-y-2">
+                                <div id="basicLightingPanel" class="grid grid-cols-8 gap-2 min-h-0">
+                                    <!-- 1D POWER -->
+                                    <div class="col-span-2 bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3 flex flex-col items-center justify-between">
+                                        <div class="text-center">
+                                            <div class="text-blue-400 text-[11px] font-bold mb-5">1D POWER</div>
+                                            <div class="text-gray-200 text-[11px] mb-5">ON / OFF</div>
+
+                                            <button
+                                                id="powerToggle"
+                                                type="button"
+                                                data-on="true"
+                                                class="w-14 h-8 rounded-full bg-green-500 relative shadow-[0_0_14px_rgba(34,197,94,0.35)] transition-all"
+                                            >
+                                                <span
+                                                    id="powerKnob"
+                                                    class="absolute right-1 top-1 w-6 h-6 rounded-full bg-white shadow transition-all"
+                                                ></span>
+                                            </button>
+                                        </div>
 
                                         <button
-                                            id="powerToggle"
+                                            id="powerLamp"
                                             type="button"
-                                            data-on="true"
-                                            class="w-14 h-8 rounded-full bg-green-500 relative shadow-[0_0_14px_rgba(34,197,94,0.35)] transition-all"
+                                            class="w-12 h-12 rounded-full bg-white/10 border border-white/5 flex items-center justify-center text-gray-200 transition-all"
                                         >
-                                            <span
-                                                id="powerKnob"
-                                                class="absolute right-1 top-1 w-6 h-6 rounded-full bg-white shadow transition-all"
-                                            ></span>
+                                            <i data-lucide="lightbulb" class="w-6 h-6"></i>
                                         </button>
                                     </div>
 
-                                    <button
-                                        id="powerLamp"
-                                        type="button"
-                                        class="w-12 h-12 rounded-full bg-white/10 border border-white/5 flex items-center justify-center text-gray-200 transition-all"
-                                    >
-                                        <i data-lucide="lightbulb" class="w-6 h-6"></i>
-                                    </button>
-                                </div>
+                                    <!-- 2D INTENSITY -->
+                                    <div class="col-span-2 bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3 flex flex-col">
+                                        <div class="text-orange-400 text-[11px] font-bold text-center mb-4">2D INTENSITY</div>
+                                        <div class="text-gray-200 text-[11px] mb-2">Intensity</div>
 
-                                <!-- 2D INTENSITY -->
-                                <div class="col-span-2 bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3 flex flex-col">
-                                    <div class="text-orange-400 text-[11px] font-bold text-center mb-4">2D INTENSITY</div>
-                                    <div class="text-gray-200 text-[11px] mb-2">Intensity</div>
-
-                                    <div class="flex-grow flex items-center justify-center gap-3">
-                                        <input
-                                            id="intensitySlider"
-                                            type="range"
-                                            min="0"
-                                            max="100"
-                                            value="78"
-                                            class="h-32 accent-blue-500"
-                                            style="writing-mode: vertical-lr; direction: rtl;"
-                                        >
-
-                                        <div class="h-32 flex flex-col justify-between text-[11px] text-gray-200">
-                                            <span>100 %</span>
-                                            <span>0 %</span>
-                                        </div>
-                                    </div>
-
-                                    <div id="intensityValue" class="mx-auto mt-2 px-3 py-1 rounded border border-gray-700 bg-white/5 text-gray-200 text-xs">
-                                        78%
-                                    </div>
-                                </div>
-
-                                <!-- 3D COLOR RGB -->
-                                <div class="col-span-4 bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3 flex flex-col">
-                                    <div class="text-red-400 text-[11px] font-bold text-center mb-4">3D COLOR (RGB)</div>
-
-                                    <div class="grid grid-cols-[1fr_78px] gap-3 flex-grow mt-2">
-                                        <div>
-                                            <div class="grid grid-cols-3 gap-3 text-center text-[11px] text-gray-200 mb-2">
-                                                <div>R</div>
-                                                <div>G</div>
-                                                <div>B</div>
-                                            </div>
-
-                                            <div class="grid grid-cols-3 gap-3">
-                                                <div class="flex justify-center">
-                                                    <input id="redSlider" type="range" min="0" max="255" value="255" class="h-32 accent-red-500" style="writing-mode: vertical-lr; direction: rtl;">
-                                                </div>
-                                                <div class="flex justify-center">
-                                                    <input id="greenSlider" type="range" min="0" max="255" value="128" class="h-32 accent-green-500" style="writing-mode: vertical-lr; direction: rtl;">
-                                                </div>
-                                                <div class="flex justify-center">
-                                                    <input id="blueSlider" type="range" min="0" max="255" value="64" class="h-32 accent-blue-500" style="writing-mode: vertical-lr; direction: rtl;">
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="flex flex-col items-center justify-center gap-4">
-                                            <div
-                                                id="colorPreview"
-                                                class="w-12 h-12 rounded border border-gray-700 shadow-[0_0_12px_rgba(255,128,64,0.35)]"
-                                                style="background-color:#FF8040"
-                                            ></div>
-
-                                            <div
-                                                id="colorWheel"
-                                                class="relative w-14 h-14 rounded-full cursor-pointer touch-none"
-                                                style="background:
-                                                    radial-gradient(circle, transparent 0 28%, rgba(11,15,22,0.95) 29% 42%, transparent 43%),
-                                                    conic-gradient(red, yellow, lime, cyan, blue, magenta, red);"
+                                        <div class="flex-grow flex items-center justify-center gap-3">
+                                            <input
+                                                id="intensitySlider"
+                                                type="range"
+                                                min="0"
+                                                max="100"
+                                                value="78"
+                                                class="h-32 accent-blue-500"
+                                                style="writing-mode: vertical-lr; direction: rtl;"
                                             >
-                                                <div
-                                                    id="colorWheelMarker"
-                                                    class="absolute w-2 h-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-[0_0_6px_rgba(255,255,255,0.9)]"
-                                                    style="left: 86%; top: 38%;"
-                                                ></div>
+
+                                            <div class="h-32 flex flex-col justify-between text-[11px] text-gray-200">
+                                                <span>100 %</span>
+                                                <span>0 %</span>
                                             </div>
+                                        </div>
+
+                                        <div id="intensityValue" class="mx-auto mt-2 px-3 py-1 rounded border border-gray-700 bg-white/5 text-gray-200 text-xs">
+                                            78%
                                         </div>
                                     </div>
 
-                                    <div class="grid grid-cols-[48px_48px_48px_1fr] gap-1 mt-2 text-[11px]">
-                                        <div id="redValue" class="px-2 py-1 rounded border border-gray-700 bg-white/5 text-center">255</div>
-                                        <div id="greenValue" class="px-2 py-1 rounded border border-gray-700 bg-white/5 text-center">128</div>
-                                        <div id="blueValue" class="px-2 py-1 rounded border border-gray-700 bg-white/5 text-center">64</div>
-                                        <div id="hexValue" class="px-2 py-1 rounded border border-gray-700 bg-white/5 text-center whitespace-nowrap">#FF8040</div>
-                                    </div>
-                                </div>
-                                
+                                    <!-- 3D COLOR RGB -->
+                                    <div class="col-span-4 bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3 flex flex-col">
+                                        <div class="text-red-400 text-[11px] font-bold text-center mb-4">3D COLOR (RGB)</div>
 
-                                <!-- 独特的 moving light panel -->
-                                <div id="movingPanel" class="hidden mt-2 bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3 flex flex-col">
-                                    <div class="text-green-400 text-[11px] font-bold text-center mb-4">4D/5D SPATIAL MOVEMENT</div>
+                                        <div class="grid grid-cols-[1fr_78px] gap-3 flex-grow mt-2">
+                                            <div>
+                                                <div class="grid grid-cols-3 gap-3 text-center text-[11px] text-gray-200 mb-2">
+                                                    <div>R</div>
+                                                    <div>G</div>
+                                                    <div>B</div>
+                                                </div>
 
-                                    <div class="space-y-5">
-                                        <div>
-                                            <div class="text-[11px] text-gray-200 mb-2">Pan (Horizontal)</div>
-                                            <div class="flex items-center gap-3">
-                                                <div class="flex-grow">
-                                                    <input id="panSlider" type="range" min="-270" max="270" value="0" class="w-full accent-blue-500">
-                                                    <div class="flex justify-between text-[11px] text-gray-300 mt-1">
-                                                        <span>-270°</span>
-                                                        <span>0°</span>
-                                                        <span>270°</span>
+                                                <div class="grid grid-cols-3 gap-3">
+                                                    <div class="flex justify-center">
+                                                        <input id="redSlider" type="range" min="0" max="255" value="255" class="h-32 accent-red-500" style="writing-mode: vertical-lr; direction: rtl;">
+                                                    </div>
+                                                    <div class="flex justify-center">
+                                                        <input id="greenSlider" type="range" min="0" max="255" value="128" class="h-32 accent-green-500" style="writing-mode: vertical-lr; direction: rtl;">
+                                                    </div>
+                                                    <div class="flex justify-center">
+                                                        <input id="blueSlider" type="range" min="0" max="255" value="64" class="h-32 accent-blue-500" style="writing-mode: vertical-lr; direction: rtl;">
                                                     </div>
                                                 </div>
-                                                <div id="panValue" class="w-11 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">0&deg;</div>
                                             </div>
+
+                                            <div class="flex flex-col items-center justify-center gap-4">
+                                                <div
+                                                    id="colorPreview"
+                                                    class="w-12 h-12 rounded border border-gray-700 shadow-[0_0_12px_rgba(255,128,64,0.35)]"
+                                                    style="background-color:#FF8040"
+                                                ></div>
+
+                                                <div
+                                                    id="colorWheel"
+                                                    class="relative w-14 h-14 rounded-full cursor-pointer touch-none"
+                                                    style="background:
+                                                        radial-gradient(circle, transparent 0 28%, rgba(11,15,22,0.95) 29% 42%, transparent 43%),
+                                                        conic-gradient(red, yellow, lime, cyan, blue, magenta, red);"
+                                                >
+                                                    <div
+                                                        id="colorWheelMarker"
+                                                        class="absolute w-2 h-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-[0_0_6px_rgba(255,255,255,0.9)]"
+                                                        style="left: 86%; top: 38%;"
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="grid grid-cols-[48px_48px_48px_1fr] gap-1 mt-2 text-[11px]">
+                                            <div id="redValue" class="px-2 py-1 rounded border border-gray-700 bg-white/5 text-center">255</div>
+                                            <div id="greenValue" class="px-2 py-1 rounded border border-gray-700 bg-white/5 text-center">128</div>
+                                            <div id="blueValue" class="px-2 py-1 rounded border border-gray-700 bg-white/5 text-center">64</div>
+                                            <div id="hexValue" class="px-2 py-1 rounded border border-gray-700 bg-white/5 text-center whitespace-nowrap">#FF8040</div>
+                                        </div>
+                                    </div>
+                                </div> 
+
+                                <!-- moving panel -->
+                                <div id="movingPanel" class="hidden bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3">
+                                    <div class="text-green-400 text-[11px] font-bold text-center mb-3">4D/5D SPATIAL MOVEMENT</div>
+
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <div class="text-[11px] text-gray-200 mb-2">Pan (Horizontal)</div>
+                                            <input id="panSlider" type="range" min="-270" max="270" value="0" class="w-full accent-blue-500">
+                                            <div class="flex justify-between text-[11px] text-gray-300 mt-1">
+                                                <span>-270&deg;</span>
+                                                <span>0&deg;</span>
+                                                <span>270&deg;</span>
+                                            </div>
+                                            <div id="panValue" class="mt-2 mx-auto w-14 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">0&deg;</div>
                                         </div>
 
                                         <div>
                                             <div class="text-[11px] text-gray-200 mb-2">Tilt (Vertical)</div>
-                                            <div class="flex items-center gap-3">
-                                                <div class="flex-grow">
-                                                    <input id="tiltSlider" type="range" min="-144.5" max="144.5" step="0.5" value="0" class="w-full accent-blue-500">
-                                                    <div class="flex justify-between text-[11px] text-gray-300 mt-1">
-                                                        <span>-128.5°</span>
-                                                        <span>0°</span>
-                                                        <span>128.5°</span>
-                                                    </div>
-                                                </div>
-                                                <div id="tiltValue" class="w-11 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">0&deg;</div>
+                                            <input id="tiltSlider" type="range" min="-144.5" max="144.5" step="0.5" value="0" class="w-full accent-blue-500">
+                                            <div class="flex justify-between text-[11px] text-gray-300 mt-1">
+                                                <span>-144.5&deg;</span>
+                                                <span>0&deg;</span>
+                                                <span>144.5&deg;</span>
                                             </div>
+                                            <div id="tiltValue" class="mt-2 mx-auto w-14 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">0&deg;</div>
                                         </div>
                                     </div>
 
                                     <button
                                         id="resetAnglesBtn"
                                         type="button"
-                                        class="mt-4 w-full py-2 rounded-md bg-white/5 border border-gray-700 text-gray-200 text-xs hover:bg-white/10 transition"
+                                        class="mt-3 w-full py-2 rounded-md bg-white/5 border border-gray-700 text-gray-200 text-xs hover:bg-white/10 transition"
                                     >
                                         Reset Angles
                                     </button>
                                 </div>
-                            </div>
-                            
-                            <!-- profile -->
-                            <div id="profilePanel" class="hidden"></div>
-                            
-                            <!-- LED -->
-                            <div id="ledPanel" class="hidden"></div>
-                            
-                            <!-- FRESNEL -->
-                            <div id="fresnelPanel" class="hidden flex-grow grid grid-cols-2 gap-2 min-h-0">
-                                <div class="bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3 flex flex-col">
-                                    <div class="text-amber-400 text-[11px] font-bold text-center mb-4">FRESNEL BEAM</div>
-                                    <div class="text-gray-200 text-[11px] mb-2">Beam Size</div>
-                                    <input id="beamSizeSlider" type="range" min="10" max="80" value="45" class="w-full accent-amber-500">
-                                    <div id="beamSizeValue" class="mt-3 mx-auto px-3 py-1 rounded border border-gray-700 bg-white/5 text-xs">45&deg;</div>
+                
+                                <!-- profile -->
+                                <div id="profilePanel" class="hidden"></div>
+                                
+                                <!-- LED -->
+                                <div id="ledPanel" class="hidden"></div>
+                                
+                                <!-- FRESNEL -->
+                                <div id="fresnelPanel" class="hidden grid grid-cols-2 gap-2 min-h-0">
+                                    <div class="bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3 flex flex-col">
+                                        <div class="text-amber-400 text-[11px] font-bold text-center mb-4">FRESNEL BEAM</div>
+                                        <div class="text-gray-200 text-[11px] mb-2">Beam Size</div>
+                                        <input id="beamSizeSlider" type="range" min="10" max="80" value="45" class="w-full accent-amber-500">
+                                        <div id="beamSizeValue" class="mt-3 mx-auto px-3 py-1 rounded border border-gray-700 bg-white/5 text-xs">45&deg;</div>
+                                    </div>
+
+                                    <div class="bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3 flex flex-col">
+                                        <div class="text-purple-400 text-[11px] font-bold text-center mb-4">SOFTNESS</div>
+                                        <div class="text-gray-200 text-[11px] mb-2">Edge Softness</div>
+                                        <input id="softnessSlider" type="range" min="0" max="1" step="0.01" value="0.75" class="w-full accent-purple-500">
+                                        <div id="softnessValue" class="mt-3 mx-auto px-3 py-1 rounded border border-gray-700 bg-white/5 text-xs">75%</div>
+                                    </div>
                                 </div>
 
-                                <div class="bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3 flex flex-col">
-                                    <div class="text-purple-400 text-[11px] font-bold text-center mb-4">SOFTNESS</div>
-                                    <div class="text-gray-200 text-[11px] mb-2">Edge Softness</div>
-                                    <input id="softnessSlider" type="range" min="0" max="1" step="0.01" value="0.75" class="w-full accent-purple-500">
-                                    <div id="softnessValue" class="mt-3 mx-auto px-3 py-1 rounded border border-gray-700 bg-white/5 text-xs">75%</div>
-                                </div>
-                            </div>
+                                <!-- shared block -->
+                                <div id="sharedLightingBlocks" class="mt-2 grid grid-cols-2 gap-2">
+                                    <div id="fieldAngleBlock" class="hidden bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3">
+                                        <div class="text-blue-400 text-[11px] font-bold text-center mb-3">FIELD ANGLE</div>
+                                        <input id="fieldAngleSlider" type="range" min="10" max="50" value="30" class="w-full accent-blue-500">
+                                        <div id="fieldAngleValue" class="mt-3 mx-auto w-fit px-3 py-1 rounded border border-gray-700 bg-white/5 text-xs">30&deg;</div>
+                                    </div>
 
-                            <!-- shared block -->
-                            <div id="sharedLightingBlocks" class="mt-2 grid grid-cols-2 gap-2">
-                                <div id="fieldAngleBlock" class="hidden bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3">
-                                    <div class="text-blue-400 text-[11px] font-bold text-center mb-3">FIELD ANGLE</div>
-                                    <input id="fieldAngleSlider" type="range" min="10" max="50" value="30" class="w-full accent-blue-500">
-                                    <div id="fieldAngleValue" class="mt-3 mx-auto w-fit px-3 py-1 rounded border border-gray-700 bg-white/5 text-xs">30&deg;</div>
-                                </div>
-
-                                <div id="strobeBlock" class="hidden bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3">
-                                    <div class="text-cyan-400 text-[11px] font-bold text-center mb-3">STROBE</div>
-                                    <input id="strobeSlider" type="range" min="0" max="100" value="0" class="w-full accent-cyan-500">
-                                    <div id="strobeValue" class="mt-3 mx-auto w-fit px-3 py-1 rounded border border-gray-700 bg-white/5 text-xs">0%</div>
+                                    <div id="strobeBlock" class="hidden bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3">
+                                        <div class="text-cyan-400 text-[11px] font-bold text-center mb-3">STROBE</div>
+                                        <input id="strobeSlider" type="range" min="0" max="100" value="0" class="w-full accent-cyan-500">
+                                        <div id="strobeValue" class="mt-3 mx-auto w-fit px-3 py-1 rounded border border-gray-700 bg-white/5 text-xs">0%</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
