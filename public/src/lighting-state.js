@@ -61,6 +61,6 @@ export function buildLightingPayload(fixture, state) {
         pan: safeNumber(state.pan, 0),
         tilt: safeNumber(state.tilt, 0),
 
-        strobe: safeNumber(state.strobe, 0) / 100
+        strobe: safeNumber(state.strobe, 0)
     };
 }

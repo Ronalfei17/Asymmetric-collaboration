@@ -6,8 +6,22 @@
     <title>Virtual Theatre Control</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @media (orientation: portrait) {
+            #portraitWarning {
+                display: flex;
+            }
+        }
+    </style>
 </head>
-<body class="bg-[#0c0f16] text-gray-200 h-screen w-screen overflow-hidden flex flex-col font-sans select-none text-[13px]">
+<body class="bg-[#0c0f16] text-gray-200 min-h-[100dvh] w-screen overflow-hidden flex flex-col font-sans select-none text-[13px]">
+
+    <div
+        id="portraitWarning"
+        class="hidden fixed inset-0 z-50 bg-[#0c0f16] text-white items-center justify-center text-center p-6"
+    >
+        Please rotate your tablet to landscape mode.
+    </div>
 
     <div class="flex-grow w-full flex overflow-hidden">
         
@@ -245,7 +259,7 @@
                         </div>
                         
                         <div class="col-span-6 bg-[#11141c] border border-gray-800/40 rounded-xl p-3 flex flex-col min-h-0 overflow-hidden">
-                            <div class="flex items-center justify-between gap-3 mb-3">
+                            <div class="flex items-center justify-between gap-3 mb-3 flex-wrap">
                                 <span class="text-xs font-bold tracking-wider text-gray-300">LIGHTING CONTROL</span>
 
                                 <div class="flex items-center gap-2">
@@ -256,7 +270,7 @@
 
                                     <select
                                         id="fixtureIdSelect"
-                                        class="h-7 min-w-[128px] bg-[#0b0f16] border border-gray-700 rounded-md px-2 text-[11px] text-gray-200 outline-none"
+                                        class="h-7 min-w-[150px] max-w-[260px] flex-1 bg-[#0b0f16] border border-gray-700 rounded-md px-2 text-[11px] text-gray-200 outline-none"
                                     ></select>
                                 </div>
                             </div>
@@ -445,8 +459,8 @@
 
                                     <div id="strobeBlock" class="hidden bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3">
                                         <div class="text-cyan-400 text-[11px] font-bold text-center mb-3">STROBE</div>
-                                        <input id="strobeSlider" type="range" min="0" max="100" value="0" class="w-full accent-cyan-500">
-                                        <div id="strobeValue" class="mt-3 mx-auto w-fit px-3 py-1 rounded border border-gray-700 bg-white/5 text-xs">0%</div>
+                                        <input id="strobeSlider" type="range" min="0" max="20" step="0.5" value="0" class="w-full accent-cyan-500">
+                                        <div id="strobeValue" class="mt-3 mx-auto w-fit px-3 py-1 rounded border border-gray-700 bg-white/5 text-xs">0 Hz</div>
                                     </div>
                                 </div>
                             </div>

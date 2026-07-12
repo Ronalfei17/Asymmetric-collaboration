@@ -80,9 +80,9 @@ function hsvToRgb(h, s, v) {
 // [修改] 胶囊按钮样式
 function capsuleClass(isActive) {
     return [
-        'px-4 py-1.5 rounded-full text-xs font-semibold transition whitespace-nowrap',
+        'h-6 px-3 rounded-full text-[11px] font-semibold transition whitespace-nowrap leading-none',
         isActive
-            ? 'bg-blue-500 text-white shadow-[0_0_12px_rgba(59,130,246,0.35)]'
+            ? 'bg-blue-500 text-white shadow-[0_0_10px_rgba(59,130,246,0.35)]'
             : 'text-gray-300 hover:text-white hover:bg-white/5'
     ].join(' ');
 }
