@@ -86,7 +86,7 @@
                     <div class="flex items-center space-x-1.5">
                         <span id="battery-level">--%</span>
                         <div class="w-6 h-3.5 border border-gray-600 rounded-sm p-0.5 flex items-center relative bg-black/20">
-                            <div id="battery-bar" class="h-full bg-green-500 rounded-2xs" style="width: 0%"></div>
+                            <div id="battery-bar" class="h-full bg-green-500 rounded-sm" style="width: 0%"></div>
                             <span id="charging-status" class="absolute inset-0 flex items-center justify-center text-[8px] text-white font-bold hidden">⚡</span>
                         </div>
                     </div>
@@ -260,12 +260,22 @@
                         
                         <div class="col-span-6 bg-[#11141c] border border-gray-800/40 rounded-xl p-3 flex flex-col min-h-0 overflow-hidden">
                             <div class="flex items-center justify-between gap-3 mb-3 flex-wrap">
-                                <span class="text-xs font-bold tracking-wider text-gray-300">LIGHTING CONTROL</span>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <span class="text-xs font-bold tracking-wider text-gray-300">LIGHTING CONTROL</span>
 
-                                <div class="flex items-center gap-2">
+                                    <button
+                                        id="lightingMoreBtn"
+                                        type="button"
+                                        class="px-2 py-1 rounded-md border border-gray-700 bg-white/5 text-[11px] text-gray-300 hover:bg-white/10 hover:text-white transition"
+                                    >
+                                        More
+                                    </button>
+                                </div>
+
+                                <div class="flex items-center gap-2 min-w-0 flex-1 justify-end">
                                     <div
                                         id="fixtureTypeCapsules"
-                                        class="inline-flex items-center rounded-full bg-[#1a1d24] p-1 border border-white/10"
+                                        class="inline-flex h-7 items-center rounded-full bg-[#1a1d24] p-0.5 border border-white/10"
                                     ></div>
 
                                     <select
@@ -398,9 +408,9 @@
                                             <div class="text-[11px] text-gray-200 mb-2">Pan (Horizontal)</div>
                                             <input id="panSlider" type="range" min="-270" max="270" value="0" class="w-full accent-blue-500">
                                             <div class="flex justify-between text-[11px] text-gray-300 mt-1">
-                                                <span>-270&deg;</span>
+                                                <span id="panMinLabel">-270&deg;</span>
                                                 <span>0&deg;</span>
-                                                <span>270&deg;</span>
+                                                <span id="panMaxLabel">270&deg;</span>
                                             </div>
                                             <div id="panValue" class="mt-2 mx-auto w-14 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">0&deg;</div>
                                         </div>
@@ -409,9 +419,9 @@
                                             <div class="text-[11px] text-gray-200 mb-2">Tilt (Vertical)</div>
                                             <input id="tiltSlider" type="range" min="-144.5" max="144.5" step="0.5" value="0" class="w-full accent-blue-500">
                                             <div class="flex justify-between text-[11px] text-gray-300 mt-1">
-                                                <span>-144.5&deg;</span>
+                                                <span id="tiltMinLabel">-144.5&deg;</span>
                                                 <span>0&deg;</span>
-                                                <span>144.5&deg;</span>
+                                                <span id="tiltMaxLabel">144.5&deg;</span>
                                             </div>
                                             <div id="tiltValue" class="mt-2 mx-auto w-14 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">0&deg;</div>
                                         </div>
@@ -430,8 +440,134 @@
                                 <div id="profilePanel" class="hidden"></div>
                                 
                                 <!-- LED -->
-                                <div id="ledPanel" class="hidden"></div>
-                                
+                                <div id="ledPanel" class="hidden">
+                                    <div id="standardLedPanel"></div>
+
+                                    <div id="colorBlazePanel" class="hidden grid grid-cols-[1.4fr_1fr] gap-2">
+                                        <div class="bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3">
+                                            <div class="text-red-400 text-[11px] font-bold text-center mb-3">
+                                                3D LED COLOR / MODE
+                                            </div>
+
+                                            <div id="ledModeTabs" class="grid grid-cols-4 rounded-lg overflow-hidden border border-gray-700 text-[11px] mb-3">
+                                                <button type="button" data-led-mode="solid" class="led-mode-btn py-2 bg-blue-500/20 text-blue-300 border-r border-gray-700">SOLID</button>
+                                                <button type="button" data-led-mode="gradient" class="led-mode-btn py-2 border-r border-gray-700 text-gray-300">GRADIENT</button>
+                                                <button type="button" data-led-mode="chase" class="led-mode-btn py-2 border-r border-gray-700 text-gray-300">CHASE</button>
+                                                <button type="button" data-led-mode="manual" class="led-mode-btn py-2 text-gray-300">MANUAL</button>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <div class="text-gray-200 text-[11px] mb-2">Segment Mode</div>
+                                                <div id="ledSegmentMode" class="grid grid-cols-2 rounded-lg overflow-hidden border border-gray-700 text-[11px]">
+                                                    <button type="button" data-led-segments="4" class="led-segment-btn py-2 text-gray-300 border-r border-gray-700">4 Segments</button>
+                                                    <button type="button" data-led-segments="8" class="led-segment-btn py-2 bg-blue-500/20 text-blue-300">8 Segments</button>
+                                                </div>
+                                            </div>
+
+                                            <div class="grid grid-cols-[1fr_auto_1fr] gap-3 items-center mb-3">
+                                                <div>
+                                                    <div class="text-[11px] text-gray-300 mb-1 text-center">Color A</div>
+                                                    <div id="ledColorAPreview" class="h-12 rounded-md border border-gray-700 shadow-[0_0_10px_rgba(255,128,64,0.3)]" style="background:#FF8040"></div>
+                                                </div>
+
+                                                <div class="text-xl text-gray-300">→</div>
+
+                                                <div>
+                                                    <div class="text-[11px] text-gray-300 mb-1 text-center">Color B</div>
+                                                    <div id="ledColorBPreview" class="h-12 rounded-md border border-gray-700 shadow-[0_0_10px_rgba(0,216,255,0.3)]" style="background:#00D8FF"></div>
+                                                </div>
+                                            </div>
+
+                                            <div class="grid grid-cols-[20px_1fr_54px] gap-2 items-center text-[11px] mb-2">
+                                                <span>R</span>
+                                                <input id="ledColorRSlider" type="range" min="0" max="255" value="255" class="accent-red-500">
+                                                <div id="ledColorRValue" class="px-2 py-1 rounded border border-gray-700 bg-white/5 text-center">255</div>
+                                            </div>
+
+                                            <div class="grid grid-cols-[20px_1fr_54px] gap-2 items-center text-[11px] mb-2">
+                                                <span>G</span>
+                                                <input id="ledColorGSlider" type="range" min="0" max="255" value="128" class="accent-green-500">
+                                                <div id="ledColorGValue" class="px-2 py-1 rounded border border-gray-700 bg-white/5 text-center">128</div>
+                                            </div>
+
+                                            <div class="grid grid-cols-[20px_1fr_54px] gap-2 items-center text-[11px]">
+                                                <span>B</span>
+                                                <input id="ledColorBSlider" type="range" min="0" max="255" value="64" class="accent-blue-500">
+                                                <div id="ledColorBValue" class="px-2 py-1 rounded border border-gray-700 bg-white/5 text-center">64</div>
+                                            </div>
+
+                                            <div class="grid grid-cols-[72px_1fr] gap-2 items-center mt-3">
+                                                <div
+                                                    id="ledColorPreview"
+                                                    class="h-10 rounded-md border border-gray-700 shadow-[0_0_10px_rgba(255,128,64,0.3)]"
+                                                    style="background:#FF8040"
+                                                ></div>
+                                                <div
+                                                    id="ledHexValue"
+                                                    class="px-2 py-2 rounded border border-gray-700 bg-white/5 text-center text-[11px]"
+                                                >
+                                                    #FF8040
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3">
+                                            <div class="text-green-400 text-[11px] font-bold text-center mb-3">
+                                                4D LED EFFECTS / SEGMENTS
+                                            </div>
+
+                                            <div class="mb-4">
+                                                <div class="text-gray-200 text-[11px] mb-2">Chase Speed</div>
+                                                <input id="ledChaseSpeedSlider" type="range" min="0.1" max="5" step="0.1" value="1.5" class="w-full accent-green-500">
+                                                <div class="flex justify-between text-[11px] text-gray-300 mt-1">
+                                                    <span>0.1x</span>
+                                                    <span>1x</span>
+                                                    <span>5.0x</span>
+                                                </div>
+                                                <div id="ledChaseSpeedValue" class="mt-2 mx-auto w-14 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">1.5x</div>
+                                            </div>
+
+                                            <div class="mb-4">
+                                                <div class="text-gray-200 text-[11px] mb-2">Direction</div>
+                                                <div id="ledDirectionTabs" class="grid grid-cols-3 gap-2 text-[11px]">
+                                                    <button type="button" data-led-direction="forward" class="led-direction-btn py-2 rounded border border-green-500/70 text-green-400 bg-green-500/10">→</button>
+                                                    <button type="button" data-led-direction="reverse" class="led-direction-btn py-2 rounded border border-gray-700 text-gray-300">←</button>
+                                                    <button type="button" data-led-direction="mirror" class="led-direction-btn py-2 rounded border border-gray-700 text-gray-300">↔</button>
+                                                </div>
+                                            </div>
+                                            
+                                            <div id="ledManualPanel" class="hidden mb-4 border border-gray-700/50 rounded-lg p-3">
+                                                <div class="text-yellow-400 text-[11px] font-bold text-center mb-3">MANUAL SEGMENTS</div>
+
+                                                <div id="ledSegmentGrid" class="grid grid-cols-8 gap-1 mb-3"></div>
+
+                                                <div class="text-[11px] text-gray-300 mb-2">
+                                                    Selected Segment:
+                                                    <span id="ledSelectedSegmentLabel" class="text-gray-100">01</span>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-4">
+                                                <div class="text-gray-200 text-[11px] mb-2">Strobe</div>
+                                                <input id="ledStrobeHzSlider" type="range" min="0" max="20" step="0.5" value="0" class="w-full accent-green-500">
+                                                <div class="flex justify-between text-[11px] text-gray-300 mt-1">
+                                                    <span>0 Hz</span>
+                                                    <span>20 Hz</span>
+                                                </div>
+                                                <div id="ledStrobeHzValue" class="mt-2 mx-auto w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">0 Hz</div>
+                                            </div>
+
+                                            <button
+                                                id="ledResetEffectsBtn"
+                                                type="button"
+                                                class="w-full py-2 rounded-md bg-white/5 border border-gray-700 text-gray-200 text-xs hover:bg-white/10 transition"
+                                            >
+                                                Reset Effects
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <!-- FRESNEL -->
                                 <div id="fresnelPanel" class="hidden grid grid-cols-2 gap-2 min-h-0">
                                     <div class="bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3 flex flex-col">

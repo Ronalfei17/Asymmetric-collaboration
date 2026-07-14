@@ -1,8 +1,12 @@
 // 用于保存每个 lightId 的状态
 
-const fixtureStateMap = new Map();
 function cloneState(state) {
-    return { ...state};
+    return {
+        ...state,
+        segments: Array.isArray(state?.segments)
+            ? state.segments.map(color => ({ ...color }))
+            : undefined
+    };
 }
 
 function safeNumber(value, fallback =0) {
@@ -61,6 +65,18 @@ export function buildLightingPayload(fixture, state) {
         pan: safeNumber(state.pan, 0),
         tilt: safeNumber(state.tilt, 0),
 
-        strobe: safeNumber(state.strobe, 0)
+        ledMode: state.ledMode || 'solid',
+        segmentMode: safeNumber(state.segmentMode, 8),
+        selectedSegment: safeNumber(state.selectedSegment, 0),
+        segments: Array.isArray(state.segments)
+        ? state.segments.map(color => ({
+            r: safeNumber(color.r, 255) / 255,
+            g: safeNumber(color.g, 255) / 255,
+            b: safeNumber(color.b, 255) / 255
+        }))
+        : [],
+        chaseSpeed: safeNumber(state.chaseSpeed, 1.5),
+        direction: state.direction || 'forward',
+        strobeHz: safeNumber(state.strobeHz, 0)
     };
 }

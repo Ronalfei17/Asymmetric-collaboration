@@ -17,12 +17,49 @@ function getElement(id) {
     return document.getElementById(id);
 }
 
+function isAdvancedLedFixture(fixture) {
+    const preset = getLedModelPreset(fixture?.fixtureModel);
+
+    return fixture?.fixtureType === FIXTURE_TYPES.LED &&
+           Boolean(preset?.supportsAdvancedModes);
+}
+
 function toHex(value) {
     return Number(value).toString(16).padStart(2, '0').toUpperCase();
 }
 
 function rgbToHex(r, g, b) {
     return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+function createDefaultSegments(count = 8) {
+    return Array.from({ length: count }, () => ({
+        r: 255,
+        g: 128,
+        b: 64
+    }));
+}
+
+let currentLedState = {
+    ledMode: 'solid',
+    segmentMode: 8,
+    selectedSegment: 0,
+    segments: createDefaultSegments(8),
+    chaseSpeed: 1.5,
+    direction: 'forward',
+    strobeHz: 0
+};
+
+function getSelectedLedDirection() {
+    return getElement('colorBlazePanel')?.dataset.ledDirection || 'forward';
+}
+
+function getSelectedLedMode() {
+    return getElement('colorBlazePanel')?.dataset.ledMode || 'solid';
+}
+
+function getSelectedLedSegmentMode() {
+    return Number(getElement('colorBlazePanel')?.dataset.ledSegments || 8);
 }
 
 function clamp(value, min, max) {
@@ -146,9 +183,11 @@ export function renderFixtureIdDropdown({
 }
 // [新增] 根据灯具大类显示 / 隐藏对应面板
 // [修改] 显示隐藏逻辑
-export function updatePanelVisibility(fixtureType) {
+export function updatePanelVisibility(fixtureType, fixture) {
     const profilePanel = getElement('profilePanel');
     const ledPanel = getElement('ledPanel');
+    const standardLedPanel = getElement('standardLedPanel');
+    const colorBlazePanel = getElement('colorBlazePanel');
     const fresnelPanel = getElement('fresnelPanel');
     const movingPanel = getElement('movingPanel');
 
@@ -156,22 +195,34 @@ export function updatePanelVisibility(fixtureType) {
     const fieldAngleBlock = getElement('fieldAngleBlock');
     const strobeBlock = getElement('strobeBlock');
 
-    const showFieldAngle =
-        fixtureType === FIXTURE_TYPES.PROFILE ||
-        fixtureType === FIXTURE_TYPES.LED;
-
-    const showStrobe =
-        fixtureType === FIXTURE_TYPES.LED ||
-        fixtureType === FIXTURE_TYPES.MOVING;
+    const isAdvancedLed = fixture ? isAdvancedLedFixture(fixture) : false;
 
     profilePanel?.classList.toggle('hidden', fixtureType !== FIXTURE_TYPES.PROFILE);
     ledPanel?.classList.toggle('hidden', fixtureType !== FIXTURE_TYPES.LED);
     fresnelPanel?.classList.toggle('hidden', fixtureType !== FIXTURE_TYPES.FRESNEL);
     movingPanel?.classList.toggle('hidden', fixtureType !== FIXTURE_TYPES.MOVING);
 
-    sharedLightingBlocks?.classList.toggle('hidden', !showFieldAngle && !showStrobe);
+    standardLedPanel?.classList.toggle(
+        'hidden',
+        fixtureType !== FIXTURE_TYPES.LED || isAdvancedLed
+    );
+
+    colorBlazePanel?.classList.toggle(
+        'hidden',
+        fixtureType !== FIXTURE_TYPES.LED || !isAdvancedLed
+    );
+
+    const showFieldAngle =
+        fixtureType === FIXTURE_TYPES.PROFILE ||
+        (fixtureType === FIXTURE_TYPES.LED && !isAdvancedLed);
+
+    const showStrobe =
+        (fixtureType === FIXTURE_TYPES.LED && !isAdvancedLed) ||
+        fixtureType === FIXTURE_TYPES.MOVING;
+
     fieldAngleBlock?.classList.toggle('hidden', !showFieldAngle);
     strobeBlock?.classList.toggle('hidden', !showStrobe);
+    sharedLightingBlocks?.classList.toggle('hidden', !showFieldAngle && !showStrobe);
 }
 
 // [扩展] 根据具体灯具型号设置 UI 参数范围 
@@ -221,6 +272,11 @@ export function applyFixturePresetToUI(fixture) {
         const panSlider = getElement('panSlider');
         const tiltSlider = getElement('tiltSlider');
 
+        const panMinLabel = getElement('panMinLabel');
+        const panMaxLabel = getElement('panMaxLabel');
+        const tiltMinLabel = getElement('tiltMinLabel');
+        const tiltMaxLabel = getElement('tiltMaxLabel');
+
         if (preset && panSlider) {
             panSlider.min = preset.panMin;
             panSlider.max = preset.panMax;
@@ -229,6 +285,22 @@ export function applyFixturePresetToUI(fixture) {
         if (preset && tiltSlider) {
             tiltSlider.min = preset.tiltMin;
             tiltSlider.max = preset.tiltMax;
+        }
+
+        if (preset && panMinLabel) {
+            panMinLabel.innerHTML = `${preset.panMin}&deg;`;
+        }
+
+        if (preset && panMaxLabel) {
+            panMaxLabel.innerHTML = `${preset.panMax}&deg;`;
+        }
+
+        if (preset && tiltMinLabel) {
+            tiltMinLabel.innerHTML = `${preset.tiltMin}&deg;`;
+        }
+
+        if (preset && tiltMaxLabel) {
+            tiltMaxLabel.innerHTML = `${preset.tiltMax}&deg;`;
         }
     }
 }
@@ -425,18 +497,250 @@ function updateSoftnessUI() {
     }
 }
 
-//对其state里的strobe: safeNumber(state.strobe, 0) / 100
 function updateStrobeUI() {
     const slider = getElement('strobeSlider');
     const value = getElement('strobeValue');
 
     if (slider && value) {
-        value.innerText = `${slider.value}%`;
+        value.innerText = `${slider.value} Hz`;
     }
 }
 
-// [迁移完成 + 新增待完成] Read / Write UI State
-// 迁移部分已经写好；新增参数留空 (finished)
+function writeColorBlazeValuesToUI(state) {
+    if (!state) return;
+
+    const panel = getElement('colorBlazePanel');
+    if (!panel) return;
+
+    panel.dataset.ledMode = state.ledMode || 'solid';
+    panel.dataset.ledSegments = String(state.segmentMode || 8);
+    panel.dataset.ledDirection = state.direction || 'forward';
+
+    currentLedState = {
+        ...currentLedState,
+        ledMode: state.ledMode || 'solid',
+        segmentMode: Number(state.segmentMode || 8),
+        selectedSegment: Number(state.selectedSegment || 0),
+        segments: Array.isArray(state.segments) && state.segments.length
+            ? state.segments
+            : createDefaultSegments(Number(state.segmentMode || 8)),
+        chaseSpeed: Number(state.chaseSpeed || 1.5),
+        direction: state.direction || 'forward',
+        strobeHz: Number(state.strobeHz || 0)
+    };
+
+    const chaseSpeedSlider = getElement('ledChaseSpeedSlider');
+    const chaseSpeedValue = getElement('ledChaseSpeedValue');
+
+    if (chaseSpeedSlider && state.chaseSpeed !== undefined) {
+        chaseSpeedSlider.value = state.chaseSpeed;
+    }
+
+    if (chaseSpeedSlider && chaseSpeedValue) {
+        chaseSpeedValue.innerText = `${chaseSpeedSlider.value}x`;
+    }
+
+    const strobeHzSlider = getElement('ledStrobeHzSlider');
+    const strobeHzValue = getElement('ledStrobeHzValue');
+
+    if (strobeHzSlider && state.strobeHz !== undefined) {
+        strobeHzSlider.value = state.strobeHz;
+    }
+
+    if (strobeHzSlider && strobeHzValue) {
+        strobeHzValue.innerText = `${strobeHzSlider.value} Hz`;
+    }
+
+    const color = state.color || {
+        r: state.r,
+        g: state.g,
+        b: state.b
+    };
+    const rSlider = getElement('ledColorRSlider');
+    const gSlider = getElement('ledColorGSlider');
+    const bSlider = getElement('ledColorBSlider');
+
+    if (rSlider && color.r !== undefined) rSlider.value = color.r;
+    if (gSlider && color.g !== undefined) gSlider.value = color.g;
+    if (bSlider && color.b !== undefined) bSlider.value = color.b;
+
+    updateColorBlazeUI();
+}
+
+function readColorBlazeValuesFromUI() {
+    const mode = getSelectedLedMode();
+    const segmentMode = Number(getSelectedLedSegmentMode() || 8);
+    const selectedSegment = Number(currentLedState.selectedSegment || 0);
+
+    const segments = currentLedState.segments?.length
+        ? [...currentLedState.segments]
+        : createDefaultSegments(segmentMode);
+
+    if (mode === 'manual') {
+        segments[selectedSegment] = {
+            r: Number(getElement('ledColorRSlider')?.value || 255),
+            g: Number(getElement('ledColorGSlider')?.value || 128),
+            b: Number(getElement('ledColorBSlider')?.value || 64)
+        };
+    }
+
+    return {
+        ledMode: mode,
+        segmentMode,
+        selectedSegment,
+        segments,
+        chaseSpeed: Number(getElement('ledChaseSpeedSlider')?.value || 1.5),
+        direction: getSelectedLedDirection(),
+        strobeHz: Number(getElement('ledStrobeHzSlider')?.value || 0)
+    };
+}
+
+function renderLedSegmentGrid() {
+    const grid = getElement('ledSegmentGrid');
+    const label = getElement('ledSelectedSegmentLabel');
+
+    if (!grid) return;
+
+    const segmentMode = Number(currentLedState.segmentMode || 8);
+    const segments = currentLedState.segments?.length === segmentMode
+        ? currentLedState.segments
+        : createDefaultSegments(segmentMode);
+
+    currentLedState.segments = segments;
+    if (Number(currentLedState.selectedSegment || 0) >= segments.length) {
+        currentLedState.selectedSegment = 0;
+    }
+
+    grid.innerHTML = '';
+
+    segments.forEach((color, index) => {
+        const button = document.createElement('button');
+        const isSelected = index === Number(currentLedState.selectedSegment || 0);
+        const hex = rgbToHex(color.r, color.g, color.b);
+
+        button.type = 'button';
+        button.className = [
+            'h-8 rounded border transition',
+            isSelected ? 'border-blue-400 ring-2 ring-blue-500/40' : 'border-white/10'
+        ].join(' ');
+        button.style.backgroundColor = hex;
+        button.dataset.segmentIndex = String(index);
+        button.title = `Segment ${String(index + 1).padStart(2, '0')} ${hex}`;
+
+        button.addEventListener('click', () => {
+            currentLedState.selectedSegment = index;
+
+            const selectedColor = currentLedState.segments[index];
+
+            const rSlider = getElement('ledColorRSlider');
+            const gSlider = getElement('ledColorGSlider');
+            const bSlider = getElement('ledColorBSlider');
+
+            if (rSlider) rSlider.value = selectedColor.r;
+            if (gSlider) gSlider.value = selectedColor.g;
+            if (bSlider) bSlider.value = selectedColor.b;
+
+            updateColorBlazeUI();
+        });
+
+        grid.appendChild(button);
+    });
+
+    if (label) {
+        label.innerText = String(Number(currentLedState.selectedSegment || 0) + 1).padStart(2, '0');
+    }
+}
+
+function updateColorBlazeUI() {
+    const panel = getElement('colorBlazePanel');
+    if (!panel) return;
+
+    const ledMode = panel.dataset.ledMode || 'solid';
+    const segmentMode = Number(panel.dataset.ledSegments || 8);
+    const direction = panel.dataset.ledDirection || 'forward';
+
+    currentLedState = {
+        ...currentLedState,
+        ledMode,
+        segmentMode,
+        direction,
+        chaseSpeed: Number(getElement('ledChaseSpeedSlider')?.value || currentLedState.chaseSpeed || 1.5),
+        strobeHz: Number(getElement('ledStrobeHzSlider')?.value || currentLedState.strobeHz || 0)
+    };
+
+    document.querySelectorAll('[data-led-mode]').forEach(button => {
+        const isActive = button.dataset.ledMode === ledMode;
+
+        button.classList.toggle('bg-blue-500/20', isActive);
+        button.classList.toggle('border-blue-500/70', isActive);
+        button.classList.toggle('text-blue-300', isActive);
+        button.classList.toggle('text-gray-300', !isActive);
+    });
+
+    document.querySelectorAll('[data-led-segments]').forEach(button => {
+        const isActive = Number(button.dataset.ledSegments) === segmentMode;
+
+        button.classList.toggle('bg-blue-500/20', isActive);
+        button.classList.toggle('border-blue-500/70', isActive);
+        button.classList.toggle('text-blue-300', isActive);
+        button.classList.toggle('text-gray-300', !isActive);
+    });
+
+    document.querySelectorAll('[data-led-direction]').forEach(button => {
+        const isActive = button.dataset.ledDirection === direction;
+
+        button.classList.toggle('bg-green-500/10', isActive);
+        button.classList.toggle('border-green-500/70', isActive);
+        button.classList.toggle('text-green-400', isActive);
+        button.classList.toggle('text-gray-300', !isActive);
+    });
+
+    const manualPanel = getElement('ledManualPanel');
+    manualPanel?.classList.toggle('hidden', ledMode !== 'manual');
+    if (ledMode === 'manual') {
+        renderLedSegmentGrid();
+    }
+
+    const chaseSpeedSlider = getElement('ledChaseSpeedSlider');
+    const chaseSpeedValue = getElement('ledChaseSpeedValue');
+
+    if (chaseSpeedSlider && chaseSpeedValue) {
+        chaseSpeedValue.innerText = `${chaseSpeedSlider.value}x`;
+    }
+
+    const strobeHzSlider = getElement('ledStrobeHzSlider');
+    const strobeHzValue = getElement('ledStrobeHzValue');
+
+    if (strobeHzSlider && strobeHzValue) {
+        strobeHzValue.innerText = `${strobeHzSlider.value} Hz`;
+    }
+
+    const r = Number(getElement('ledColorRSlider')?.value || 255);
+    const g = Number(getElement('ledColorGSlider')?.value || 128);
+    const b = Number(getElement('ledColorBSlider')?.value || 64);
+    const hex = rgbToHex(r, g, b);
+
+    const colorPreview = getElement('ledColorPreview');
+    const hexValue = getElement('ledHexValue');
+
+    if (colorPreview) {
+        colorPreview.style.backgroundColor = hex;
+        colorPreview.style.boxShadow = `0 0 12px ${hex}66`;
+    }
+
+    if (hexValue) {
+        hexValue.innerText = hex;
+    }
+
+    const rValue = getElement('ledColorRValue');
+    const gValue = getElement('ledColorGValue');
+    const bValue = getElement('ledColorBValue');
+
+    if (rValue) rValue.innerText = r;
+    if (gValue) gValue.innerText = g;
+    if (bValue) bValue.innerText = b;
+}
+
 export function readLightingValuesFromUI() {
     const powerToggle = getElement('powerToggle');
 
@@ -453,6 +757,23 @@ export function readLightingValuesFromUI() {
     const softnessSlider = getElement('softnessSlider');
     const strobeSlider = getElement('strobeSlider');
 
+    const colorBlazePanel = getElement('colorBlazePanel');
+    const strobeBlock = getElement('strobeBlock');
+
+    const isColorBlazeActive =
+        colorBlazePanel && !colorBlazePanel.classList.contains('hidden');
+
+    const isSharedStrobeActive =
+        strobeBlock && !strobeBlock.classList.contains('hidden');
+
+    const colorBlazeState = isColorBlazeActive ? readColorBlazeValuesFromUI() : {};
+
+    const strobeHz = isColorBlazeActive
+        ? Number(getElement('ledStrobeHzSlider')?.value || 0)
+        : isSharedStrobeActive
+            ? Number(getElement('strobeSlider')?.value || 0)
+            : 0;
+
     return {
         isOn: powerToggle ? powerToggle.dataset.on === 'true' : true,
 
@@ -468,7 +789,10 @@ export function readLightingValuesFromUI() {
         fieldAngle: fieldAngleSlider ? Number(fieldAngleSlider.value) : undefined,
         beamSize: beamSizeSlider ? Number(beamSizeSlider.value) : undefined,
         softness: softnessSlider ? Number(softnessSlider.value) : undefined,
-        strobe: strobeSlider ? Number(strobeSlider.value) : undefined,
+
+        strobeHz,
+
+        ...colorBlazeState
     };
 }
 
@@ -513,8 +837,8 @@ export function writeLightingValuesToUI(state) {
         softnessSlider.value = state.softness;
     }
 
-    if (strobeSlider && state.strobe !== undefined) {
-        strobeSlider.value = state.strobe;
+    if (strobeSlider && state.strobeHz !== undefined) {
+        strobeSlider.value = state.strobeHz;
     }
 
     updateIntensityUI();
@@ -524,6 +848,7 @@ export function writeLightingValuesToUI(state) {
     updateBeamSizeUI();
     updateSoftnessUI();
     updateStrobeUI();
+    writeColorBlazeValuesToUI(state);
 }
 
 
@@ -645,6 +970,108 @@ export function setupLightingInputListeners(onInput) {
         onInput();
     });
 
+    getElement('ledChaseSpeedSlider')?.addEventListener('input', () => {
+        updateColorBlazeUI();
+        onInput();
+    });
+
+    getElement('ledStrobeHzSlider')?.addEventListener('input', () => {
+        updateColorBlazeUI();
+        onInput();
+    });
+
+    getElement('ledResetEffectsBtn')?.addEventListener('click', () => {
+        currentLedState = {
+            ...currentLedState,
+            ledMode: 'solid',
+            segmentMode: 8,
+            selectedSegment: 0,
+            segments: createDefaultSegments(8),
+            chaseSpeed: 1.5,
+            direction: 'forward',
+            strobeHz: 0
+        };
+
+        const panel = getElement('colorBlazePanel');
+        if (panel) {
+            panel.dataset.ledMode = 'solid';
+            panel.dataset.ledSegments = '8';
+            panel.dataset.ledDirection = 'forward';
+        }
+
+        const chaseSpeedSlider = getElement('ledChaseSpeedSlider');
+        const strobeHzSlider = getElement('ledStrobeHzSlider');
+
+        if (chaseSpeedSlider) chaseSpeedSlider.value = 1.5;
+        if (strobeHzSlider) strobeHzSlider.value = 0;
+
+        const rSlider = getElement('ledColorRSlider');
+        const gSlider = getElement('ledColorGSlider');
+        const bSlider = getElement('ledColorBSlider');
+
+        if (rSlider) rSlider.value = 255;
+        if (gSlider) gSlider.value = 128;
+        if (bSlider) bSlider.value = 64;
+
+        updateColorBlazeUI();
+        onInput();
+    });
+
+    [
+        getElement('ledColorRSlider'),
+        getElement('ledColorGSlider'),
+        getElement('ledColorBSlider')
+    ].forEach(slider => {
+        slider?.addEventListener('input', () => {
+            if (getSelectedLedMode() === 'manual') {
+                const selectedSegment = Number(currentLedState.selectedSegment || 0);
+
+                currentLedState.segments[selectedSegment] = {
+                    r: Number(getElement('ledColorRSlider')?.value || 255),
+                    g: Number(getElement('ledColorGSlider')?.value || 128),
+                    b: Number(getElement('ledColorBSlider')?.value || 64)
+                };
+            }
+
+            updateColorBlazeUI();
+            onInput();
+        });
+    });
+
+    document.querySelectorAll('.led-mode-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            getElement('colorBlazePanel').dataset.ledMode = button.dataset.ledMode;
+            updateColorBlazeUI();
+            onInput();
+        });
+    });
+
+    document.querySelectorAll('[data-led-segments]').forEach(button => {
+        button.addEventListener('click', () => {
+            const colorBlazePanel = getElement('colorBlazePanel');
+
+            if (colorBlazePanel) {
+                colorBlazePanel.dataset.ledSegments = button.dataset.ledSegments;
+            }
+
+            updateColorBlazeUI();
+            onInput();
+        });
+    });
+
+    document.querySelectorAll('[data-led-direction]').forEach(button => {
+        button.addEventListener('click', () => {
+            const colorBlazePanel = getElement('colorBlazePanel');
+
+            if (colorBlazePanel) {
+                colorBlazePanel.dataset.ledDirection = button.dataset.ledDirection;
+            }
+
+            updateColorBlazeUI();
+            onInput();
+        });
+    });
+
     updateIntensityUI();
     updateRGB();
     updatePanTiltUI();
@@ -653,4 +1080,5 @@ export function setupLightingInputListeners(onInput) {
     updateBeamSizeUI();
     updateSoftnessUI();
     updateStrobeUI();
+    updateColorBlazeUI();
 }

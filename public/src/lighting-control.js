@@ -37,7 +37,7 @@ export function setupLightingControl(sendControlMessage) {
             onSelectFixture: handleSelectFixture
         });
 
-        updatePanelVisibility(selectedFixtureType);
+        updatePanelVisibility(selectedFixtureType, selectedFixture);
 
         if (!selectedFixture) return;
 
@@ -53,11 +53,13 @@ export function setupLightingControl(sendControlMessage) {
         selectedFixtureType = nextType;
         selectedFixture = getFixturesByType(nextType)[0] || null;
         renderAll();
+        sendCurrentFixtureState();
     }
 
     function handleSelectFixture(fixture) {
         selectedFixture = fixture;
         renderAll();
+        sendCurrentFixtureState();
     }
 
     function sendCurrentFixtureState() {
@@ -100,4 +102,5 @@ export function setupLightingControl(sendControlMessage) {
     });
 
     renderAll();
+    sendCurrentFixtureState();
 }

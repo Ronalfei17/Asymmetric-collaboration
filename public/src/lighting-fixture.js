@@ -109,8 +109,34 @@ export const LED_MODEL_PRESETS = {
         fieldAngleMin: 10,
         fieldAngleMax: 10,
         defaultFieldAngle: 10,
+
         supportsRGB: true,
-        supportsStrobe: false,
+        supportsStrobe: true,
+
+        supportsAdvancedModes: true,
+        segmentModes: [4, 8],
+        defaultSegmentMode: 8,
+
+        modes: ['solid', 'gradient', 'chase', 'manual'],
+        defaultMode: 'solid',
+
+        defaultSolidColor: '#FF8040',
+        defaultColorA: '#FF8040',
+        defaultColorB: '#00D8FF',
+
+        defaultDirection: 'forward',
+        directionOptions: ['forward', 'reverse', 'mirror'],
+
+        defaultRepeatMode: 'single',
+        repeatModes: ['single', 'repeat', 'mirror'],
+
+        defaultChaseSpeed: 1.5,
+
+        defaultStrobeEnabled: false,
+        defaultStrobeHz: 8,
+        strobeHzMin: 0,
+        strobeHzMax: 20,
+        strobeHzStep: 0.5
     },
 
     [LED_MODELS.LUSTR_D60]: {
@@ -797,12 +823,41 @@ export const FIXTURES = [
         fixtureModel: LED_MODELS.COLORBLAZE,
         notes: 'Range fixture. Starting channel is used as lightId.',
         defaultState: {
-            intensity: 0.8,
+            isOn: true,
+            intensity: 0.78,
+
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 10,
-            strobe: 0
+
+            fieldAngle: 36,
+
+            ledMode: 'solid',
+
+            colorA: {
+                r: 255,
+                g: 128,
+                b: 64,
+                hex: '#FF8040'
+            },
+
+            colorB: {
+                r: 0,
+                g: 216,
+                b: 255,
+                hex: '#00D8FF'
+            },
+
+            segmentMode: 8,
+            selectedSegment: 1,
+
+            direction: 'forward',
+            repeatMode: 'single',
+
+            chaseSpeed: 1.5,
+
+            strobeEnabled: false,
+            strobeHz: 8
         }
     }),
 
@@ -814,12 +869,41 @@ export const FIXTURES = [
         fixtureModel: LED_MODELS.COLORBLAZE,
         notes: 'Range fixture. Starting channel is used as lightId.',
         defaultState: {
-            intensity: 0.8,
+            isOn: true,
+            intensity: 0.78,
+
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 10,
-            strobe: 0
+
+            fieldAngle: 36,
+
+            ledMode: 'solid',
+
+            colorA: {
+                r: 255,
+                g: 128,
+                b: 64,
+                hex: '#FF8040'
+            },
+
+            colorB: {
+                r: 0,
+                g: 216,
+                b: 255,
+                hex: '#00D8FF'
+            },
+
+            segmentMode: 8,
+            selectedSegment: 1,
+
+            direction: 'forward',
+            repeatMode: 'single',
+
+            chaseSpeed: 1.5,
+
+            strobeEnabled: false,
+            strobeHz: 8
         }
     }),
 
@@ -831,12 +915,41 @@ export const FIXTURES = [
         fixtureModel: LED_MODELS.COLORBLAZE,
         notes: 'Range fixture. Starting channel is used as lightId.',
         defaultState: {
-            intensity: 0.8,
+            isOn: true,
+            intensity: 0.78,
+
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 10,
-            strobe: 0
+
+            fieldAngle: 36,
+
+            ledMode: 'solid',
+
+            colorA: {
+                r: 255,
+                g: 128,
+                b: 64,
+                hex: '#FF8040'
+            },
+
+            colorB: {
+                r: 0,
+                g: 216,
+                b: 255,
+                hex: '#00D8FF'
+            },
+
+            segmentMode: 8,
+            selectedSegment: 1,
+
+            direction: 'forward',
+            repeatMode: 'single',
+
+            chaseSpeed: 1.5,
+
+            strobeEnabled: false,
+            strobeHz: 8
         }
     }),
 
@@ -848,12 +961,41 @@ export const FIXTURES = [
         fixtureModel: LED_MODELS.COLORBLAZE,
         notes: 'Range fixture. Starting channel is used as lightId.',
         defaultState: {
-            intensity: 0.8,
+            isOn: true,
+            intensity: 0.78,
+
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 10,
-            strobe: 0
+
+            fieldAngle: 36,
+
+            ledMode: 'solid',
+
+            colorA: {
+                r: 255,
+                g: 128,
+                b: 64,
+                hex: '#FF8040'
+            },
+
+            colorB: {
+                r: 0,
+                g: 216,
+                b: 255,
+                hex: '#00D8FF'
+            },
+
+            segmentMode: 8,
+            selectedSegment: 1,
+
+            direction: 'forward',
+            repeatMode: 'single',
+
+            chaseSpeed: 1.5,
+
+            strobeEnabled: false,
+            strobeHz: 8
         }
     }),
 
@@ -865,12 +1007,41 @@ export const FIXTURES = [
         fixtureModel: LED_MODELS.COLORBLAZE,
         notes: 'Range fixture. Starting channel is used as lightId.',
         defaultState: {
-            intensity: 0.8,
+            isOn: true,
+            intensity: 0.78,
+
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 10,
-            strobe: 0
+
+            fieldAngle: 36,
+
+            ledMode: 'solid',
+
+            colorA: {
+                r: 255,
+                g: 128,
+                b: 64,
+                hex: '#FF8040'
+            },
+
+            colorB: {
+                r: 0,
+                g: 216,
+                b: 255,
+                hex: '#00D8FF'
+            },
+
+            segmentMode: 8,
+            selectedSegment: 1,
+
+            direction: 'forward',
+            repeatMode: 'single',
+
+            chaseSpeed: 1.5,
+
+            strobeEnabled: false,
+            strobeHz: 8
         }
     }),
 
@@ -882,12 +1053,41 @@ export const FIXTURES = [
         fixtureModel: LED_MODELS.COLORBLAZE,
         notes: 'Range fixture. Starting channel is used as lightId.',
         defaultState: {
-            intensity: 0.8,
+            isOn: true,
+            intensity: 0.78,
+
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 10,
-            strobe: 0
+
+            fieldAngle: 36,
+
+            ledMode: 'solid',
+
+            colorA: {
+                r: 255,
+                g: 128,
+                b: 64,
+                hex: '#FF8040'
+            },
+
+            colorB: {
+                r: 0,
+                g: 216,
+                b: 255,
+                hex: '#00D8FF'
+            },
+
+            segmentMode: 8,
+            selectedSegment: 1,
+
+            direction: 'forward',
+            repeatMode: 'single',
+
+            chaseSpeed: 1.5,
+
+            strobeEnabled: false,
+            strobeHz: 8
         }
     }),
 
@@ -899,12 +1099,41 @@ export const FIXTURES = [
         fixtureModel: LED_MODELS.COLORBLAZE,
         notes: 'Range fixture. Starting channel is used as lightId.',
         defaultState: {
-            intensity: 0.8,
+            isOn: true,
+            intensity: 0.78,
+
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 10,
-            strobe: 0
+
+            fieldAngle: 36,
+
+            ledMode: 'solid',
+
+            colorA: {
+                r: 255,
+                g: 128,
+                b: 64,
+                hex: '#FF8040'
+            },
+
+            colorB: {
+                r: 0,
+                g: 216,
+                b: 255,
+                hex: '#00D8FF'
+            },
+
+            segmentMode: 8,
+            selectedSegment: 1,
+
+            direction: 'forward',
+            repeatMode: 'single',
+
+            chaseSpeed: 1.5,
+
+            strobeEnabled: false,
+            strobeHz: 8
         }
     }),
 
@@ -916,12 +1145,41 @@ export const FIXTURES = [
         fixtureModel: LED_MODELS.COLORBLAZE,
         notes: 'Range fixture. Starting channel is used as lightId.',
         defaultState: {
-            intensity: 0.8,
+            isOn: true,
+            intensity: 0.78,
+
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 10,
-            strobe: 0
+
+            fieldAngle: 36,
+
+            ledMode: 'solid',
+
+            colorA: {
+                r: 255,
+                g: 128,
+                b: 64,
+                hex: '#FF8040'
+            },
+
+            colorB: {
+                r: 0,
+                g: 216,
+                b: 255,
+                hex: '#00D8FF'
+            },
+
+            segmentMode: 8,
+            selectedSegment: 1,
+
+            direction: 'forward',
+            repeatMode: 'single',
+
+            chaseSpeed: 1.5,
+
+            strobeEnabled: false,
+            strobeHz: 8
         }
     }),
     // LED - Florrie Tube - Light ID / Channel: 27, 28, 29

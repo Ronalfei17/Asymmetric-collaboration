@@ -30,6 +30,11 @@ connectVideoRelay();
 
 document.getElementById('startVideoButton')?.addEventListener('click', startVideoStream);
 document.getElementById('stopVideoButton')?.addEventListener('click', () => stopVideoStream(true));
+document.getElementById('lightingMoreBtn')?.addEventListener('click', () => {
+    document
+        .querySelector('.nav-btn[data-target="page-light"]')
+        ?.click();
+});
 
 setInterval(() => {
     if (CONTROL_CONFIG.mode !== 'mock') {
