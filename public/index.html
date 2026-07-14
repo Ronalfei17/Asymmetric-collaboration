@@ -14,7 +14,7 @@
         }
     </style>
 </head>
-<body class="bg-[#0c0f16] text-gray-200 min-h-[100dvh] w-screen overflow-hidden flex flex-col font-sans select-none text-[13px]">
+<body class="bg-[#0c0f16] text-gray-200 h-[100dvh] w-screen overflow-hidden flex flex-col font-sans select-none text-[13px]">
 
     <div
         id="portraitWarning"
@@ -23,7 +23,7 @@
         Please rotate your tablet to landscape mode.
     </div>
 
-    <div class="flex-grow w-full flex overflow-hidden">
+    <div class="flex-1 min-h-0 w-full flex overflow-hidden">
         
         <div class="w-24 bg-[#090c12] border-r border-gray-800/40 flex flex-col items-center py-6 justify-between flex-shrink-0 z-10">
             <div class="flex flex-col items-center pt-2">
@@ -74,7 +74,7 @@
             </div>
         </div>
 
-        <div class="flex-grow p-4 relative h-full overflow-hidden flex flex-col space-y-3 bg-[#0c0f16]">
+        <div class="flex-1 min-w-0 min-h-0 p-3 relative overflow-hidden flex flex-col gap-3 bg-[#0c0f16]">
             
             <div class="flex items-center justify-between text-xs py-1 flex-shrink-0">
                 <div id="top-status-block" class="flex items-center space-x-2 text-green-400 font-medium transition-all duration-300">
@@ -93,11 +93,11 @@
                 </div>
             </div>
 
-            <div class="flex-grow relative overflow-hidden w-full h-full">
+            <div class="flex-1 min-h-0 relative overflow-hidden w-full">
 
-                <div id="page-status" class="page-view w-full h-full grid grid-rows-[minmax(0,1fr)_minmax(0,0.95fr)] gap-4">
-                   <div class="min-h-0 grid grid-cols-2 gap-4"> 
-                        <div class="bg-[#11141c] border border-gray-800/40 rounded-xl p-4 flex flex-col">
+                <div id="page-status" class="page-view absolute inset-0 grid grid-rows-[minmax(0,58fr)_minmax(0,42fr)] gap-3 overflow-hidden">
+                    <div class="min-h-0 overflow-hidden grid grid-cols-2 gap-3"> 
+                        <div class="bg-[#11141c] border border-gray-800/40 rounded-xl p-3 flex flex-col min-h-0 overflow-hidden">
                             <span class="text-xs font-bold tracking-wider text-gray-400 block mb-2">THEATRE MAP + INTERACTIVE OVERLAY</span>
                             <div id="statusTheatreMap" class="relative flex-grow bg-[#06080c] rounded-lg overflow-hidden border border-gray-800/70">
                                 <div id="mapViewport" class="absolute inset-0 overflow-hidden cursor-grab">
@@ -146,7 +146,7 @@
                             </div>
                         </div>
 
-                        <div class="bg-[#11141c] border border-gray-800/40 rounded-xl p-4 flex flex-col">
+                        <div class="bg-[#11141c] border border-gray-800/40 rounded-xl p-3 flex flex-col min-h-0 overflow-hidden">
                             <span class="text-xs font-bold tracking-wider text-gray-400 block mb-2">VR LIVE STREAM</span>
                             <div class="relative flex-grow bg-black rounded-lg overflow-hidden border border-gray-800">
                                 <video
@@ -189,8 +189,8 @@
                             </div>
                         </div>
                     </div>
-                    <div class="min-h-0 grid grid-cols-12 gap-4">
-                        <div class="col-span-3 bg-[#11141c] border border-gray-800/40 rounded-xl p-4 flex flex-col">
+                    <div class="min-h-0 overflow-hidden grid grid-cols-12 gap-3">
+                        <div class="col-span-3 bg-[#11141c] border border-gray-800/40 rounded-xl p-3 flex flex-col min-h-0 overflow-hidden">
                             <span class="text-xs font-bold tracking-wider text-gray-400 block mb-2">SELECTED INFO</span>
                             <div class="flex-grow bg-[#06080c]/30 rounded-lg p-4 text-xs flex flex-col justify-between">
                                 <div class="grid grid-cols-[72px_1fr] gap-y-4">
@@ -217,7 +217,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-span-3 bg-[#11141c] border border-gray-800/40 rounded-xl p-4 flex flex-col">
+                        <div class="col-span-3 bg-[#11141c] border border-gray-800/40 rounded-xl p-3 flex flex-col min-h-0 overflow-hidden">
                             <span class="text-xs font-bold tracking-wider text-gray-400 block mb-2">CUE LIST</span>
                             <div class="flex-grow bg-[#06080c]/30 rounded-lg p-3 space-y-2">
                                 <button
