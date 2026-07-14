@@ -188,6 +188,7 @@ export function updatePanelVisibility(fixtureType, fixture) {
     const ledPanel = getElement('ledPanel');
     const standardLedPanel = getElement('standardLedPanel');
     const colorBlazePanel = getElement('colorBlazePanel');
+    const rgbPanel = getElement('rgbPanel');
     const fresnelPanel = getElement('fresnelPanel');
     const movingPanel = getElement('movingPanel');
 
@@ -210,6 +211,11 @@ export function updatePanelVisibility(fixtureType, fixture) {
     colorBlazePanel?.classList.toggle(
         'hidden',
         fixtureType !== FIXTURE_TYPES.LED || !isAdvancedLed
+    );
+
+    rgbPanel?.classList.toggle(
+        'hidden',
+        fixtureType === FIXTURE_TYPES.LED && isAdvancedLed
     );
 
     const showFieldAngle =
