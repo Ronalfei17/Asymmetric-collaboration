@@ -6,6 +6,7 @@ import { setupCueList } from './cue-list.js';
 import { setupSidebar } from './sidebar.js';
 import { setupStatus } from './status.js';
 import { CONTROL_CONFIG } from './config.js';
+import { setupFixtureLibrary } from './fixture-library.js';
 
 console.log('[MAIN] loaded');
 
@@ -17,11 +18,10 @@ function createIcons() {
     }
 }
 
-createIcons();
-
 setupStatus();
 setupSidebar();
 setupLightingControl(sendControlMessage);
+setupFixtureLibrary();
 setupTeleportMap(sendControlMessage);
 setupCueList(sendControlMessage);
 

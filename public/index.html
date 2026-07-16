@@ -620,8 +620,77 @@
                 <div id="page-targetinfo" class="page-view w-full h-full bg-[#11141c] border border-gray-800/40 rounded-xl p-6 hidden flex-col">
                     <span class="text-xs font-bold tracking-wider text-gray-400 block mb-2">TARGET INFO 面板</span>
                 </div>
-                <div id="page-light" class="page-view w-full h-full bg-[#11141c] border border-gray-800/40 rounded-xl p-6 hidden flex-col">
-                    <span class="text-xs font-bold tracking-wider text-gray-400 block mb-2">LIGHTING CONTROL 控制台</span>
+                <div id="page-light" class="page-view w-full h-full hidden">
+                    <div class="h-full min-h-0 grid grid-cols-[300px_minmax(0,1fr)_320px] gap-3">
+
+                        <!-- Fixture Library -->
+                        <section class="min-h-0 bg-[#11141c] border border-gray-800/40 rounded-xl p-3 flex flex-col overflow-hidden">
+                            <div class="flex items-center justify-between mb-3 shrink-0">
+                                <div class="text-xs font-bold tracking-wider text-gray-300">FIXTURE LIBRARY</div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-1 mb-3 shrink-0 rounded-lg border border-gray-700/70 bg-[#0b0f16] p-1">
+                                <button
+                                    type="button"
+                                    data-fixture-library-tab="all"
+                                    class="h-8 rounded-md border border-blue-500/60 bg-blue-500/20 text-blue-300 text-[11px] font-semibold transition"
+                                >
+                                    All Fixtures
+                                </button>
+
+                                <button
+                                    type="button"
+                                    data-fixture-library-tab="by-type"
+                                    class="h-8 rounded-md border border-gray-700 bg-white/5 text-gray-300 text-[11px] font-semibold transition"
+                                >
+                                    By Type
+                                </button>
+                            </div>
+
+                            <div
+                                id="fixtureLibraryList"
+                                class="flex-1 min-h-0 overflow-y-auto pr-1 space-y-2"
+                            ></div>
+                        </section>
+
+                        <!-- Detail Control Placeholder -->
+                        <section class="min-h-0 bg-[#11141c] border border-gray-800/40 rounded-xl p-4 flex flex-col overflow-hidden">
+                            <div class="flex items-center justify-between mb-3 shrink-0">
+                                <div class="text-xs font-bold tracking-wider text-gray-300">LIGHTING CONTROL</div>
+                                <div class="text-[11px] text-gray-500">Details coming soon</div>
+                            </div>
+
+                            <div class="flex-1 min-h-0 rounded-lg border border-dashed border-gray-700/70 bg-[#06080c]/40 flex items-center justify-center text-gray-500 text-sm">
+                                Fixture-specific controls will be placed here
+                            </div>
+                        </section>
+
+                        <!-- Selected Fixture Placeholder -->
+                        <aside class="min-h-0 bg-[#11141c] border border-gray-800/40 rounded-xl p-3 flex flex-col overflow-hidden">
+                            <div class="flex items-center justify-between mb-3 shrink-0">
+                                <div class="text-xs font-bold tracking-wider text-gray-300">SELECTED FIXTURE</div>
+                                <span id="detailSelectedFixtureId" class="text-xs text-blue-400">--</span>
+                            </div>
+
+                            <div class="rounded-lg bg-[#06080c]/40 border border-gray-800 p-3 text-xs space-y-3 shrink-0">
+                                <div class="grid grid-cols-[72px_1fr] gap-y-2">
+                                    <span class="text-gray-500">ID:</span>
+                                    <span id="detailSelectedId" class="text-gray-200">--</span>
+
+                                    <span class="text-gray-500">Name:</span>
+                                    <span id="detailSelectedName" class="text-gray-200">--</span>
+
+                                    <span class="text-gray-500">Type:</span>
+                                    <span id="detailSelectedType" class="text-gray-200">--</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 flex-1 min-h-0 rounded-lg border border-dashed border-gray-700/70 bg-[#06080c]/40 flex items-center justify-center text-gray-500 text-xs">
+                                Preview / DMX info coming soon
+                            </div>
+                        </aside>
+
+                    </div>
                 </div>
 
                 <div id="page-settings" class="page-view w-full h-full bg-[#11141c] border border-gray-800/40 rounded-xl p-6 hidden flex-col space-y-4">

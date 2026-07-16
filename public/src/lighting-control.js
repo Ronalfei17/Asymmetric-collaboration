@@ -1,6 +1,7 @@
 import {
     FIXTURE_TYPES,
-    getFixturesByType
+    getFixturesByType,
+    getFixtureById
 } from './lighting-fixture.js';
 
 import {
@@ -19,6 +20,8 @@ import {
     writeLightingValuesToUI,
     setupLightingInputListeners
 } from './lighting-ui.js';
+
+let lightingController = null;
 
 export function setupLightingControl(sendControlMessage) {
     let selectedFixtureType = FIXTURE_TYPES.PROFILE;
@@ -88,6 +91,25 @@ export function setupLightingControl(sendControlMessage) {
         }, 40);
     }
 
+    function findFixtureById(lightId) {
+        return getFixtureById(lightId) || null;
+    }
+
+    function selectFixtureById(lightId) {
+        const fixture = findFixtureById(lightId);
+
+        if (!fixture) {
+            console.warn('[LightingControl] fixture not found:', lightId);
+            return;
+        }
+
+        selectedFixtureType = fixture.fixtureType;
+        selectedFixture = fixture;
+
+        renderAll();
+        sendCurrentFixtureState();
+    }
+
     setupLightingInputListeners(() => {
         if (!selectedFixture) return;
 
@@ -101,6 +123,29 @@ export function setupLightingControl(sendControlMessage) {
         scheduleSendCurrentFixtureState();
     });
 
+    lightingController = {
+        selectFixtureById,
+        getSelectedFixture: () => selectedFixture,
+        getSelectedFixtureType: () => selectedFixtureType
+    };
+
     renderAll();
     sendCurrentFixtureState();
+}
+
+export function selectLightingFixtureById(lightId) {
+    if (!lightingController) {
+        console.warn('[LightingControl] controller is not ready yet');
+        return;
+    }
+
+    lightingController.selectFixtureById(lightId);
+}
+
+export function getSelectedLightingFixture() {
+    return lightingController?.getSelectedFixture() || null;
+}
+
+export function getSelectedLightingFixtureType() {
+    return lightingController?.getSelectedFixtureType() || null;
 }
