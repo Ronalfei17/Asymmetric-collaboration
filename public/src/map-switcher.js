@@ -69,9 +69,6 @@ function setActiveMap(mapType) {
     activeMapType = mapType;
     image.dataset.activeMapType = mapType;
     title.textContent = map.title;
-    image.src = map.src;
-    image.alt = map.alt;
-    image.classList.toggle('invert', map.invert);
 
     const shouldShowQuestPin =
     mapType === 'theatre' &&
@@ -80,6 +77,23 @@ function setActiveMap(mapType) {
     selectedMapPin?.classList.toggle('hidden', !shouldShowQuestPin);
 
     setButtonState(mapType);
+
+    image.style.visibility = 'hidden';
+
+    const handleImageLoaded = () => {
+        image.alt = map.alt;
+        image.classList.toggle('invert', map.invert);
+
+        requestAnimationFrame(() => {
+            image.style.visibility = 'visible';
+        });
+    };
+
+    image.addEventListener('load', handleImageLoaded, {
+        once: true
+    });
+
+    image.src = map.src;
 
     window.dispatchEvent(new CustomEvent('map-type-changed', {
         detail: {
