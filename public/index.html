@@ -98,7 +98,32 @@
                 <div id="page-status" class="page-view absolute inset-0 grid grid-rows-[minmax(0,58fr)_minmax(0,42fr)] gap-3 overflow-hidden">
                     <div class="min-h-0 overflow-hidden grid grid-cols-2 gap-3"> 
                         <div class="bg-[#11141c] border border-gray-800/40 rounded-xl p-3 flex flex-col min-h-0 overflow-hidden">
-                            <span class="text-xs font-bold tracking-wider text-gray-400 block mb-2">THEATRE MAP + INTERACTIVE OVERLAY</span>
+                            <div class="flex items-center justify-between gap-3 mb-2">
+                                <span id="mapPanelTitle" class="text-xs font-bold tracking-wider text-gray-400 block">
+                                    THEATRE MAP + INTERACTIVE OVERLAY
+                                </span>
+
+                                <div
+                                    id="mapTypeCapsule" class="inline-flex items-center gap-1 p-1 rounded-xl bg-[#1a1d24] border border-white/10">
+                                    <button
+                                        id="theatreMapButton"
+                                        type="button"
+                                        data-map-type="theatre"
+                                        class="map-switch-btn px-3 py-1 rounded-lg text-[11px] font-semibold transition-all duration-150 bg-blue-500 text-white shadow-[0_0_14px_rgba(59,130,246,0.28)]"
+                                    >
+                                        Theatre Map
+                                    </button>
+
+                                    <button
+                                        id="lightingMapButton"
+                                        type="button"
+                                        data-map-type="lighting"
+                                        class="map-switch-btn px-3 py-1 rounded-lg text-[11px] font-semibold transition-all duration-150 text-gray-300 bg-transparent hover:text-white"
+                                    >
+                                        Lighting Map
+                                    </button>
+                                </div>
+                            </div>
                             <div id="statusTheatreMap" class="relative flex-grow bg-[#06080c] rounded-lg overflow-hidden border border-gray-800/70">
                                 <div id="mapViewport" class="absolute inset-0 overflow-hidden cursor-grab">
                                     <div
