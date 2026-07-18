@@ -176,10 +176,20 @@ function getTeleportRegion(point) {
         point.yaw = region.yaw || point.yaw;
     }
 
+    function isLightingMapMode() {
+        return image.dataset.activeMapType === 'lighting';
+    }
+
     function teleportFromPointer(event) {
+        if (isLightingMapMode()) {
+            selectedMapPin?.classList.add('hidden');
+            console.log('[TeleportMap] Lighting Map mode: teleport disabled.');
+            return;
+        }
         const point = getImagePercentFromPointer(event);
 
         if (selectedMapPin) {
+            selectedMapPin.dataset.hasMapPosition = 'true';
             selectedMapPin.classList.remove('hidden');
             selectedMapPin.style.left = `${point.imageLeft}%`;
             selectedMapPin.style.top = `${point.imageTop}%`;
@@ -232,7 +242,7 @@ function getTeleportRegion(point) {
     });
 
     viewport.addEventListener('pointerup', event => {
-        if (!view.moved) {
+        if (!view.moved && !isLightingMapMode()) {
             teleportFromPointer(event);
         }
 

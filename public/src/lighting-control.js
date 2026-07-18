@@ -53,16 +53,28 @@ export function setupLightingControl(sendControlMessage) {
     }
 
     function handleSelectType(nextType) {
-        selectedFixtureType = nextType;
-        selectedFixture = getFixturesByType(nextType)[0] || null;
-        renderAll();
-        sendCurrentFixtureState();
+        const firstFixtureOfType = getFixturesByType(nextType)[0] || null;
+
+        if (!firstFixtureOfType) {
+            selectedFixtureType = nextType;
+            selectedFixture = null;
+            renderAll();
+            return;
+        }
+
+        selectFixture(firstFixtureOfType, {
+            emit: true,
+            source: 'lighting-control',
+            send: true
+        });
     }
 
     function handleSelectFixture(fixture) {
-        selectedFixture = fixture;
-        renderAll();
-        sendCurrentFixtureState();
+        selectFixture(fixture, {
+            emit: true,
+            source: 'lighting-control',
+            send: true
+        });
     }
 
     function sendCurrentFixtureState() {
@@ -95,7 +107,11 @@ export function setupLightingControl(sendControlMessage) {
         return getFixtureById(lightId) || null;
     }
 
-    function selectFixtureById(lightId) {
+    function selectFixtureById(lightId, {
+        emit = true,
+        source = 'lighting-control',
+        send = true
+    } = {}) {
         const fixture = findFixtureById(lightId);
 
         if (!fixture) {
@@ -103,12 +119,51 @@ export function setupLightingControl(sendControlMessage) {
             return;
         }
 
-        selectedFixtureType = fixture.fixtureType;
-        selectedFixture = fixture;
-
-        renderAll();
-        sendCurrentFixtureState();
+        selectFixture(fixture, {
+            emit,
+            source,
+            send
+        });
     }
+
+    function dispatchSelectedFixture(fixture, source = 'lighting-control') {
+        if (!fixture) return;
+
+        window.dispatchEvent(new CustomEvent('lighting-fixture-selected', {
+            detail: {
+                lightId: fixture.lightId,
+                source
+            }
+        }));
+    }
+
+    function selectFixture(fixture, {
+        emit = true,
+        source = 'lighting-control',
+        send = true
+    } = {}) {
+        if (!fixture) return;
+        selectedFixture = fixture;
+        selectedFixtureType = fixture.fixtureType;
+        renderAll();
+
+        if(emit) dispatchSelectedFixture(fixture, source);
+        if(send) sendCurrentFixtureState();
+    }
+
+    window.addEventListener('lighting-fixture-selected', event => {
+            const lightId = event.detail?.lightId;
+            const source = event.detail?.source;
+
+            if(lightId == null) return;
+            if(source === 'lighting-control') return;
+
+            selectFixtureById(lightId, {
+                emit: false,
+                source: 'lighting-map',
+                send: false
+            });
+        });
 
     setupLightingInputListeners(() => {
         if (!selectedFixture) return;
@@ -132,6 +187,7 @@ export function setupLightingControl(sendControlMessage) {
     renderAll();
     sendCurrentFixtureState();
 }
+
 
 export function selectLightingFixtureById(lightId) {
     if (!lightingController) {

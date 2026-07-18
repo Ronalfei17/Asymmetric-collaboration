@@ -8,6 +8,7 @@ import { setupStatus } from './status.js';
 import { CONTROL_CONFIG } from './config.js';
 import { setupFixtureLibrary } from './fixture-library.js';
 import { setupMapSwitcher } from './map-switcher.js';
+import { setupLightingMapOverlay } from './lighting-map-overlay.js';
 
 console.log('[MAIN] loaded');
 
@@ -26,6 +27,9 @@ setupFixtureLibrary();
 setupTeleportMap(sendControlMessage);
 setupCueList(sendControlMessage);
 setupMapSwitcher();
+setupLightingControl(sendControlMessage);
+setupMapSwitcher();
+setupLightingMapOverlay();
 
 connectControlServer();
 connectVideoRelay();
