@@ -47,7 +47,7 @@ export function setupLightingControl(sendControlMessage) {
         applyFixturePresetToUI(selectedFixture);
 
         const fixtureState = getFixtureState(selectedFixture);
-        writeLightingValuesToUI(fixtureState);
+        writeLightingValuesToUI(fixtureState, selectedFixture);
 
         updateSelectedInfoPanel(selectedFixture);
     }
@@ -152,20 +152,20 @@ export function setupLightingControl(sendControlMessage) {
     }
 
     window.addEventListener('lighting-fixture-selected', event => {
-            const lightId = event.detail?.lightId;
-            const source = event.detail?.source;
+        const lightId = event.detail?.lightId;
+        const source = event.detail?.source;
 
-            if(lightId == null) return;
-            if(source === 'lighting-control') return;
+        if (lightId == null) return;
+        if (source === 'lighting-control') return;
 
-            selectFixtureById(lightId, {
-                emit: false,
-                source: 'lighting-map',
-                send: false
-            });
+        selectFixtureById(lightId, {
+            emit: false,
+            source,
+            send: true
         });
+    });
 
-    setupLightingInputListeners(() => {
+    setupLightingInputListeners((options = {}) => {
         if (!selectedFixture) return;
 
         const uiState = readLightingValuesFromUI();
@@ -174,6 +174,10 @@ export function setupLightingControl(sendControlMessage) {
             selectedFixture,
             uiState
         );
+
+        if (options.render) {
+            renderAll();
+        }
 
         scheduleSendCurrentFixtureState();
     });

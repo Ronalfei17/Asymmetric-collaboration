@@ -70,45 +70,76 @@ export const PROFILE_MODEL_PRESETS = {
     [PROFILE_MODELS.ETC_SOURCE4_ZOOM_15_30]: {
         fieldAngleMin: 15,
         fieldAngleMax: 30,
-        defaultFieldAngle: 25
+        defaultFieldAngle: 25,
+        aimPanMin: -180,
+        aimPanMax: 180,
+        aimTiltMin: -90,
+        aimTiltMax: 90,
+        aimPreviewOnly: true
     },
 
     [PROFILE_MODELS.ETC_SOURCE4_JR_ZOOM_25_50]: {
         fieldAngleMin: 25,
         fieldAngleMax: 50,
-        defaultFieldAngle: 35
+        defaultFieldAngle: 35,
+        aimPanMin: -180,
+        aimPanMax: 180,
+        aimTiltMin: -90,
+        aimTiltMax: 90,
+        aimPreviewOnly: true
     },
 
     [PROFILE_MODELS.SELECON_SPX_15_35]: {
         fieldAngleMin: 15,
         fieldAngleMax: 35,
-        defaultFieldAngle: 25
+        defaultFieldAngle: 25,
+        aimPanMin: -180,
+        aimPanMax: 180,
+        aimTiltMin: -90,
+        aimTiltMax: 90,
+        aimPreviewOnly: true
     },
 
     [PROFILE_MODELS.PRELUDE_16_30]: {
         fieldAngleMin: 16,
         fieldAngleMax: 30,
-        defaultFieldAngle: 24
+        defaultFieldAngle: 24,
+        aimPanMin: -180,
+        aimPanMax: 180,
+        aimTiltMin: -90,
+        aimTiltMax: 90,
+        aimPreviewOnly: true
     },
 
     [PROFILE_MODELS.SELECON_ACCLAIM_CONDENSER_18_32]: {
         fieldAngleMin: 18,
         fieldAngleMax: 32,
-        defaultFieldAngle: 25
+        defaultFieldAngle: 25,
+        aimPanMin: -180,
+        aimPanMax: 180,
+        aimTiltMin: -90,
+        aimTiltMax: 90,
+        aimPreviewOnly: true
     },
 
     [PROFILE_MODELS.CANTATA_18_32]: {
         fieldAngleMin: 18,
         fieldAngleMax: 32,
-        defaultFieldAngle: 25
+        defaultFieldAngle: 25,
+        aimPanMin: -180,
+        aimPanMax: 180,
+        aimTiltMin: -90,
+        aimTiltMax: 90,
+        aimPreviewOnly: true
     }
 };
 
 export const LED_MODEL_PRESETS = {
     [LED_MODELS.COLORBLAZE]: {
-        fieldAngleMin: 10,
-        fieldAngleMax: 10,
-        defaultFieldAngle: 10,
+        fieldAngleMin: 60,
+        fieldAngleMax: 60,
+        defaultFieldAngle: 60,
+        fieldAngleFixed: true,
 
         supportsRGB: true,
         supportsStrobe: true,
@@ -136,15 +167,26 @@ export const LED_MODEL_PRESETS = {
         defaultStrobeHz: 8,
         strobeHzMin: 0,
         strobeHzMax: 20,
-        strobeHzStep: 0.5
+        strobeHzStep: 0.5,
+        aimPanMin: -180,
+        aimPanMax: 180,
+        aimTiltMin: -90,
+        aimTiltMax: 90,
+        aimPreviewOnly: true
     },
 
     [LED_MODELS.LUSTR_D60]: {
         fieldAngleMin: 17,
         fieldAngleMax: 17,
         defaultFieldAngle: 17,
+        fieldAngleFixed: true,
         supportsRGB: true,
         supportsStrobe: true,
+        aimPanMin: -180,
+        aimPanMax: 180,
+        aimTiltMin: -90,
+        aimTiltMax: 90,
+        aimPreviewOnly: true
     },
 
     [LED_MODELS.LUSTR_25_50]: {
@@ -152,23 +194,40 @@ export const LED_MODEL_PRESETS = {
         fieldAngleMax: 50,
         defaultFieldAngle: 35,
         supportsRGB: true,
-        supportsStrobe: true
+        supportsStrobe: true,
+        aimPanMin: -180,
+        aimPanMax: 180,
+        aimTiltMin: -90,
+        aimTiltMax: 90,
+        aimPreviewOnly: true
     },
 
     [LED_MODELS.LUSTR2_36]: {
         fieldAngleMin: 36,
         fieldAngleMax: 36,
         defaultFieldAngle: 36,
+        fieldAngleFixed: true,
         supportsRGB: true,
-        supportsStrobe: true
+        supportsStrobe: true,
+        aimPanMin: -180,
+        aimPanMax: 180,
+        aimTiltMin: -90,
+        aimTiltMax: 90,
+        aimPreviewOnly: true
     },
 
     [LED_MODELS.FLORRIE_TUBE]: {
         fieldAngleMin: 90,
         fieldAngleMax: 90,
         defaultFieldAngle: 90,
+        fieldAngleFixed: true,
         supportsRGB: true,
         supportsStrobe: false,
+        aimPanMin: -180,
+        aimPanMax: 180,
+        aimTiltMin: -90,
+        aimTiltMax: 90,
+        aimPreviewOnly: true
     }
 };
 
@@ -177,19 +236,34 @@ export const FRESNEL_MODEL_PRESETS = {
         beamSizeMin: 7,
         beamSizeMax: 50,
         defaultBeamSize: 45,
-        defaultSoftness: 0.8
+        defaultSoftness: 0.8,
+        aimPanMin: -180,
+        aimPanMax: 180,
+        aimTiltMin: -90,
+        aimTiltMax: 90,
+        aimPreviewOnly: true
     },
     [FRESNEL_MODELS.STRAND_CANTATA_F]: {
         beamSizeMin: 8.7,
         beamSizeMax: 50.7,
         defaultBeamSize: 45,
-        defaultSoftness: 0.75
+        defaultSoftness: 0.75,
+        aimPanMin: -180,
+        aimPanMax: 180,
+        aimTiltMin: -90,
+        aimTiltMax: 90,
+        aimPreviewOnly: true
     },
     [FRESNEL_MODELS.STARLETTE_FR]: {
         beamSizeMin: 6,
         beamSizeMax: 57,
         defaultBeamSize: 40,
-        defaultSoftness: 0.75
+        defaultSoftness: 0.75,
+        aimPanMin: -180,
+        aimPanMax: 180,
+        aimTiltMin: -90,
+        aimTiltMax: 90,
+        aimPreviewOnly: true
     }
 };
 
@@ -200,7 +274,11 @@ export const MOVING_MODEL_PRESETS = {
         tiltMin: -166,
         tiltMax: 166,
         defaultPan: 0,
-        defaultTilt: 0
+        defaultTilt: 0,
+        beamAngleMin: 12,
+        beamAngleMax: 36,
+        defaultBeamAngle: 25,
+        defaultFieldAngle: 25
     },
     [MOVING_MODELS.MARTIN_MAC_250]: {
         panMin: -270,
@@ -208,11 +286,15 @@ export const MOVING_MODEL_PRESETS = {
         tiltMin: -144.5,
         tiltMax: 144.5,
         defaultPan: 0,
-        defaultTilt: 0
+        defaultTilt: 0,
+        beamAngleOptions: [12.1, 14.6, 17.5, 23.3],
+        defaultBeamAngle: 12.1,
+        defaultFieldAngle: 12.1
     }
 };
 
 function createDefaultState({
+    isOn = true,
     intensity = 0.75,
     r = 255,
     g = 230,
@@ -222,10 +304,16 @@ function createDefaultState({
     softness = 0.75,
     pan = 0,
     tilt = 0,
-    strobe = 0
+    strobeHz = 0,
+    ledMode = 'solid',
+    segmentMode = 8,
+    selectedSegment = 0,
+    segments,
+    chaseSpeed = 1.5,
+    direction = 'forward'
 } = {}) {
     return {
-        isOn: true,
+        isOn,
         intensity,
         r,
         g,
@@ -235,7 +323,13 @@ function createDefaultState({
         softness,
         pan,
         tilt,
-        strobe
+        strobeHz,
+        ledMode,
+        segmentMode,
+        selectedSegment,
+        segments,
+        chaseSpeed,
+        direction
     };
 }
 
@@ -830,7 +924,7 @@ export const FIXTURES = [
             g: 128,
             b: 64,
 
-            fieldAngle: 36,
+            fieldAngle: 60,
 
             ledMode: 'solid',
 
@@ -876,7 +970,7 @@ export const FIXTURES = [
             g: 128,
             b: 64,
 
-            fieldAngle: 36,
+            fieldAngle: 60,
 
             ledMode: 'solid',
 
@@ -922,7 +1016,7 @@ export const FIXTURES = [
             g: 128,
             b: 64,
 
-            fieldAngle: 36,
+            fieldAngle: 60,
 
             ledMode: 'solid',
 
@@ -968,7 +1062,7 @@ export const FIXTURES = [
             g: 128,
             b: 64,
 
-            fieldAngle: 36,
+            fieldAngle: 60,
 
             ledMode: 'solid',
 
@@ -1014,7 +1108,7 @@ export const FIXTURES = [
             g: 128,
             b: 64,
 
-            fieldAngle: 36,
+            fieldAngle: 60,
 
             ledMode: 'solid',
 
@@ -1060,7 +1154,7 @@ export const FIXTURES = [
             g: 128,
             b: 64,
 
-            fieldAngle: 36,
+            fieldAngle: 60,
 
             ledMode: 'solid',
 
@@ -1106,7 +1200,7 @@ export const FIXTURES = [
             g: 128,
             b: 64,
 
-            fieldAngle: 36,
+            fieldAngle: 60,
 
             ledMode: 'solid',
 
@@ -1152,7 +1246,7 @@ export const FIXTURES = [
             g: 128,
             b: 64,
 
-            fieldAngle: 36,
+            fieldAngle: 60,
 
             ledMode: 'solid',
 
@@ -1408,6 +1502,7 @@ export const FIXTURES = [
             r: 255,
             g: 255,
             b: 255,
+            fieldAngle: 25,
             pan: 0,
             tilt: 0
         }
@@ -1423,6 +1518,7 @@ export const FIXTURES = [
             r: 255,
             g: 255,
             b: 255,
+            fieldAngle: 25,
             pan: 0,
             tilt: 0
         }
@@ -1438,6 +1534,7 @@ export const FIXTURES = [
             r: 255,
             g: 255,
             b: 255,
+            fieldAngle: 12.1,
             pan: 0,
             tilt: 0
         }
@@ -1453,6 +1550,7 @@ export const FIXTURES = [
             r: 255,
             g: 255,
             b: 255,
+            fieldAngle: 12.1,
             pan: 0,
             tilt: 0
         }

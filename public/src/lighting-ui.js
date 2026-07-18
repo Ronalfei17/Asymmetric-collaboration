@@ -1,7 +1,3 @@
-// [新增]：为多类型灯具控制新加的逻辑
-// [迁移]：从旧 lighting-control.js 迁移过来的 UI 策略
-// [扩展]：基于原 UI 策略，为 Profile / LED / Fresnel / Moving 扩展的参数显示
-
 import {
     FIXTURE_TYPES,
     getFixtureTypes,
@@ -22,6 +18,28 @@ function isAdvancedLedFixture(fixture) {
 
     return fixture?.fixtureType === FIXTURE_TYPES.LED &&
            Boolean(preset?.supportsAdvancedModes);
+}
+
+function getFixturePreset(fixture) {
+    if (!fixture) return null;
+
+    if (fixture.fixtureType === FIXTURE_TYPES.PROFILE) {
+        return getProfileModelPreset(fixture.fixtureModel);
+    }
+
+    if (fixture.fixtureType === FIXTURE_TYPES.LED) {
+        return getLedModelPreset(fixture.fixtureModel);
+    }
+
+    if (fixture.fixtureType === FIXTURE_TYPES.FRESNEL) {
+        return getFresnelModelPreset(fixture.fixtureModel);
+    }
+
+    if (fixture.fixtureType === FIXTURE_TYPES.MOVING) {
+        return getMovingModelPreset(fixture.fixtureModel);
+    }
+
+    return null;
 }
 
 function toHex(value) {
@@ -50,16 +68,24 @@ let currentLedState = {
     strobeHz: 0
 };
 
-function getSelectedLedDirection() {
-    return getElement('colorBlazePanel')?.dataset.ledDirection || 'forward';
+function getSelectedLedMode() {
+    return getElement('detailColorBlazePanel')?.dataset.ledMode ||
+           getElement('colorBlazePanel')?.dataset.ledMode ||
+           'solid';
 }
 
-function getSelectedLedMode() {
-    return getElement('colorBlazePanel')?.dataset.ledMode || 'solid';
+function getSelectedLedDirection() {
+    return getElement('detailColorBlazePanel')?.dataset.ledDirection ||
+           getElement('colorBlazePanel')?.dataset.ledDirection ||
+           'forward';
 }
 
 function getSelectedLedSegmentMode() {
-    return Number(getElement('colorBlazePanel')?.dataset.ledSegments || 8);
+    return Number(
+        getElement('detailColorBlazePanel')?.dataset.ledSegments ||
+        getElement('colorBlazePanel')?.dataset.ledSegments ||
+        8
+    );
 }
 
 function clamp(value, min, max) {
@@ -181,136 +207,163 @@ export function renderFixtureIdDropdown({
         }
     };
 }
-// [新增] 根据灯具大类显示 / 隐藏对应面板
-// [修改] 显示隐藏逻辑
+
 export function updatePanelVisibility(fixtureType, fixture) {
-    const profilePanel = getElement('profilePanel');
-    const ledPanel = getElement('ledPanel');
-    const standardLedPanel = getElement('standardLedPanel');
-    const colorBlazePanel = getElement('colorBlazePanel');
-    const rgbPanel = getElement('rgbPanel');
-    const fresnelPanel = getElement('fresnelPanel');
-    const movingPanel = getElement('movingPanel');
+    const quickAimTitle = getElement('quickAimTitle');
+    const quickAimTag = getElement('quickAimTag');
+    const quickAngleTitle = getElement('quickAngleTitle');
+    const quickAngleLabel = getElement('quickAngleLabel');
 
-    const sharedLightingBlocks = getElement('sharedLightingBlocks');
-    const fieldAngleBlock = getElement('fieldAngleBlock');
-    const strobeBlock = getElement('strobeBlock');
+    const isMoving = fixtureType === FIXTURE_TYPES.MOVING;
+    const isFresnel = fixtureType === FIXTURE_TYPES.FRESNEL;
 
-    const isAdvancedLed = fixture ? isAdvancedLedFixture(fixture) : false;
+    if (quickAimTitle) {
+        quickAimTitle.textContent = isMoving ? 'SPATIAL MOVEMENT' : 'AIM';
+    }
 
-    profilePanel?.classList.toggle('hidden', fixtureType !== FIXTURE_TYPES.PROFILE);
-    ledPanel?.classList.toggle('hidden', fixtureType !== FIXTURE_TYPES.LED);
-    fresnelPanel?.classList.toggle('hidden', fixtureType !== FIXTURE_TYPES.FRESNEL);
-    movingPanel?.classList.toggle('hidden', fixtureType !== FIXTURE_TYPES.MOVING);
+    quickAimTag?.classList.toggle('hidden', isMoving);
 
-    standardLedPanel?.classList.toggle(
-        'hidden',
-        fixtureType !== FIXTURE_TYPES.LED || isAdvancedLed
-    );
+    if (quickAngleTitle) {
+        quickAngleTitle.textContent = isMoving || isFresnel ? 'BEAM ANGLE' : 'FIELD ANGLE';
+    }
 
-    colorBlazePanel?.classList.toggle(
-        'hidden',
-        fixtureType !== FIXTURE_TYPES.LED || !isAdvancedLed
-    );
+    if (quickAngleLabel) {
+        quickAngleLabel.textContent = isMoving || isFresnel ? 'Beam Angle' : 'Angle';
+    }
 
-    rgbPanel?.classList.toggle(
-        'hidden',
-        fixtureType === FIXTURE_TYPES.LED && isAdvancedLed
-    );
-
-    const showFieldAngle =
-        fixtureType === FIXTURE_TYPES.PROFILE ||
-        (fixtureType === FIXTURE_TYPES.LED && !isAdvancedLed);
-
-    const showStrobe =
-        (fixtureType === FIXTURE_TYPES.LED && !isAdvancedLed) ||
-        fixtureType === FIXTURE_TYPES.MOVING;
-
-    fieldAngleBlock?.classList.toggle('hidden', !showFieldAngle);
-    strobeBlock?.classList.toggle('hidden', !showStrobe);
-    sharedLightingBlocks?.classList.toggle('hidden', !showFieldAngle && !showStrobe);
 }
 
-// [扩展] 根据具体灯具型号设置 UI 参数范围 
-//默认值不要在这里写，切换时会覆盖state，已修改
 export function applyFixturePresetToUI(fixture) {
     if (!fixture) return;
 
-    if (fixture.fixtureType === FIXTURE_TYPES.PROFILE) {
-        const preset = getProfileModelPreset(fixture.fixtureModel);
-        const fieldAngleSlider = getElement('fieldAngleSlider');
+    const preset = getFixturePreset(fixture);
 
-        if (preset && fieldAngleSlider) {
-            fieldAngleSlider.min = preset.fieldAngleMin;
-            fieldAngleSlider.max = preset.fieldAngleMax;
-        }
-    }
-
-    if (fixture.fixtureType === FIXTURE_TYPES.LED) {
-        const preset = getLedModelPreset(fixture.fixtureModel);
-        const fieldAngleSlider = getElement('fieldAngleSlider');
-
-        if (preset && fieldAngleSlider) {
-            fieldAngleSlider.min = preset.fieldAngleMin;
-            fieldAngleSlider.max = preset.fieldAngleMax;
-        }
-    }
-
-    if (fixture.fixtureType === FIXTURE_TYPES.FRESNEL) {
-        const preset = getFresnelModelPreset(fixture.fixtureModel);
-        const beamSizeSlider = getElement('beamSizeSlider');
-        const softnessSlider = getElement('softnessSlider');
-
-        if (preset && beamSizeSlider) {
-            beamSizeSlider.min = preset.beamSizeMin;
-            beamSizeSlider.max = preset.beamSizeMax;
-        }
-
-        if (softnessSlider) {
-            softnessSlider.min = 0;
-            softnessSlider.max = 1;
-            softnessSlider.step = 0.01;
-        }
-    }
-
-    if (fixture.fixtureType === FIXTURE_TYPES.MOVING) {
-        const preset = getMovingModelPreset(fixture.fixtureModel);
-        const panSlider = getElement('panSlider');
-        const tiltSlider = getElement('tiltSlider');
-
-        const panMinLabel = getElement('panMinLabel');
-        const panMaxLabel = getElement('panMaxLabel');
-        const tiltMinLabel = getElement('tiltMinLabel');
-        const tiltMaxLabel = getElement('tiltMaxLabel');
-
-        if (preset && panSlider) {
-            panSlider.min = preset.panMin;
-            panSlider.max = preset.panMax;
-        }
-
-        if (preset && tiltSlider) {
-            tiltSlider.min = preset.tiltMin;
-            tiltSlider.max = preset.tiltMax;
-        }
-
-        if (preset && panMinLabel) {
-            panMinLabel.innerHTML = `${preset.panMin}&deg;`;
-        }
-
-        if (preset && panMaxLabel) {
-            panMaxLabel.innerHTML = `${preset.panMax}&deg;`;
-        }
-
-        if (preset && tiltMinLabel) {
-            tiltMinLabel.innerHTML = `${preset.tiltMin}&deg;`;
-        }
-
-        if (preset && tiltMaxLabel) {
-            tiltMaxLabel.innerHTML = `${preset.tiltMax}&deg;`;
-        }
-    }
+    applyQuickAnglePreset(fixture, preset);
+    applyQuickAimPreset(fixture, preset);
 }
-// [新增] 灯具 selected info 显示（当 light blueprint 加入后，可在主页显示）
+
+function updateQuickAngleOptionActive(angle) {
+    document.querySelectorAll('.quick-angle-option').forEach(option => {
+        const isActive = Number(option.dataset.angle) === Number(angle);
+
+        option.classList.toggle('border-blue-500', isActive);
+        option.classList.toggle('bg-blue-500/20', isActive);
+        option.classList.toggle('border-gray-700', !isActive);
+        option.classList.toggle('bg-white/5', !isActive);
+    });
+}
+
+function applyQuickAnglePreset(fixture, preset) {
+    const sliderWrap = getElement('quickAngleSliderWrap');
+    const fixedWrap = getElement('quickAngleFixedWrap');
+    const fixedValue = getElement('quickAngleFixedValue');
+    const optionsWrap = getElement('quickAngleOptionsWrap');
+    const slider = getElement('fieldAngleSlider');
+
+    const minLabel = getElement('fieldAngleMinLabel');
+    const maxLabel = getElement('fieldAngleMaxLabel');
+
+    if (!preset) return;
+
+    const isMoving = fixture.fixtureType === FIXTURE_TYPES.MOVING;
+    const hasOptions = Array.isArray(preset.beamAngleOptions);
+    const isFixed = preset.fieldAngleFixed || preset.fieldAngleMin === preset.fieldAngleMax;
+
+    sliderWrap?.classList.toggle('hidden', hasOptions || isFixed);
+    fixedWrap?.classList.toggle('hidden', !isFixed);
+    fixedWrap?.classList.toggle('flex', isFixed);
+    optionsWrap?.classList.toggle('hidden', !hasOptions);
+    optionsWrap?.classList.toggle('flex', hasOptions);
+
+    if (hasOptions) {
+        const selectedAngle =
+            fixture.defaultState?.fieldAngle ??
+            preset.defaultFieldAngle ??
+            preset.beamAngleOptions?.[0];
+
+        if (slider && selectedAngle !== undefined) {
+            slider.value = selectedAngle;
+        }
+
+        updateQuickAngleOptionActive(selectedAngle);
+
+        updateFieldAngleUI();
+        return;
+    }
+
+    if (isFixed) {
+        const fixedAngle =
+            preset.defaultFieldAngle ??
+            fixture.defaultState?.fieldAngle ??
+            preset.fieldAngleMin;
+
+        if (slider && fixedAngle !== undefined) {
+            slider.value = fixedAngle;
+        }
+
+        if (fixedValue) {
+            fixedValue.innerHTML = `${fixedAngle}&deg;`;
+        }
+
+        updateFieldAngleUI();
+        return;
+    }
+
+    const min = isMoving ? preset.beamAngleMin : preset.fieldAngleMin;
+    const max = isMoving ? preset.beamAngleMax : preset.fieldAngleMax;
+
+    if (slider) {
+        slider.min = min ?? 10;
+        slider.max = max ?? 60;
+        slider.step = 0.1;
+
+        const currentAngle =
+            fixture.defaultState?.fieldAngle ??
+            preset.defaultFieldAngle ??
+            min ??
+            10;
+
+        slider.value = currentAngle;
+    }
+
+    if (minLabel) minLabel.innerHTML = `${min ?? 10}&deg;`;
+    if (maxLabel) maxLabel.innerHTML = `${max ?? 60}&deg;`;
+
+    updateFieldAngleUI();
+}
+
+function applyQuickAimPreset(fixture, preset) {
+    const panSlider = getElement('panSlider');
+    const tiltSlider = getElement('tiltSlider');
+
+    const panMinLabel = getElement('panMinLabel');
+    const panMaxLabel = getElement('panMaxLabel');
+    const tiltMinLabel = getElement('tiltMinLabel');
+    const tiltMaxLabel = getElement('tiltMaxLabel');
+
+    const isMoving = fixture.fixtureType === FIXTURE_TYPES.MOVING;
+
+    const panMin = isMoving ? preset?.panMin : preset?.aimPanMin ?? -180;
+    const panMax = isMoving ? preset?.panMax : preset?.aimPanMax ?? 180;
+    const tiltMin = isMoving ? preset?.tiltMin : preset?.aimTiltMin ?? -90;
+    const tiltMax = isMoving ? preset?.tiltMax : preset?.aimTiltMax ?? 90;
+
+    if (panSlider) {
+        panSlider.min = panMin;
+        panSlider.max = panMax;
+    }
+
+    if (tiltSlider) {
+        tiltSlider.min = tiltMin;
+        tiltSlider.max = tiltMax;
+    }
+
+    if (panMinLabel) panMinLabel.innerHTML = `${panMin}&deg;`;
+    if (panMaxLabel) panMaxLabel.innerHTML = `${panMax}&deg;`;
+    if (tiltMinLabel) tiltMinLabel.innerHTML = `${tiltMin}&deg;`;
+    if (tiltMaxLabel) tiltMaxLabel.innerHTML = `${tiltMax}&deg;`;
+}
+
 export function updateSelectedInfoPanel(fixture) {
     if (!fixture) return;
 
@@ -323,6 +376,32 @@ export function updateSelectedInfoPanel(fixture) {
     if (selectedName) selectedName.innerText = fixture.label || '--';
     if (selectedType) selectedType.innerText = fixture.fixtureTypeLabel || fixture.fixtureType || '--';
     if (selectedModel) selectedModel.innerText = fixture.modelLabel || fixture.fixtureModel || '--';
+
+    const detailSelectedFixtureId = getElement('detailSelectedFixtureId');
+    const detailSelectedId = getElement('detailSelectedId');
+    const detailSelectedName = getElement('detailSelectedName');
+    const detailSelectedType = getElement('detailSelectedType');
+    const detailFixtureModeLabel = getElement('detailFixtureModeLabel');
+
+    if (detailSelectedFixtureId) {
+        detailSelectedFixtureId.innerText = fixture.displayId || `CH ${fixture.lightId}`;
+    }
+
+    if (detailSelectedId) {
+        detailSelectedId.innerText = fixture.displayId || `CH ${fixture.lightId}`;
+    }
+
+    if (detailSelectedName) {
+        detailSelectedName.innerText = fixture.label || '--';
+    }
+
+    if (detailSelectedType) {
+        detailSelectedType.innerText = fixture.fixtureTypeLabel || fixture.fixtureType || '--';
+    }
+
+    if (detailFixtureModeLabel) {
+        detailFixtureModeLabel.innerText = fixture.modelLabel || fixture.fixtureModel || 'Selected fixture';
+    }
 }
 // [迁移] 以下策略均从旧 lighting-control.js 中迁移
 export function setPowerState(isOn) {
@@ -410,6 +489,25 @@ function updateRGB() {
     }
 
     updateWheelMarkerFromRGB();
+}
+
+function updateDetailRGBUI() {
+    const r = Number(getElement('detailRedSlider')?.value || 255);
+    const g = Number(getElement('detailGreenSlider')?.value || 128);
+    const b = Number(getElement('detailBlueSlider')?.value || 64);
+    const hex = rgbToHex(r, g, b);
+
+    const rValue = getElement('detailRedValue');
+    const gValue = getElement('detailGreenValue');
+    const bValue = getElement('detailBlueValue');
+    const hexValue = getElement('detailHexValue');
+    const preview = getElement('detailColorPreview');
+
+    if (rValue) rValue.textContent = r;
+    if (gValue) gValue.textContent = g;
+    if (bValue) bValue.textContent = b;
+    if (hexValue) hexValue.textContent = hex;
+    if (preview) preview.style.background = hex;
 }
 
 function updateRGBFromWheel(event) {
@@ -749,60 +847,57 @@ function updateColorBlazeUI() {
 
 export function readLightingValuesFromUI() {
     const powerToggle = getElement('powerToggle');
-
     const intensitySlider = getElement('intensitySlider');
-    const redSlider = getElement('redSlider');
-    const greenSlider = getElement('greenSlider');
-    const blueSlider = getElement('blueSlider');
-
     const panSlider = getElement('panSlider');
     const tiltSlider = getElement('tiltSlider');
-
     const fieldAngleSlider = getElement('fieldAngleSlider');
-    const beamSizeSlider = getElement('beamSizeSlider');
-    const softnessSlider = getElement('softnessSlider');
-    const strobeSlider = getElement('strobeSlider');
 
-    const colorBlazePanel = getElement('colorBlazePanel');
-    const strobeBlock = getElement('strobeBlock');
-
-    const isColorBlazeActive =
-        colorBlazePanel && !colorBlazePanel.classList.contains('hidden');
-
-    const isSharedStrobeActive =
-        strobeBlock && !strobeBlock.classList.contains('hidden');
-
-    const colorBlazeState = isColorBlazeActive ? readColorBlazeValuesFromUI() : {};
-
-    const strobeHz = isColorBlazeActive
-        ? Number(getElement('ledStrobeHzSlider')?.value || 0)
-        : isSharedStrobeActive
-            ? Number(getElement('strobeSlider')?.value || 0)
-            : 0;
+    const detailState = readDetailLightingValuesFromUI();
 
     return {
         isOn: powerToggle ? powerToggle.dataset.on === 'true' : true,
-
         intensity: intensitySlider ? Number(intensitySlider.value) / 100 : 0,
-
-        r: redSlider ? Number(redSlider.value) : 255,
-        g: greenSlider ? Number(greenSlider.value) : 255,
-        b: blueSlider ? Number(blueSlider.value) : 255,
-
+        fieldAngle: fieldAngleSlider ? Number(fieldAngleSlider.value) : undefined,
         pan: panSlider ? Number(panSlider.value) : 0,
         tilt: tiltSlider ? Number(tiltSlider.value) : 0,
-
-        fieldAngle: fieldAngleSlider ? Number(fieldAngleSlider.value) : undefined,
-        beamSize: beamSizeSlider ? Number(beamSizeSlider.value) : undefined,
-        softness: softnessSlider ? Number(softnessSlider.value) : undefined,
-
-        strobeHz,
-
-        ...colorBlazeState
+        ...detailState
     };
 }
 
-export function writeLightingValuesToUI(state) {
+function readDetailLightingValuesFromUI() {
+    const detailRedSlider = getElement('detailRedSlider');
+    const detailGreenSlider = getElement('detailGreenSlider');
+    const detailBlueSlider = getElement('detailBlueSlider');
+    const detailStrobeHzSlider = getElement('detailStrobeHzSlider');
+
+    const detailBeamSizeSlider = getElement('detailBeamSizeSlider');
+    const detailSoftnessSlider = getElement('detailSoftnessSlider');
+
+    const detailColorBlazePanel = getElement('detailColorBlazePanel');
+
+    const state = {};
+
+    if (detailRedSlider) state.r = Number(detailRedSlider.value);
+    if (detailGreenSlider) state.g = Number(detailGreenSlider.value);
+    if (detailBlueSlider) state.b = Number(detailBlueSlider.value);
+    if (detailStrobeHzSlider) state.strobeHz = Number(detailStrobeHzSlider.value);
+
+    if (detailBeamSizeSlider) state.beamSize = Number(detailBeamSizeSlider.value);
+    if (detailSoftnessSlider) state.softness = Number(detailSoftnessSlider.value);
+
+    if (detailColorBlazePanel) {
+        state.ledMode = detailColorBlazePanel.dataset.ledMode || 'solid';
+        state.segmentMode = Number(detailColorBlazePanel.dataset.ledSegments || 8);
+        state.chaseSpeed = Number(getElement('detailLedChaseSpeedSlider')?.value || 1.5);
+        state.direction = detailColorBlazePanel.dataset.ledDirection || 'forward';
+        state.segments = currentLedState.segments;
+        state.selectedSegment = currentLedState.selectedSegment;
+    }
+
+    return state;
+}
+
+export function writeLightingValuesToUI(state, fixture) {
     if (!state) return;
 
     setPowerState(Boolean(state.isOn));
@@ -812,14 +907,6 @@ export function writeLightingValuesToUI(state) {
         intensitySlider.value = Math.round(Number(state.intensity) * 100);
     }
 
-    const redSlider = getElement('redSlider');
-    const greenSlider = getElement('greenSlider');
-    const blueSlider = getElement('blueSlider');
-
-    if (redSlider && state.r !== undefined) redSlider.value = state.r;
-    if (greenSlider && state.g !== undefined) greenSlider.value = state.g;
-    if (blueSlider && state.b !== undefined) blueSlider.value = state.b;
-
     const panSlider = getElement('panSlider');
     const tiltSlider = getElement('tiltSlider');
 
@@ -827,39 +914,369 @@ export function writeLightingValuesToUI(state) {
     if (tiltSlider && state.tilt !== undefined) tiltSlider.value = state.tilt;
 
     const fieldAngleSlider = getElement('fieldAngleSlider');
-    const beamSizeSlider = getElement('beamSizeSlider');
-    const softnessSlider = getElement('softnessSlider');
-    const strobeSlider = getElement('strobeSlider');
-
     if (fieldAngleSlider && state.fieldAngle !== undefined) {
         fieldAngleSlider.value = state.fieldAngle;
     }
 
-    if (beamSizeSlider && state.beamSize !== undefined) {
-        beamSizeSlider.value = state.beamSize;
-    }
-
-    if (softnessSlider && state.softness !== undefined) {
-        softnessSlider.value = state.softness;
-    }
-
-    if (strobeSlider && state.strobeHz !== undefined) {
-        strobeSlider.value = state.strobeHz;
+    if (state.fieldAngle !== undefined) {
+        updateQuickAngleOptionActive(state.fieldAngle);
     }
 
     updateIntensityUI();
-    updateRGB();
     updatePanTiltUI();
     updateFieldAngleUI();
-    updateBeamSizeUI();
-    updateSoftnessUI();
-    updateStrobeUI();
-    writeColorBlazeValuesToUI(state);
+
+    renderDetailLightingPanel(fixture, state);
 }
 
+function renderDetailLightingPanel(fixture, state = {}) {
+    const panel = getElement('detailLightingPanel');
+    if (!panel || !fixture) return;
 
-// [迁移完成 + 新增待完成] Input Event Binding
-// 迁移部分已经写好；新增参数事件留空
+    const preset = getFixturePreset(fixture);
+    const isAdvancedLed = isAdvancedLedFixture(fixture);
+    const isMoving = fixture.fixtureType === FIXTURE_TYPES.MOVING;
+    const isFresnel = fixture.fixtureType === FIXTURE_TYPES.FRESNEL;
+
+    const angleTitle = isMoving || isFresnel ? 'Beam Angle' : 'Field Angle';
+    const r = Number(state.r ?? 255);
+    const g = Number(state.g ?? 128);
+    const b = Number(state.b ?? 64);
+    const hex = rgbToHex(r, g, b);
+
+    panel.innerHTML = `
+        <div class="space-y-3" data-detail-fixture-id="${fixture.lightId}">
+            <div class="rounded-lg border border-gray-800 bg-[#0b0f16] p-3">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <div class="text-blue-400 text-xs font-bold">${fixture.fixtureTypeLabel}</div>
+                        <div class="text-gray-100 text-sm font-semibold mt-1">${fixture.label}</div>
+                        <div class="text-gray-500 text-xs mt-1">${fixture.modelLabel || ''}</div>
+                    </div>
+                    <div class="text-xs text-gray-400">${fixture.displayId || `CH ${fixture.lightId}`}</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                ${renderDetailRgbBlock(r, g, b, hex)}
+                ${renderDetailStrobeBlock(state)}
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                ${renderDetailAngleBlock(fixture, preset, state, angleTitle)}
+                ${renderDetailAimBlock(fixture, preset, state)}
+            </div>
+
+            ${fixture.fixtureType === FIXTURE_TYPES.FRESNEL ? renderDetailFresnelBlock(state) : ''}
+            ${fixture.fixtureType === FIXTURE_TYPES.MOVING ? renderDetailMovingBlock(fixture, preset, state) : ''}
+            ${fixture.fixtureType === FIXTURE_TYPES.LED && isAdvancedLed ? renderDetailColorBlazeBlock(state) : ''}
+        </div>
+    `;
+}
+
+function renderDetailRgbBlock(r, g, b, hex) {
+    return `
+        <section class="rounded-lg border border-gray-800 bg-[#0b0f16] p-3">
+            <div class="text-red-400 text-xs font-bold mb-3">RGB COLOR</div>
+
+            <div class="grid grid-cols-[1fr_72px] gap-3 items-center">
+                <div class="space-y-3">
+                    <label class="grid grid-cols-[18px_1fr_48px] gap-2 items-center text-xs">
+                        <span class="text-red-400">R</span>
+                        <input id="detailRedSlider" type="range" min="0" max="255" value="${r}" class="accent-red-500">
+                        <span id="detailRedValue" class="text-center rounded border border-gray-700 bg-white/5 py-1">${r}</span>
+                    </label>
+
+                    <label class="grid grid-cols-[18px_1fr_48px] gap-2 items-center text-xs">
+                        <span class="text-green-400">G</span>
+                        <input id="detailGreenSlider" type="range" min="0" max="255" value="${g}" class="accent-green-500">
+                        <span id="detailGreenValue" class="text-center rounded border border-gray-700 bg-white/5 py-1">${g}</span>
+                    </label>
+
+                    <label class="grid grid-cols-[18px_1fr_48px] gap-2 items-center text-xs">
+                        <span class="text-blue-400">B</span>
+                        <input id="detailBlueSlider" type="range" min="0" max="255" value="${b}" class="accent-blue-500">
+                        <span id="detailBlueValue" class="text-center rounded border border-gray-700 bg-white/5 py-1">${b}</span>
+                    </label>
+
+                    <div id="detailHexValue" class="w-28 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">${hex}</div>
+                </div>
+
+                <div id="detailColorPreview" class="w-16 h-16 rounded-lg border border-white/10 shadow-lg" style="background:${hex}"></div>
+            </div>
+        </section>
+    `;
+}
+
+function renderDetailStrobeBlock(state) {
+    const strobeHz = Number(state.strobeHz ?? 0);
+
+    return `
+        <section class="rounded-lg border border-gray-800 bg-[#0b0f16] p-3">
+            <div class="text-cyan-400 text-xs font-bold mb-3">STROBE</div>
+            <input id="detailStrobeHzSlider" type="range" min="0" max="20" step="1" value="${strobeHz}" class="w-full accent-cyan-500">
+            <div class="flex justify-between text-[11px] text-gray-400 mt-1">
+                <span>0 Hz</span>
+                <span>20 Hz</span>
+            </div>
+            <div id="detailStrobeHzValue" class="mx-auto mt-3 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">${strobeHz} Hz</div>
+        </section>
+    `;
+}
+
+function renderDetailAngleBlock(fixture, preset, state, title) {
+    const value = Number(state.fieldAngle ?? fixture.defaultState?.fieldAngle ?? preset?.defaultFieldAngle ?? preset?.defaultBeamAngle ?? 30);
+
+    if (Array.isArray(preset?.beamAngleOptions)) {
+        return `
+            <section class="rounded-lg border border-gray-800 bg-[#0b0f16] p-3">
+                <div class="text-blue-400 text-xs font-bold mb-3">${title.toUpperCase()}</div>
+                <div class="grid grid-cols-2 gap-2">
+                    ${preset.beamAngleOptions.map(angle => `
+                        <button
+                            type="button"
+                            class="detail-angle-option px-3 py-2 rounded-md border ${Number(angle) === value ? 'border-blue-500 bg-blue-500/20 text-blue-200' : 'border-gray-700 bg-white/5 text-gray-300'}"
+                            data-detail-angle="${angle}"
+                        >
+                            ${angle}&deg;
+                        </button>
+                    `).join('')}
+                </div>
+            </section>
+        `;
+    }
+
+    const min = preset?.beamAngleMin ?? preset?.fieldAngleMin ?? value;
+    const max = preset?.beamAngleMax ?? preset?.fieldAngleMax ?? value;
+    const isFixed = preset?.fieldAngleFixed || min === max;
+
+    return `
+        <section class="rounded-lg border border-gray-800 bg-[#0b0f16] p-3">
+            <div class="text-blue-400 text-xs font-bold mb-3">${title.toUpperCase()}</div>
+
+            ${isFixed ? `
+                <div class="h-24 flex items-center justify-center">
+                    <div class="px-6 py-3 rounded-lg border border-gray-700 bg-white/5 text-2xl">${value}&deg;</div>
+                </div>
+            ` : `
+                <input id="detailFieldAngleSlider" type="range" min="${min}" max="${max}" step="0.1" value="${value}" class="w-full accent-blue-500">
+                <div class="flex justify-between text-[11px] text-gray-400 mt-1">
+                    <span>${min}&deg;</span>
+                    <span>${max}&deg;</span>
+                </div>
+                <div id="detailFieldAngleValue" class="mx-auto mt-3 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">${value}&deg;</div>
+            `}
+        </section>
+    `;
+}
+
+function renderDetailAimBlock(fixture, preset, state) {
+    const isMoving = fixture.fixtureType === FIXTURE_TYPES.MOVING;
+    const title = isMoving ? 'SPATIAL MOVEMENT' : 'AIM';
+    const panMin = isMoving ? preset?.panMin : preset?.aimPanMin ?? -180;
+    const panMax = isMoving ? preset?.panMax : preset?.aimPanMax ?? 180;
+    const tiltMin = isMoving ? preset?.tiltMin : preset?.aimTiltMin ?? -90;
+    const tiltMax = isMoving ? preset?.tiltMax : preset?.aimTiltMax ?? 90;
+
+    return `
+        <section class="rounded-lg border border-gray-800 bg-[#0b0f16] p-3">
+            <div class="flex items-center gap-2 mb-3">
+                <div class="text-green-400 text-xs font-bold">${title}</div>
+                ${isMoving ? '' : '<span class="px-1.5 py-0.5 rounded border border-yellow-500/40 bg-yellow-500/10 text-[9px] text-yellow-300">Preview Only</span>'}
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <div class="text-xs text-gray-300 mb-1">Pan</div>
+                    <input id="detailPanSlider" type="range" min="${panMin}" max="${panMax}" step="0.5" value="${state.pan ?? 0}" class="w-full accent-blue-500">
+                    <div class="flex justify-between text-[11px] text-gray-400 mt-1">
+                        <span>${panMin}&deg;</span><span>0&deg;</span><span>${panMax}&deg;</span>
+                    </div>
+                    <div id="detailPanValue" class="mx-auto mt-2 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">${state.pan ?? 0}&deg;</div>
+                </div>
+
+                <div>
+                    <div class="text-xs text-gray-300 mb-1">Tilt</div>
+                    <input id="detailTiltSlider" type="range" min="${tiltMin}" max="${tiltMax}" step="0.5" value="${state.tilt ?? 0}" class="w-full accent-blue-500">
+                    <div class="flex justify-between text-[11px] text-gray-400 mt-1">
+                        <span>${tiltMin}&deg;</span><span>0&deg;</span><span>${tiltMax}&deg;</span>
+                    </div>
+                    <div id="detailTiltValue" class="mx-auto mt-2 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">${state.tilt ?? 0}&deg;</div>
+                </div>
+            </div>
+        </section>
+    `;
+}
+
+function renderDetailFresnelBlock(state) {
+    return `
+        <section class="rounded-lg border border-gray-800 bg-[#0b0f16] p-3">
+            <div class="text-yellow-400 text-xs font-bold mb-3">FRESNEL BEAM</div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <div class="text-xs text-gray-300 mb-1">Beam Size</div>
+                    <input id="detailBeamSizeSlider" type="range" min="0" max="100" value="${state.beamSize ?? 45}" class="w-full accent-yellow-500">
+                    <div id="detailBeamSizeValue" class="mx-auto mt-2 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">${state.beamSize ?? 45}&deg;</div>
+                </div>
+
+                <div>
+                    <div class="text-xs text-gray-300 mb-1">Softness</div>
+                    <input id="detailSoftnessSlider" type="range" min="0" max="1" step="0.01" value="${state.softness ?? 0.75}" class="w-full accent-purple-500">
+                    <div id="detailSoftnessValue" class="mx-auto mt-2 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">${Math.round(Number(state.softness ?? 0.75) * 100)}%</div>
+                </div>
+            </div>
+        </section>
+    `;
+}
+
+function renderDetailMovingBlock(fixture, preset, state) {
+    return `
+        <section class="rounded-lg border border-gray-800 bg-[#0b0f16] p-3">
+            <div class="text-green-400 text-xs font-bold mb-2">MOVING LIGHT EXTRA</div>
+            <div class="text-xs text-gray-500">
+                Moving fixtures use real pan / tilt ranges from fixture preset. Strobe and beam angle are available above.
+            </div>
+        </section>
+    `;
+}
+
+function renderDetailColorBlazeBlock(state) {
+    const mode = state.ledMode || 'solid';
+    const segmentMode = Number(state.segmentMode || 8);
+    const chaseSpeed = Number(state.chaseSpeed || 1.5);
+    const direction = state.direction || 'forward';
+
+    const segments = normalizeLedSegments(state.segments, segmentMode);
+    currentLedState = {
+        ...currentLedState,
+        ledMode: mode,
+        segmentMode,
+        selectedSegment: Number(state.selectedSegment || 0),
+        segments,
+        chaseSpeed,
+        direction,
+        strobeHz: Number(state.strobeHz || 0)
+    };
+
+    return `
+        <section
+            id="detailColorBlazePanel"
+            class="rounded-lg border border-gray-800 bg-[#0b0f16] p-3"
+            data-led-mode="${mode}"
+            data-led-segments="${segmentMode}"
+            data-led-direction="${direction}"
+        >
+            <div class="text-red-400 text-xs font-bold mb-3">COLORBLAZE 48 MODE</div>
+
+            <div class="grid grid-cols-4 gap-1 rounded-lg border border-gray-700 p-1 mb-3">
+                ${['solid', 'gradient', 'chase', 'manual'].map(item => `
+                    <button
+                        type="button"
+                        class="detail-led-mode-btn h-8 rounded-md text-xs ${mode === item ? 'bg-blue-500/30 text-blue-200 border border-blue-500' : 'text-gray-300'}"
+                        data-detail-led-mode="${item}"
+                    >
+                        ${item.toUpperCase()}
+                    </button>
+                `).join('')}
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                    <div class="text-xs text-gray-300 mb-2">Segment Mode</div>
+                    <div class="grid grid-cols-2 gap-1 rounded-lg border border-gray-700 p-1">
+                        <button type="button" data-detail-led-segments="4" class="detail-led-segment-mode h-8 rounded-md text-xs ${segmentMode === 4 ? 'bg-blue-500/30 text-blue-200' : 'text-gray-300'}">4 Segments</button>
+                        <button type="button" data-detail-led-segments="8" class="detail-led-segment-mode h-8 rounded-md text-xs ${segmentMode === 8 ? 'bg-blue-500/30 text-blue-200' : 'text-gray-300'}">8 Segments</button>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="text-xs text-gray-300 mb-2">Chase Speed</div>
+                    <input id="detailLedChaseSpeedSlider" type="range" min="0.1" max="5" step="0.1" value="${chaseSpeed}" class="w-full accent-green-500">
+                    <div id="detailLedChaseSpeedValue" class="mx-auto mt-2 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">${chaseSpeed}x</div>
+                </div>
+            </div>
+
+            ${mode === 'manual' ? renderDetailManualSegmentGrid(segments) : ''}
+
+            ${mode === 'gradient' ? `
+                <div class="text-xs text-gray-400 rounded-lg border border-gray-800 bg-black/20 p-3">
+                    Gradient mode uses Color A to Color B across selected segments.
+                </div>
+            ` : ''}
+
+            ${mode === 'chase' ? `
+                <div class="text-xs text-gray-400 rounded-lg border border-gray-800 bg-black/20 p-3">
+                    Chase mode animates Color 1 to Color 2 with chase speed.
+                </div>
+            ` : ''}
+        </section>
+    `;
+}
+
+function normalizeLedSegments(segments, count) {
+    if (Array.isArray(segments) && segments.length === count) {
+        return segments.map(color => ({
+            r: Number(color.r ?? 255),
+            g: Number(color.g ?? 128),
+            b: Number(color.b ?? 64)
+        }));
+    }
+
+    return createDefaultSegments(count);
+}
+
+function renderDetailManualSegmentGrid(segments) {
+    const selectedSegment = Number(currentLedState.selectedSegment || 0);
+
+    return `
+        <div class="rounded-lg border border-gray-800 bg-black/20 p-3">
+            <div class="flex items-center justify-between mb-3">
+                <div class="text-xs text-gray-300 font-bold">Manual Segment Colors</div>
+                <div class="text-xs text-purple-300">
+                    Selected Segment:
+                    <span id="detailSelectedSegmentLabel">${String(selectedSegment + 1).padStart(2, '0')}</span>
+                </div>
+            </div>
+
+            <div id="detailLedSegmentGrid" class="grid grid-cols-4 gap-2">
+                ${segments.map((color, index) => {
+                    const hex = rgbToHex(color.r, color.g, color.b);
+                    const isSelected = index === selectedSegment;
+
+                    return `
+                        <button
+                            type="button"
+                            class="detail-led-segment-swatch aspect-square rounded-lg border ${isSelected ? 'border-blue-400 ring-2 ring-blue-400/60' : 'border-white/10'}"
+                            data-detail-led-segment="${index}"
+                            style="background:${hex}"
+                        >
+                            <span class="sr-only">Segment ${index + 1}</span>
+                        </button>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `;
+}
+
+function updateDetailManualSegmentSwatches() {
+    document.querySelectorAll('[data-detail-led-segment]').forEach(button => {
+        const index = Number(button.dataset.detailLedSegment);
+        const color = currentLedState.segments[index];
+
+        if (!color) return;
+
+        button.style.background = rgbToHex(color.r, color.g, color.b);
+        button.classList.toggle('border-blue-400', index === Number(currentLedState.selectedSegment || 0));
+        button.classList.toggle('ring-2', index === Number(currentLedState.selectedSegment || 0));
+        button.classList.toggle('ring-blue-400/60', index === Number(currentLedState.selectedSegment || 0));
+    });
+
+    const label = getElement('detailSelectedSegmentLabel');
+    if (label) {
+        label.textContent = String(Number(currentLedState.selectedSegment || 0) + 1).padStart(2, '0');
+    }
+}
 
 export function setupLightingInputListeners(onInput) {
     const powerToggle = getElement('powerToggle');
@@ -1046,7 +1463,9 @@ export function setupLightingInputListeners(onInput) {
 
     document.querySelectorAll('.led-mode-btn').forEach(button => {
         button.addEventListener('click', () => {
-            getElement('colorBlazePanel').dataset.ledMode = button.dataset.ledMode;
+            const panel = getElement('colorBlazePanel');
+            if (!panel) return;
+            panel.dataset.ledMode = button.dataset.ledMode;
             updateColorBlazeUI();
             onInput();
         });
@@ -1076,6 +1495,181 @@ export function setupLightingInputListeners(onInput) {
             updateColorBlazeUI();
             onInput();
         });
+    });
+
+    document.querySelectorAll('.quick-angle-option').forEach(button => {
+        button.addEventListener('click', () => {
+            const angle = Number(button.dataset.angle);
+            const fieldAngleSlider = getElement('fieldAngleSlider');
+
+            if (fieldAngleSlider) {
+                fieldAngleSlider.value = angle;
+            }
+
+            document.querySelectorAll('.quick-angle-option').forEach(option => {
+                const isActive = option === button;
+
+                option.classList.toggle('border-blue-500', isActive);
+                option.classList.toggle('bg-blue-500/20', isActive);
+
+                option.classList.toggle('border-gray-700', !isActive);
+                option.classList.toggle('bg-white/5', !isActive);
+            });
+
+            updateFieldAngleUI();
+            onInput();
+        });
+    });
+
+    const detailPanel = getElement('detailLightingPanel');
+
+    detailPanel?.addEventListener('input', event => {
+        const target = event.target;
+
+        if (target.id === 'detailRedSlider' || target.id === 'detailGreenSlider' || target.id === 'detailBlueSlider') {
+            updateDetailRGBUI();
+
+            if (getSelectedLedMode() === 'manual') {
+                const selectedSegment = Number(currentLedState.selectedSegment || 0);
+
+                currentLedState.segments[selectedSegment] = {
+                    r: Number(getElement('detailRedSlider')?.value || 255),
+                    g: Number(getElement('detailGreenSlider')?.value || 128),
+                    b: Number(getElement('detailBlueSlider')?.value || 64)
+                };
+
+                updateDetailManualSegmentSwatches();
+            }
+        }
+
+        if (target.id === 'detailStrobeHzSlider') {
+            const value = getElement('detailStrobeHzValue');
+            if (value) value.textContent = `${target.value} Hz`;
+        }
+
+        if (target.id === 'detailFieldAngleSlider') {
+            const value = getElement('detailFieldAngleValue');
+            const quick = getElement('fieldAngleSlider');
+
+            if (value) value.innerHTML = `${target.value}&deg;`;
+            if (quick) {
+                quick.value = target.value;
+                updateFieldAngleUI();
+            }
+        }
+
+        if (target.id === 'detailPanSlider') {
+            const value = getElement('detailPanValue');
+            const quick = getElement('panSlider');
+
+            if (value) value.innerHTML = `${target.value}&deg;`;
+            if (quick) {
+                quick.value = target.value;
+                updatePanTiltUI();
+            }
+        }
+
+        if (target.id === 'detailTiltSlider') {
+            const value = getElement('detailTiltValue');
+            const quick = getElement('tiltSlider');
+
+            if (value) value.innerHTML = `${target.value}&deg;`;
+            if (quick) {
+                quick.value = target.value;
+                updatePanTiltUI();
+            }
+        }
+
+        if (target.id === 'detailBeamSizeSlider') {
+            const value = getElement('detailBeamSizeValue');
+            if (value) value.innerHTML = `${target.value}&deg;`;
+        }
+
+        if (target.id === 'detailSoftnessSlider') {
+            const value = getElement('detailSoftnessValue');
+            if (value) value.textContent = `${Math.round(Number(target.value) * 100)}%`;
+        }
+
+        if (target.id === 'detailLedChaseSpeedSlider') {
+            const value = getElement('detailLedChaseSpeedValue');
+            if (value) value.textContent = `${target.value}x`;
+        }
+
+        onInput();
+    });
+
+    detailPanel?.addEventListener('click', event => {
+        const angleButton = event.target.closest('[data-detail-angle]');
+        if (angleButton) {
+            const angle = Number(angleButton.dataset.detailAngle);
+            const quick = getElement('fieldAngleSlider');
+
+            if (quick) {
+                quick.value = angle;
+                updateFieldAngleUI();
+            }
+
+            document.querySelectorAll('.detail-angle-option').forEach(button => {
+                button.classList.toggle('border-blue-500', button === angleButton);
+                button.classList.toggle('bg-blue-500/20', button === angleButton);
+            });
+
+            onInput();
+            return;
+        }
+
+        const modeButton = event.target.closest('[data-detail-led-mode]');
+        if (modeButton) {
+            const panel = getElement('detailColorBlazePanel');
+            const nextMode = modeButton.dataset.detailLedMode;
+
+            if (panel) panel.dataset.ledMode = nextMode;
+            currentLedState.ledMode = nextMode;
+
+            onInput({ render: true });
+            return;
+        }
+
+        const segmentModeButton = event.target.closest('[data-detail-led-segments]');
+        if (segmentModeButton) {
+            const panel = getElement('detailColorBlazePanel');
+            const nextSegmentMode = Number(segmentModeButton.dataset.detailLedSegments);
+
+            if (panel) {
+                panel.dataset.ledSegments = String(nextSegmentMode);
+            }
+
+            currentLedState.segmentMode = nextSegmentMode;
+            currentLedState.segments = normalizeLedSegments(currentLedState.segments, nextSegmentMode);
+
+            if (currentLedState.selectedSegment >= nextSegmentMode) {
+                currentLedState.selectedSegment = 0;
+            }
+
+            onInput({ render: true });
+            return;
+        }
+
+        const segmentButton = event.target.closest('[data-detail-led-segment]');
+        if (segmentButton) {
+            const index = Number(segmentButton.dataset.detailLedSegment);
+            currentLedState.selectedSegment = index;
+
+            const color = currentLedState.segments[index] || { r: 255, g: 128, b: 64 };
+
+            const rSlider = getElement('detailRedSlider');
+            const gSlider = getElement('detailGreenSlider');
+            const bSlider = getElement('detailBlueSlider');
+
+            if (rSlider) rSlider.value = color.r;
+            if (gSlider) gSlider.value = color.g;
+            if (bSlider) bSlider.value = color.b;
+
+            updateDetailRGBUI();
+            updateDetailManualSegmentSwatches();
+            onInput();
+            return;
+        }
     });
 
     updateIntensityUI();

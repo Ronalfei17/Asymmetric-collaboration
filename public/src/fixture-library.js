@@ -10,6 +10,7 @@ import {
 } from './lighting-control.js';
 
 const TYPE_ORDER = getFixtureTypes();
+let currentMode = 'all';
 
 function getElement(id) {
     return document.getElementById(id);
@@ -115,11 +116,12 @@ function renderFixtureGroup(title, fixtures) {
 }
 
 function getCurrentMode() {
-    const activeButton = document.querySelector('[data-fixture-library-tab].bg-blue-500\\/20');
-    return activeButton?.dataset.fixtureLibraryTab || 'all';
+    return currentMode;
 }
 
 export function renderFixtureLibrary(mode = 'all') {
+    currentMode = mode;
+    
     const container = getElement('fixtureLibraryList');
 
     if (!container) {

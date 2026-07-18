@@ -1,16 +1,17 @@
 // 用于保存每个 lightId 的状态
 const fixtureStateMap = new Map();
 
-function cloneState(state) {
-    return {
-        ...state,
-        segments: Array.isArray(state?.segments)
-            ? state.segments.map(color => ({ ...color }))
-            : undefined
-    };
+function cloneState(state = {}) {
+    const nextState = { ...state };
+
+    if (Array.isArray(state.segments)) {
+        nextState.segments = state.segments.map(color => ({ ...color }));
+    }
+
+    return nextState;
 }
 
-function safeNumber(value, fallback =0) {
+function safeNumber(value, fallback = 0) {
     const number = Number(value);
     return Number.isFinite(number) ? number : fallback;
 }
@@ -41,7 +42,7 @@ export function updateFixtureState(fixture, partialState) {
 };
 
 export function buildLightingPayload(fixture, state) {
-    return{
+    return {
         lightId: fixture.lightId,
         displayId: fixture.displayId,
 
