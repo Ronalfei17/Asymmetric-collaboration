@@ -888,12 +888,12 @@ export function readLightingValuesFromUI() {
         : {};
 
     return {
-        isOn: powerToggle ? powerToggle.dataset.on === 'true' : true,
+        ...detailState,
+        isOn: powerToggle ? toBoolean(powerToggle.dataset.on, true) : true,
         intensity: intensitySlider ? Number(intensitySlider.value) / 100 : 0,
         fieldAngle: fieldAngleSlider ? Number(fieldAngleSlider.value) : undefined,
         pan: panSlider ? Number(panSlider.value) : 0,
-        tilt: tiltSlider ? Number(tiltSlider.value) : 0,
-        ...detailState
+        tilt: tiltSlider ? Number(tiltSlider.value) : 0
     };
 }
 
@@ -1316,7 +1316,11 @@ export function setupLightingInputListeners(onInput) {
 
     if (powerToggle) {
         powerToggle.addEventListener('click', () => {
-            const nextState = powerToggle.dataset.on !== 'true';
+            const currentState = toBoolean(powerToggle.dataset.on, true);
+            const nextState = !currentState;
+
+            console.log('[Power Toggle]', { currentState, nextState });//调试
+
             setPowerState(nextState);
             onInput();
         });
