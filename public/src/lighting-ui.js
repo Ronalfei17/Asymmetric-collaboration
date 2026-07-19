@@ -245,11 +245,23 @@ export function applyFixturePresetToUI(fixture) {
 function updateQuickAngleOptionActive(angle) {
     document.querySelectorAll('.quick-angle-option').forEach(option => {
         const isActive = Number(option.dataset.angle) === Number(angle);
+        const dot = option.querySelector('.quick-angle-dot');
 
         option.classList.toggle('border-blue-500', isActive);
         option.classList.toggle('bg-blue-500/20', isActive);
+        option.classList.toggle('text-blue-100', isActive);
+
         option.classList.toggle('border-gray-700', !isActive);
         option.classList.toggle('bg-white/5', !isActive);
+        option.classList.toggle('text-gray-300', !isActive);
+
+        if (dot) {
+            dot.classList.toggle('border-blue-400', isActive);
+            dot.classList.toggle('after:block', isActive);
+
+            dot.classList.toggle('border-gray-500', !isActive);
+            dot.classList.toggle('after:hidden', !isActive);
+        }
     });
 }
 
@@ -265,9 +277,23 @@ function applyQuickAnglePreset(fixture, preset) {
 
     if (!preset) return;
 
-    const isMoving = fixture.fixtureType === FIXTURE_TYPES.MOVING;
-    const hasOptions = Array.isArray(preset.beamAngleOptions);
-    const isFixed = preset.fieldAngleFixed || preset.fieldAngleMin === preset.fieldAngleMax;
+    const angleOptions = preset.fieldAngleOptions ?? preset.beamAngleOptions;
+    const angleMin = preset.fieldAngleMin ?? preset.beamAngleMin;
+    const angleMax = preset.fieldAngleMax ?? preset.beamAngleMax;
+    const defaultAngle =
+        fixture.defaultState?.fieldAngle ??
+        preset.defaultFieldAngle ??
+        preset.defaultBeamAngle ??
+        angleOptions?.[0] ??
+        angleMin ??
+        30;
+
+    const hasOptions = Array.isArray(angleOptions) && angleOptions.length > 0;
+    const isFixed = Boolean(preset.fieldAngleFixed) || (
+        angleMin !== undefined &&
+        angleMax !== undefined &&
+        Number(angleMin) === Number(angleMax)
+    );
 
     sliderWrap?.classList.toggle('hidden', hasOptions || isFixed);
     fixedWrap?.classList.toggle('hidden', !isFixed);
@@ -276,28 +302,23 @@ function applyQuickAnglePreset(fixture, preset) {
     optionsWrap?.classList.toggle('flex', hasOptions);
 
     if (hasOptions) {
-        const selectedAngle =
-            fixture.defaultState?.fieldAngle ??
-            preset.defaultFieldAngle ??
-            preset.beamAngleOptions?.[0];
+        const selectedAngle = angleOptions.includes(Number(defaultAngle))
+            ? Number(defaultAngle)
+            : Number(preset.defaultFieldAngle ?? preset.defaultBeamAngle ?? angleOptions[0]);
 
-        if (slider && selectedAngle !== undefined) {
+        if (slider) {
             slider.value = selectedAngle;
         }
 
         updateQuickAngleOptionActive(selectedAngle);
-
         updateFieldAngleUI();
         return;
     }
 
     if (isFixed) {
-        const fixedAngle =
-            preset.defaultFieldAngle ??
-            fixture.defaultState?.fieldAngle ??
-            preset.fieldAngleMin;
+        const fixedAngle = Number(defaultAngle);
 
-        if (slider && fixedAngle !== undefined) {
+        if (slider) {
             slider.value = fixedAngle;
         }
 
@@ -309,25 +330,15 @@ function applyQuickAnglePreset(fixture, preset) {
         return;
     }
 
-    const min = isMoving ? preset.beamAngleMin : preset.fieldAngleMin;
-    const max = isMoving ? preset.beamAngleMax : preset.fieldAngleMax;
-
     if (slider) {
-        slider.min = min ?? 10;
-        slider.max = max ?? 60;
+        slider.min = angleMin ?? 10;
+        slider.max = angleMax ?? 60;
         slider.step = 0.1;
-
-        const currentAngle =
-            fixture.defaultState?.fieldAngle ??
-            preset.defaultFieldAngle ??
-            min ??
-            10;
-
-        slider.value = currentAngle;
+        slider.value = defaultAngle;
     }
 
-    if (minLabel) minLabel.innerHTML = `${min ?? 10}&deg;`;
-    if (maxLabel) maxLabel.innerHTML = `${max ?? 60}&deg;`;
+    if (minLabel) minLabel.innerHTML = `${angleMin ?? 10}&deg;`;
+    if (maxLabel) maxLabel.innerHTML = `${angleMax ?? 60}&deg;`;
 
     updateFieldAngleUI();
 }
@@ -403,11 +414,12 @@ export function updateSelectedInfoPanel(fixture) {
         detailFixtureModeLabel.innerText = fixture.modelLabel || fixture.fixtureModel || 'Selected fixture';
     }
 }
-// [迁移] 以下策略均从旧 lighting-control.js 中迁移
+
 export function setPowerState(isOn) {
     const powerToggle = getElement('powerToggle');
     const powerKnob = getElement('powerKnob');
     const powerLamp = getElement('powerLamp');
+    const powerStatusLabel = getElement('powerStatusLabel');
 
     if (!powerToggle) return;
 
@@ -423,6 +435,11 @@ export function setPowerState(isOn) {
         if (powerLamp) {
             powerLamp.className = 'w-12 h-12 rounded-full bg-green-500/15 border border-green-400/30 flex items-center justify-center text-green-300 transition-all shadow-[0_0_18px_rgba(34,197,94,0.2)]';
         }
+
+        if (powerStatusLabel) {
+            powerStatusLabel.textContent = 'Lamp On';
+            powerStatusLabel.className = 'text-[11px] text-green-400';
+        }
     } else {
         powerToggle.className = 'w-14 h-8 rounded-full bg-gray-700 relative shadow-none transition-all';
 
@@ -432,6 +449,11 @@ export function setPowerState(isOn) {
 
         if (powerLamp) {
             powerLamp.className = 'w-12 h-12 rounded-full bg-white/10 border border-white/5 flex items-center justify-center text-gray-500 transition-all';
+        }
+
+        if (powerStatusLabel) {
+            powerStatusLabel.textContent = 'Lamp Off';
+            powerStatusLabel.className = 'text-[11px] text-gray-500';
         }
     }
 }
@@ -573,7 +595,6 @@ function updatePanTiltUI() {
     }
 }
 
-// [新增待完成]后续需要新增 Profile、Fresnel、LED 参数 UI 更新（finished)
 function updateFieldAngleUI() {
     const slider = getElement('fieldAngleSlider');
     const value = getElement('fieldAngleValue');
@@ -852,7 +873,12 @@ export function readLightingValuesFromUI() {
     const tiltSlider = getElement('tiltSlider');
     const fieldAngleSlider = getElement('fieldAngleSlider');
 
-    const detailState = readDetailLightingValuesFromUI();
+    const detailPage = getElement('page-light');
+    const isDetailPageActive = detailPage && !detailPage.classList.contains('hidden');
+
+    const detailState = isDetailPageActive
+        ? readDetailLightingValuesFromUI()
+        : {};
 
     return {
         isOn: powerToggle ? powerToggle.dataset.on === 'true' : true,
@@ -1506,16 +1532,7 @@ export function setupLightingInputListeners(onInput) {
                 fieldAngleSlider.value = angle;
             }
 
-            document.querySelectorAll('.quick-angle-option').forEach(option => {
-                const isActive = option === button;
-
-                option.classList.toggle('border-blue-500', isActive);
-                option.classList.toggle('bg-blue-500/20', isActive);
-
-                option.classList.toggle('border-gray-700', !isActive);
-                option.classList.toggle('bg-white/5', !isActive);
-            });
-
+            updateQuickAngleOptionActive(angle);
             updateFieldAngleUI();
             onInput();
         });

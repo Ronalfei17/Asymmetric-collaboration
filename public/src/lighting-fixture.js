@@ -304,13 +304,18 @@ function createDefaultState({
     softness = 0.75,
     pan = 0,
     tilt = 0,
-    strobeHz = 0,
+    strobe = 0,
+    strobeHz = strobe,
     ledMode = 'solid',
     segmentMode = 8,
     selectedSegment = 0,
     segments,
+    colorA,
+    colorB,
     chaseSpeed = 1.5,
-    direction = 'forward'
+    direction = 'forward',
+    repeatMode = 'single',
+    strobeEnabled = false
 } = {}) {
     return {
         isOn,
@@ -328,9 +333,33 @@ function createDefaultState({
         segmentMode,
         selectedSegment,
         segments,
+        colorA,
+        colorB,
         chaseSpeed,
-        direction
+        direction,
+        repeatMode,
+        strobeEnabled
     };
+}
+
+function getModelPreset(fixtureType, fixtureModel) {
+    if (fixtureType === FIXTURE_TYPES.PROFILE) {
+        return getProfileModelPreset(fixtureModel);
+    }
+
+    if (fixtureType === FIXTURE_TYPES.LED) {
+        return getLedModelPreset(fixtureModel);
+    }
+
+    if (fixtureType === FIXTURE_TYPES.FRESNEL) {
+        return getFresnelModelPreset(fixtureModel);
+    }
+
+    if (fixtureType === FIXTURE_TYPES.MOVING) {
+        return getMovingModelPreset(fixtureModel);
+    }
+
+    return null;
 }
 
 function createFixture({
@@ -342,6 +371,52 @@ function createFixture({
     notes = '',
     defaultState = {}
 }) {
+    const preset = getModelPreset(fixtureType, fixtureModel) || {};
+
+    const presetDefaultState = {
+        fieldAngle:
+            preset.defaultFieldAngle
+            ?? preset.defaultBeamAngle
+            ?? preset.fieldAngleMin
+            ?? preset.beamAngleMin
+            ?? 30,
+
+        beamSize: preset.defaultBeamSize ?? 45,
+        softness: preset.defaultSoftness ?? 0.75,
+
+        pan:
+            preset.defaultPan
+            ?? 0,
+
+        tilt:
+            preset.defaultTilt
+            ?? 0,
+
+        strobeHz:
+            preset.defaultStrobeHz
+            ?? 0,
+
+        ledMode:
+            preset.defaultMode
+            ?? 'solid',
+
+        segmentMode:
+            preset.defaultSegmentMode
+            ?? 8,
+
+        direction:
+            preset.defaultDirection
+            ?? 'forward',
+
+        repeatMode:
+            preset.defaultRepeatMode
+            ?? 'single',
+
+        chaseSpeed:
+            preset.defaultChaseSpeed
+            ?? 1.5
+    };
+
     return {
         lightId,
         displayId,
@@ -351,7 +426,11 @@ function createFixture({
         fixtureModel,
         modelLabel: FIXTURE_MODEL_LABELS[fixtureModel],
         notes,
-        defaultState: createDefaultState(defaultState)
+        preset,
+        defaultState: createDefaultState({
+            ...presetDefaultState,
+            ...defaultState
+        })
     };
 }
 
@@ -1502,9 +1581,6 @@ export const FIXTURES = [
             r: 255,
             g: 255,
             b: 255,
-            fieldAngle: 25,
-            pan: 0,
-            tilt: 0
         }
     }),
 
@@ -1518,9 +1594,6 @@ export const FIXTURES = [
             r: 255,
             g: 255,
             b: 255,
-            fieldAngle: 25,
-            pan: 0,
-            tilt: 0
         }
     }),
     // Moving - Martin MAC 250 - Light ID / Channel: 303, 304
@@ -1534,9 +1607,6 @@ export const FIXTURES = [
             r: 255,
             g: 255,
             b: 255,
-            fieldAngle: 12.1,
-            pan: 0,
-            tilt: 0
         }
     }),
 
@@ -1550,9 +1620,6 @@ export const FIXTURES = [
             r: 255,
             g: 255,
             b: 255,
-            fieldAngle: 12.1,
-            pan: 0,
-            tilt: 0
         }
     })
 ];
