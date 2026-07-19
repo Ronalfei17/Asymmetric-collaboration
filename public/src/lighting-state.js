@@ -16,6 +16,12 @@ function safeNumber(value, fallback = 0) {
     return Number.isFinite(number) ? number : fallback;
 }
 
+function safeBoolean(value, fallback = true) {
+    if (value === true || value === 'true') return true;
+    if (value === false || value === 'false') return false;
+    return fallback;
+}
+
 export function getFixtureState(fixture) {
     if (!fixture) return null;
 
@@ -39,7 +45,7 @@ export function updateFixtureState(fixture, partialState) {
     fixtureStateMap.set(fixture.lightId, nextState);
 
     return nextState;
-};
+}
 
 export function buildLightingPayload(fixture, state) {
     return {
@@ -52,7 +58,7 @@ export function buildLightingPayload(fixture, state) {
         fixtureModel: fixture.fixtureModel,
         modelLabel: fixture.modelLabel,
 
-        isOn: Boolean(state.isOn),
+        isOn: safeBoolean(state.isOn, true),
         intensity: safeNumber(state.intensity, 0),
 
         r: safeNumber(state.r, 255) / 255,
@@ -71,12 +77,13 @@ export function buildLightingPayload(fixture, state) {
         segmentMode: safeNumber(state.segmentMode, 8),
         selectedSegment: safeNumber(state.selectedSegment, 0),
         segments: Array.isArray(state.segments)
-        ? state.segments.map(color => ({
-            r: safeNumber(color.r, 255) / 255,
-            g: safeNumber(color.g, 255) / 255,
-            b: safeNumber(color.b, 255) / 255
-        }))
-        : [],
+            ? state.segments.map(color => ({
+                r: safeNumber(color.r, 255) / 255,
+                g: safeNumber(color.g, 255) / 255,
+                b: safeNumber(color.b, 255) / 255
+            }))
+            : [],
+
         chaseSpeed: safeNumber(state.chaseSpeed, 1.5),
         direction: state.direction || 'forward',
         strobeHz: safeNumber(state.strobeHz, 0)

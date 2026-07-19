@@ -351,11 +351,11 @@
                                     </div>
 
                                     <!-- INTENSITY -->
-                                    <div id="quickIntensityPanel" class="bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3 flex flex-col h-full min-h-0">
+                                    <div id="quickIntensityPanel" class="bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3 grid grid-rows-[auto_auto_minmax(0,1fr)_auto] h-full min-h-0">
                                         <div class="text-orange-400 text-[11px] font-bold text-center mb-4">INTENSITY</div>
                                         <div class="text-gray-200 text-[11px] mb-2">Intensity</div>
 
-                                        <div class="flex-grow flex items-center justify-center gap-3">
+                                        <div class="min-h-0 flex items-center justify-center gap-3">
                                             <input
                                                 id="intensitySlider"
                                                 type="range"
@@ -372,18 +372,18 @@
                                             </div>
                                         </div>
 
-                                        <div id="intensityValue" class="mx-auto mt-2 px-3 py-1 rounded border border-gray-700 bg-white/5 text-gray-200 text-xs">
+                                        <div id="intensityValue" class="mx-auto h-7 min-w-14 px-3 rounded border border-gray-700 bg-white/5 text-gray-200 text-xs flex items-center justify-center">
                                             78%
                                         </div>
                                     </div>
 
                                     <!-- FIELD / BEAM ANGLE -->
-                                    <div id="quickAnglePanel" class="bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3 flex flex-col h-full min-h-0">
+                                    <div id="quickAnglePanel" class="bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3 grid grid-rows-[auto_auto_minmax(0,1fr)_auto] h-full min-h-0">
                                         <div id="quickAngleTitle" class="text-blue-400 text-[11px] font-bold text-center mb-4">FIELD ANGLE</div>
                                         <div id="quickAngleLabel" class="text-gray-200 text-[11px] mb-2">Angle</div>
 
                                         <!-- range angle -->
-                                        <div id="quickAngleSliderWrap" class="flex-grow flex flex-col justify-center">
+                                        <div id="quickAngleSliderWrap" class="min-h-0 flex flex-col justify-center">
                                             <div class="flex items-center justify-center gap-3">
                                                 <input
                                                     id="fieldAngleSlider"
@@ -401,20 +401,20 @@
                                                 </div>
                                             </div>
 
-                                            <div id="fieldAngleValue" class="mx-auto mt-2 px-3 py-1 rounded border border-gray-700 bg-white/5 text-gray-200 text-xs">
+                                            <div id="fieldAngleValue" class="mx-auto h-7 min-w-14 px-3 rounded border border-gray-700 bg-white/5 text-gray-200 text-xs flex items-center justify-center">
                                                 30&deg;
                                             </div>
                                         </div>
 
                                         <!-- fixed angle -->
-                                        <div id="quickAngleFixedWrap" class="hidden flex-grow items-center justify-center">
+                                        <div id="quickAngleFixedWrap" class="hidden min-h-0 items-center justify-center">
                                             <div id="quickAngleFixedValue" class="px-6 py-4 rounded-lg border border-gray-700 bg-white/5 text-3xl text-gray-100">
                                                 60&deg;
                                             </div>
                                         </div>
 
                                         <!-- option angle, for Martin MAC 250 -->
-                                        <div id="quickAngleOptionsWrap" class="hidden flex-grow flex-col justify-center gap-2">
+                                        <div id="quickAngleOptionsWrap" class="hidden min-h-0 flex-col justify-center gap-2">
                                             <button type="button" class="quick-angle-option w-full flex items-center justify-between px-3 py-2 rounded-md border border-gray-700 bg-white/5 text-gray-300" data-angle="12.1">
                                                 <span>12.1&deg;</span>
                                                 <span class="quick-angle-dot relative w-4 h-4 rounded-full border-2 border-gray-500 after:hidden after:absolute after:left-1/2 after:top-1/2 after:w-2 after:h-2 after:-translate-x-1/2 after:-translate-y-1/2 after:rounded-full after:bg-blue-400"></span>

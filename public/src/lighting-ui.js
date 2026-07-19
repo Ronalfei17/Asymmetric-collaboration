@@ -13,6 +13,12 @@ function getElement(id) {
     return document.getElementById(id);
 }
 
+function toBoolean(value, fallback = true) {
+    if (value === true || value === 'true') return true;
+    if (value === false || value === 'false') return false;
+    return fallback;
+}
+
 function isAdvancedLedFixture(fixture) {
     const preset = getLedModelPreset(fixture?.fixtureModel);
 
@@ -416,6 +422,7 @@ export function updateSelectedInfoPanel(fixture) {
 }
 
 export function setPowerState(isOn) {
+    isOn = toBoolean(isOn, true);
     const powerToggle = getElement('powerToggle');
     const powerKnob = getElement('powerKnob');
     const powerLamp = getElement('powerLamp');
@@ -926,7 +933,7 @@ function readDetailLightingValuesFromUI() {
 export function writeLightingValuesToUI(state, fixture) {
     if (!state) return;
 
-    setPowerState(Boolean(state.isOn));
+    setPowerState(toBoolean(state.isOn, true));
 
     const intensitySlider = getElement('intensitySlider');
     if (intensitySlider && state.intensity !== undefined) {
