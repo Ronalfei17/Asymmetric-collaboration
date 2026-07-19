@@ -27,8 +27,6 @@ setupFixtureLibrary();
 setupTeleportMap(sendControlMessage);
 setupCueList(sendControlMessage);
 setupMapSwitcher();
-setupLightingControl(sendControlMessage);
-setupMapSwitcher();
 setupLightingMapOverlay();
 
 connectControlServer();
