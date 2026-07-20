@@ -298,6 +298,156 @@ function createFlorrieTubeMarker({
     });
 }
 
+function createEtcSource4Zoom1530Marker({
+    lightId,
+    x,
+    y,
+    width = 410,
+    height = 152,
+    rotation = 180,
+    asset = './assets/ETC-Source-4-Zoom-15-30.png'
+}) {
+    return createMarker({
+        markerId: `etc-source-4-zoom-15-30-${lightId}`,
+        lightId,
+        displayId: `CH ${lightId}`,
+        fixtureType: 'profile',
+        fixtureModel: 'ETC_SOURCE4_ZOOM_15_30',
+        label: `ETC Source 4 Zoom 15-30° - CH ${lightId}`,
+        x,
+        y,
+        width,
+        height,
+        rotation,
+        asset
+    });
+}
+
+function createEtcSource4JrZoom2550Marker({
+    lightId,
+    x,
+    y,
+    width = 129.03, 
+    height = 372.28,  
+    rotation = 0,
+    asset = './assets/ETC-Source-4-Jr-Zoom-25-50.png'
+}) {
+    return createMarker({
+        markerId: `etc-source-4-jr-zoom-25-50-${lightId}`,
+        lightId,
+        displayId: `CH ${lightId}`,
+        fixtureType: 'profile',
+        fixtureModel: 'ETC_SOURCE4_JR_ZOOM_25_50',
+        label: `ETC Source 4 Jr Zoom 25-50° - CH ${lightId}`,
+        x,
+        y,
+        width,
+        height,
+        rotation,
+        asset
+    });
+}
+
+function createSeleconSpx1535Marker({
+    lightId,
+    x,
+    y,
+    width = 90,
+    height = 340,
+    rotation = 180,
+    asset = './assets/Selecon-SPX-15-35.png'
+}) {
+    return createMarker({
+        markerId: `selecon-spx-15-35-${lightId}`,
+        lightId,
+        displayId: `CH ${lightId}`,
+        fixtureType: 'profile',
+        fixtureModel: 'SELECON_SPX_15_35',
+        label: `Selecon SPX 15-35° - CH ${lightId}`,
+        x,
+        y,
+        width,
+        height,
+        rotation,
+        asset
+    });
+}
+
+function createPrelude1630Marker({
+    lightId,
+    x,
+    y,
+    width = 166,
+    height = 309,
+    rotation = 180,
+    asset = './assets/Prelude-16-30.png'
+}) {
+    return createMarker({
+        markerId: `prelude-16-30-${lightId}`,
+        lightId,
+        displayId: `CH ${lightId}`,
+        fixtureType: 'profile',
+        fixtureModel: 'PRELUDE_16_30',
+        label: `Prelude 16/30 - CH ${lightId}`,
+        x,
+        y,
+        width,
+        height,
+        rotation,
+        asset
+    });
+}
+
+function createSeleconAcclaimCondenser1832Marker({
+    lightId,
+    x,
+    y,
+    width = 101,
+    height = 267,
+    rotation = 180,
+    asset = './assets/Selecon-Acclaim-Condenser-18-32.png'
+}) {
+    return createMarker({
+        markerId: `selecon-acclaim-condenser-18-32-${lightId}`,
+        lightId,
+        displayId: `CH ${lightId}`,
+        fixtureType: 'profile',
+        fixtureModel: 'SELECON_ACCLAIM_CONDENSER_18_32',
+        label: `Selecon Acclaim Condenser 18-32° - CH ${lightId}`,
+        x,
+        y,
+        width,
+        height,
+        rotation,
+        asset
+    });
+}
+
+function createCantata1832Marker({
+    lightId,
+    x,
+    y,
+    width = 124,
+    height = 354,
+    rotation = 180,
+    asset = './assets/Cantata-18-32.png'
+}) {
+    return createMarker({
+        markerId: `cantata-18-32-${lightId}`,
+        lightId,
+        displayId: `CH ${lightId}`,
+        fixtureType: 'profile',
+        fixtureModel: 'CANTATA_18_32',
+        label: `Cantata 18/32 - CH ${lightId}`,
+        x,
+        y,
+        width,
+        height,
+        rotation,
+        asset
+    });
+}
+
 export const LIGHTING_MAP_MARKERS = [
     createSeleconRama7FresnelMarker({
         lightId: 32,
@@ -619,6 +769,202 @@ export const LIGHTING_MAP_MARKERS = [
         lightId: 29,
         x: 6698,
         y: 4360,
+        rotation: 0
+    }),
+
+    createPrelude1630Marker({
+        lightId: 1,
+        x: 5844,
+        y: 5305,
+        rotation: 180
+    }),
+
+    createPrelude1630Marker({
+        lightId: 2,
+        x: 7817,
+        y: 7314,
+        rotation: 180
+    }),
+
+    createPrelude1630Marker({
+        lightId: 3,
+        x: 6264,
+        y: 5310,
+        rotation: 180
+    }),
+
+    createPrelude1630Marker({
+        lightId: 4,
+        x: 7321,
+        y:73140,
+        rotation: 180
+    }),
+
+    createPrelude1630Marker({
+        lightId: 5,
+        x: 4679,
+        y: 7314,
+        rotation: 180
+    }),
+
+    createPrelude1630Marker({
+        lightId: 6,
+        x: 5109,
+        y: 7319,
+        rotation: 180
+    }),
+
+    createSeleconAcclaimCondenser1832Marker({
+        lightId: 7,
+        x: 6891,
+        y: 7035,
+        rotation: 180
+    }),
+
+    createSeleconAcclaimCondenser1832Marker({
+        lightId: 8,
+        x: 5335,
+        y: 7035,
+        rotation: 180
+    }),
+
+    createSeleconAcclaimCondenser1832Marker({
+        lightId: 9,
+        x: 7423,
+        y: 6312,
+        rotation: 180
+    }),
+
+    createSeleconAcclaimCondenser1832Marker({
+        lightId: 10,
+        x: 5640,
+        y: 6306,
+        rotation: 180
+    }),
+
+    createSeleconAcclaimCondenser1832Marker({
+        lightId: 11,
+        x: 6699,
+        y: 5342,
+        rotation: 180
+    }),
+
+    createSeleconSpx1535Marker({
+        lightId: 12,
+        x: 4755,
+        y: 5262,
+        rotation: 0
+    }),
+
+    createSeleconSpx1535Marker({
+        lightId: 13,
+        x: 7610,
+        y: 5262,
+        rotation: 0
+    }),
+
+    createSeleconSpx1535Marker({
+        lightId: 37,
+        x: 6425,
+        y: 2958,
+        rotation: 190
+    }),
+
+    createEtcSource4JrZoom2550Marker({
+        lightId: 14,
+        x: 4500,
+        y: 5713,
+        rotation: 30
+    }),
+
+    createEtcSource4JrZoom2550Marker({
+        lightId: 15,
+        x: 4500,
+        y: 6266,
+        rotation: 30
+    }),
+
+    createEtcSource4JrZoom2550Marker({
+        lightId: 16,
+        x: 4500,
+        y: 6990,
+        rotation: 30
+    }),
+
+    createEtcSource4JrZoom2550Marker({
+        lightId: 17,
+        x: 5900,
+        y: 5726,
+        rotation: 30
+    }),
+
+    createEtcSource4JrZoom2550Marker({
+        lightId: 18,
+        x: 5900,
+        y: 6281,
+        rotation: 30
+    }),
+
+    createEtcSource4JrZoom2550Marker({
+        lightId: 19,
+        x: 5900,
+        y: 7003,
+        rotation: 30
+    }),
+
+    createEtcSource4JrZoom2550Marker({
+        lightId: 34,
+        x: 7480,
+        y: 8111,
+        rotation: -30
+    }),
+
+    createCantata1832Marker({
+        lightId: 30,
+        x: 4891,
+        y: 5746,
+        rotation: 0
+    }),
+
+    createCantata1832Marker({
+        lightId: 31,
+        x: 7693,
+        y: 5746,
+        rotation: 0
+    }),
+
+    createCantata1832Marker({
+        lightId: 41,
+        x: 6223,
+        y: 4886,
+        rotation: 180
+    }),
+
+    createEtcSource4Zoom1530Marker({
+        lightId: 48,
+        x: 4711,
+        y: 4163,
+        rotation: 180
+    }),
+
+    createEtcSource4Zoom1530Marker({
+        lightId: 49,
+        x: 7380,
+        y: 4163,
+        rotation: 0
+    }),
+
+    createEtcSource4Zoom1530Marker({
+        lightId: 50,
+        x: 2760,
+        y: 4464,
+        rotation: 180
+    }),
+
+    createEtcSource4Zoom1530Marker({
+        lightId: 51,
+        x: 9021,
+        y: 4498,
         rotation: 0
     })
 ];
