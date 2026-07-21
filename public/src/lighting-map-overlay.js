@@ -6,6 +6,10 @@ import {
     getFixtureById
 } from './lighting-fixture.js';
 
+import {
+    getSelectedLightingFixture
+} from './lighting-control.js';
+
 let activeMapType = 'theatre';
 let selectedLightId = null;
 
@@ -154,6 +158,28 @@ function updateSelectedInfoFromFixture(lightId) {
     }
 }
 
+function hasMarkerForLight(lightId) {
+    return LIGHTING_MAP_MARKERS.some(marker =>
+        Number(marker.lightId) === Number(lightId)
+    );
+}
+
+function syncSelectedMarkerFromLightingControl() {
+    const selectedFixture = getSelectedLightingFixture();
+
+    if (!selectedFixture) {
+        selectedLightId = null;
+        refreshMarkerVisuals();
+        return;
+    }
+
+    const lightId = Number(selectedFixture.lightId);
+
+    selectedLightId = lightId;
+    refreshMarkerVisuals();
+    updateSelectedInfoFromFixture(selectedLightId);
+}
+
 function selectMarker(lightId, { source = 'lighting-map' } = {}) {
     selectedLightId = Number(lightId);
     refreshMarkerVisuals();
@@ -200,7 +226,7 @@ export function setupLightingMapOverlay() {
         updateOverlayVisibility();
 
         if (activeMapType === 'lighting') {
-            updateSelectedInfoFromFixture(selectedLightId);
+            syncSelectedMarkerFromLightingControl();
         }
     });
 

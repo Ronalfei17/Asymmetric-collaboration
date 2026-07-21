@@ -19,6 +19,24 @@ export function setupTeleportMap(sendControlMessage) {
         lastY: 0
     };
 
+    const DEFAULT_VIEW_BY_MAP_TYPE = {
+        theatre: {
+            scale: 1,
+            x: 0,
+            y: 0
+        },
+
+        lighting: {
+            scale: 1.35,
+            x: -80,
+            y: 140
+        }
+    };
+
+    function getActiveMapType() {
+        return image.dataset.activeMapType || 'theatre';
+    }
+
     const TELEPORT_REGIONS = [
     {
         id: 'USR',
@@ -124,10 +142,12 @@ function getTeleportRegion(point) {
         renderMapTransform();
     }
 
-    function resetMapView() {
-        view.scale = 1;
-        view.x = 0;
-        view.y = 0;
+    function resetMapView(mapType = getActiveMapType()) {
+        const defaultView = DEFAULT_VIEW_BY_MAP_TYPE[mapType] || DEFAULT_VIEW_BY_MAP_TYPE.theatre;
+
+        view.scale = defaultView.scale;
+        view.x = defaultView.x;
+        view.y = defaultView.y;
         renderMapTransform();
     }
 
@@ -272,6 +292,16 @@ function getTeleportRegion(point) {
             resetMapView();
         });
     }
+
+    window.addEventListener('map-type-changed', event => {
+        const mapType = event.detail?.mapType || getActiveMapType();
+
+        resetMapView(mapType);
+
+        if (mapType === 'lighting') {
+            selectedMapPin?.classList.add('hidden');
+        }
+    });
 
     resetMapView();
 }
