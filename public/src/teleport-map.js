@@ -16,6 +16,10 @@ const TELEPORT_POINTS = Object.freeze([
             x: -1.346,
             y: 2.0,
             z: 10.23
+        },
+        mapPosition: {
+            left: 52.57,
+            top: 58.10
         }
     },
     {
@@ -27,6 +31,10 @@ const TELEPORT_POINTS = Object.freeze([
             x: -1.346,
             y: 1.676,
             z: 8.465
+        },
+        mapPosition: {
+            left: 52.76,
+            top: 53.03
         }
     },
     {
@@ -38,6 +46,10 @@ const TELEPORT_POINTS = Object.freeze([
             x: -1.346,
             y: 2.86,
             z: 12.997
+        },
+        mapPosition: {
+            left: 51.15,
+            top: 67.11
         }
     },
     {
@@ -49,27 +61,92 @@ const TELEPORT_POINTS = Object.freeze([
             x: 0.0,
             y: 0.44,
             z: 0.0
+        },
+        mapPosition: {
+            left: 53.27,
+            top: 42.87
         }
+    },
+    {
+    pointId: 'TP_AUDITORIUM_RIGHT',
+    shortLabel: 'AUD Right',
+    name: 'Auditorium Right',
+    type: 'Fixed Teleport Point',
+
+    position: {
+        x: -2.72,
+        y: 2,
+        z: 10.23
+    },
+    mapPosition: {
+        left: 58.1,
+        top: 58.1
     }
+},
+{
+    pointId: 'TP_AUDITORIUM_LEFT',
+    shortLabel: 'AUD Left',
+    name: 'Auditorium Left',
+    type: 'Fixed Teleport Point',
+
+    position: {
+        x: 0.27,
+        y: 2,
+        z: 10.23
+    },
+        mapPosition: {
+        left: 46.3,
+        top: 57.9
+    }
+}
 ]);
 
-const MAP_CALIBRATION_REFERENCES = Object.freeze([
-    {
-        label: 'Stage Centre',
-        world: { x: 0.0, z: 0.0 },
-        map: { left: 52.0, top: 42.5 }
-    },
-    {
-        label: 'Auditorium Front',
-        world: { x: -1.346, z: 8.465 },
-        map: { left: 51.4, top: 52.0 }
-    },
-    {
-        label: 'Auditorium Rear',
-        world: { x: -1.346, z: 12.997 },
-        map: { left: 50.8, top: 65.0 }
-    }
+const MAP_CALIBRATION_POINT_IDS = Object.freeze([
+    'TP_STAGE_CENTRE',
+    'TP_AUDITORIUM_FRONT',
+    'TP_AUDITORIUM_REAR',
+    'TP_AUDITORIUM_LEFT',
+    'TP_AUDITORIUM_RIGHT'
 ]);
+
+const MAP_CALIBRATION_REFERENCES =
+    Object.freeze(
+        MAP_CALIBRATION_POINT_IDS.map(
+            pointId => {
+                const point =
+                    TELEPORT_POINTS.find(
+                        item =>
+                            item.pointId === pointId
+                    );
+
+                if (
+                    !point ||
+                    !point.mapPosition
+                ) {
+                    throw new Error(
+                        `Missing calibration data: ${pointId}`
+                    );
+                }
+
+                return Object.freeze({
+                    label: point.name,
+
+                    world: Object.freeze({
+                        x: point.position.x,
+                        z: point.position.z
+                    }),
+
+                    map: Object.freeze({
+                        left:
+                            point.mapPosition.left,
+
+                        top:
+                            point.mapPosition.top
+                    })
+                });
+            }
+        )
+    );
 
 const VIEW_RANGE_METRES = 3.0;
 
@@ -131,6 +208,50 @@ function solve3x3(matrix, values) {
     ];
 }
 
+function fitAffineCoefficients(
+    references,
+    mapProperty
+) {
+    const normalMatrix = [
+        [0, 0, 0],
+        [0, 0, 0],
+        [0, 0, 0]
+    ];
+
+    const normalValues = [0, 0, 0];
+
+    references.forEach(reference => {
+        const row = [
+            Number(reference.world.x),
+            Number(reference.world.z),
+            1
+        ];
+
+        const targetValue =
+            Number(reference.map[mapProperty]);
+
+        for (let rowIndex = 0; rowIndex < 3; rowIndex++) {
+            normalValues[rowIndex] +=
+                row[rowIndex] * targetValue;
+
+            for (
+                let columnIndex = 0;
+                columnIndex < 3;
+                columnIndex++
+            ) {
+                normalMatrix[rowIndex][columnIndex] +=
+                    row[rowIndex] *
+                    row[columnIndex];
+            }
+        }
+    });
+
+    return solve3x3(
+        normalMatrix,
+        normalValues
+    );
+}
+
 function createWorldToMapTransform(references) {
     if (!Array.isArray(references) || references.length < 3) {
         throw new Error(
@@ -138,35 +259,27 @@ function createWorldToMapTransform(references) {
         );
     }
 
-    const selected = references.slice(0, 3);
+    const leftCoefficients = fitAffineCoefficients(references, 'left');
+    const topCoefficients = fitAffineCoefficients(references, 'top');
 
-    const matrix = selected.map(reference => [
-        reference.world.x,
-        reference.world.z,
-        1
-    ]);
+    return function worldToMap(
+        worldX,
+        worldZ
+    ) {
+        const x = Number(worldX);
+        const z = Number(worldZ);
+        return {
+            left:
+                leftCoefficients[0] * x +
+                leftCoefficients[1] * z +
+                leftCoefficients[2],
 
-    const leftCoefficients = solve3x3(
-        matrix,
-        selected.map(reference => reference.map.left)
-    );
-
-    const topCoefficients = solve3x3(
-        matrix,
-        selected.map(reference => reference.map.top)
-    );
-
-    return (worldX, worldZ) => ({
-        left:
-            leftCoefficients[0] * worldX +
-            leftCoefficients[1] * worldZ +
-            leftCoefficients[2],
-
-        top:
-            topCoefficients[0] * worldX +
-            topCoefficients[1] * worldZ +
-            topCoefficients[2]
-    });
+            top:
+                topCoefficients[0] * x +
+                topCoefficients[1] * z +
+                topCoefficients[2]
+        };
+    };
 }
 
 function getPointById(pointId) {
@@ -506,7 +619,7 @@ export function setupTeleportMap({
     }
 
     function createMarker(point) {
-        const mapPosition = worldToMap(
+        const mapPosition = point.mapPosition || worldToMap(
             point.position.x,
             point.position.z
         );
@@ -523,17 +636,17 @@ export function setupTeleportMap({
 
         button.dataset.shortLabel =
             point.shortLabel;
-
-        button.setAttribute(
-            'aria-label',
-            `Select ${point.name}`
-        );
-
+        
         button.style.left =
             `${mapPosition.left}%`;
 
         button.style.top =
             `${mapPosition.top}%`;
+
+        button.setAttribute(
+            'aria-label',
+            `Select ${point.name}`
+        );
 
         button.addEventListener('pointerdown', event => {
             event.stopPropagation();
@@ -718,6 +831,22 @@ export function setupTeleportMap({
 
         const horizontalFov =
             Number(pose.horizontalFov);
+        
+        const currentPointId =
+            state.currentPointId ||
+            pose.currentPointId;
+
+        const currentPoint =
+            getPointById(currentPointId);
+
+        if (!currentPoint) {
+            vrViewOverlay.classList.add('hidden');
+            updateDirectionText();
+            return;
+        }
+
+        const originX = Number(currentPoint.position.x);
+        const originZ = Number(currentPoint.position.z);
 
         if (
             yaw === null ||
@@ -728,45 +857,79 @@ export function setupTeleportMap({
             return;
         }
 
-        const centre = worldToMap(
-            Number(pose.x),
-            Number(pose.z)
+        const rawCentre = worldToMap(
+            originX,
+            originZ
         );
 
+        const centre =
+            currentPoint.mapPosition ||
+            rawCentre;
+        
+        const mapOffset = {
+            left:
+                centre.left -
+                rawCentre.left,
+
+            top:
+                centre.top -
+                rawCentre.top
+        };
+
+        function applyCurrentPointOffset(
+            mapPoint
+        ) {
+            return {
+                left:
+                    mapPoint.left +
+                    mapOffset.left,
+
+                top:
+                    mapPoint.top +
+                    mapOffset.top
+            };
+        }
+
         const leftWorld = pointFromYaw(
-            Number(pose.x),
-            Number(pose.z),
+            originX,
+            originZ,
             yaw - horizontalFov / 2,
             VIEW_RANGE_METRES
         );
 
         const rightWorld = pointFromYaw(
-            Number(pose.x),
-            Number(pose.z),
+            originX,
+            originZ,
             yaw + horizontalFov / 2,
             VIEW_RANGE_METRES
         );
 
         const headingWorld = pointFromYaw(
-            Number(pose.x),
-            Number(pose.z),
+            originX,
+            originZ,
             yaw,
             VIEW_RANGE_METRES * 0.72
         );
 
-        const left = worldToMap(
-            leftWorld.x,
-            leftWorld.z
+        const left = applyCurrentPointOffset(
+            worldToMap(
+                leftWorld.x,
+                leftWorld.z
+            )
         );
 
-        const right = worldToMap(
-            rightWorld.x,
-            rightWorld.z
+        const right = applyCurrentPointOffset(
+            worldToMap(
+                rightWorld.x,
+                rightWorld.z
+            )
         );
 
-        const heading = worldToMap(
-            headingWorld.x,
-            headingWorld.z
+        const heading = applyCurrentPointOffset(
+            worldToMap(
+                headingWorld.x,
+                headingWorld.z
+            )
         );
 
         vrFovPolygon?.setAttribute(
@@ -819,7 +982,7 @@ export function setupTeleportMap({
 
     function handleTeleportState(message) {
         state.currentPointId =
-            message.currentTeleportPointId || null;
+            message.currentTeleportPointId || message.currentPointId || null;
 
         state.pendingPointId =
             message.pendingTargetPointId || null;
@@ -834,6 +997,7 @@ export function setupTeleportMap({
 
         updateMarkerStates();
         updateSelectedInfo();
+        renderVrPose();
     }
 
     function handleRequestReceived(message) {
@@ -893,6 +1057,7 @@ export function setupTeleportMap({
         state.statusMessage =
             'Teleport completed';
 
+        renderVrPose();
         updateMarkerStates();
         updateSelectedInfo();
     }
@@ -927,7 +1092,7 @@ export function setupTeleportMap({
                 Number(message.timestamp)
         };
 
-        if (message.currentPointId) {
+        if (!state.currentPointId && message.currentPointId) {
             state.currentPointId =
                 message.currentPointId;
         }
