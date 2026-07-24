@@ -12,6 +12,28 @@
                 display: flex;
             }
         }
+
+        @media (max-width: 1200px) {
+            #quickLightingPanel {
+                gap: 6px;
+            }
+
+            #quickPowerPanel,
+            #quickIntensityPanel,
+            #quickAnglePanel,
+            #quickAimPanel {
+                padding: 10px;
+            }
+
+            #fixtureTypeCapsules {
+                height: 26px;
+            }
+
+            #fixtureIdSelect {
+                min-width: 130px;
+                font-size: 11px;
+            }
+        }
     </style>
 </head>
 <body class="bg-[#0c0f16] text-gray-200 h-[100dvh] w-screen overflow-hidden flex flex-col font-sans select-none text-[13px]">
@@ -95,7 +117,7 @@
 
             <div class="flex-1 min-h-0 relative overflow-hidden w-full">
 
-                <div id="page-status" class="page-view absolute inset-0 grid grid-rows-[minmax(0,58fr)_minmax(0,42fr)] gap-3 overflow-hidden">
+                <div id="page-status" class="page-view absolute inset-0 grid grid-rows-[minmax(0,54fr)_minmax(0,46fr)] gap-3 overflow-hidden">
                     <div class="min-h-0 overflow-hidden grid grid-cols-2 gap-3"> 
                         <div class="bg-[#11141c] border border-gray-800/40 rounded-xl p-3 flex flex-col min-h-0 overflow-hidden">
                             <div class="flex items-center justify-between gap-3 mb-2">
@@ -315,8 +337,8 @@
                                 </div>
                             </div>
 
-                            <div class="flex-1 min-h-0 overflow-hidden pr-1">
-                                <div id="quickLightingPanel" class="grid h-full min-h-0 grid-cols-[0.75fr_0.85fr_0.95fr_1.45fr] gap-2">
+                            <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pr-1">
+                                <div id="quickLightingPanel" class="grid min-h-full grid-cols-[0.75fr_0.85fr_0.95fr_1.45fr] gap-2">
 
                                     <!-- POWER -->
                                     <div id="quickPowerPanel" class="bg-[#0b0f16] border border-gray-700/50 rounded-lg p-3 flex flex-col items-center justify-between h-full min-h-0">
@@ -383,27 +405,25 @@
                                         <div id="quickAngleLabel" class="text-gray-200 text-[11px] mb-2">Angle</div>
 
                                         <!-- range angle -->
-                                        <div id="quickAngleSliderWrap" class="min-h-0 flex flex-col justify-center">
-                                            <div class="flex items-center justify-center gap-3">
-                                                <input
-                                                    id="fieldAngleSlider"
-                                                    type="range"
-                                                    min="10"
-                                                    max="50"
-                                                    value="30"
-                                                    class="h-24 accent-blue-500"
-                                                    style="writing-mode: vertical-lr; direction: rtl;"
-                                                >
+                                        <div id="quickAngleSliderWrap" class="min-h-0 flex items-center justify-center gap-3">
+                                            <input
+                                                id="fieldAngleSlider"
+                                                type="range"
+                                                min="10"
+                                                max="50"
+                                                value="30"
+                                                class="h-24 accent-blue-500"
+                                                style="writing-mode: vertical-lr; direction: rtl;"
+                                            >
 
-                                                <div class="h-24 flex flex-col justify-between text-[11px] text-gray-200">
-                                                    <span id="fieldAngleMaxLabel">50&deg;</span>
-                                                    <span id="fieldAngleMinLabel">10&deg;</span>
-                                                </div>
+                                            <div class="h-24 flex flex-col justify-between text-[11px] text-gray-200">
+                                                <span id="fieldAngleMaxLabel">50&deg;</span>
+                                                <span id="fieldAngleMinLabel">10&deg;</span>
                                             </div>
+                                        </div>
 
-                                            <div id="fieldAngleValue" class="mx-auto h-7 min-w-14 px-3 rounded border border-gray-700 bg-white/5 text-gray-200 text-xs flex items-center justify-center">
-                                                30&deg;
-                                            </div>
+                                        <div id="fieldAngleValue" class="mx-auto h-7 min-w-14 px-3 rounded border border-gray-700 bg-white/5 text-gray-200 text-xs flex items-center justify-center">
+                                            30&deg;
                                         </div>
 
                                         <!-- fixed angle -->
