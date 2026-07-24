@@ -4,6 +4,9 @@ import { mockConnect } from './status.js';
 let controlSocket = null;
 let reconnectTimer = null;
 
+const controlMessageListeners = new Set();
+const controlOpenListeners = new Set();
+
 function getControlWsUrl() {
     const params = new URLSearchParams({
         role: CONTROL_CONFIG.role,
@@ -11,6 +14,59 @@ function getControlWsUrl() {
     });
 
     return `${CONTROL_CONFIG.relayUrl}?${params.toString()}`;
+}
+
+export function subscribeControlMessages(listener) {
+    controlMessageListeners.add(listener);
+
+    return () => {
+        controlMessageListeners.delete(listener);
+    };
+}
+
+export function subscribeControlOpen(listener) {
+    controlOpenListeners.add(listener);
+
+    if (
+        controlSocket &&
+        controlSocket.readyState === WebSocket.OPEN
+    ) {
+        queueMicrotask(listener);
+    }
+
+    return () => {
+        controlOpenListeners.delete(listener);
+    };
+}
+
+export function sendRawControlMessage(message) {
+    console.log('[CONTROL RAW]', message);
+
+    if (CONTROL_CONFIG.mode === 'mock') {
+        return true;
+    }
+
+    const json = JSON.stringify(message);
+
+    if (
+        CONTROL_CONFIG.mode === 'websocket' &&
+        controlSocket &&
+        controlSocket.readyState === WebSocket.OPEN
+    ) {
+        controlSocket.send(json);
+        return true;
+    }
+
+    if (
+        CONTROL_CONFIG.mode === 'datachannel' &&
+        window.controlDataChannel &&
+        window.controlDataChannel.readyState === 'open'
+    ) {
+        window.controlDataChannel.send(json);
+        return true;
+    }
+
+    return false;
 }
 
 export function sendControlMessage(type, payload = {}) {
@@ -55,6 +111,7 @@ export function connectControlServer() {
         clearTimeout(reconnectTimer);
         mockConnect(true);
         sendControlMessage('heartbeat');
+        controlOpenListeners.forEach(listener => listener());
     });
 
     controlSocket.addEventListener('close', () => {
@@ -68,6 +125,13 @@ export function connectControlServer() {
 
     controlSocket.addEventListener('message', event => {
         console.log('[CloudRelay]', event.data);
+
+        let message = null;
+        try {message = JSON.parse(event.data);}
+        catch {}
+        controlMessageListeners.forEach(
+            listener => {listener(message ?? event.data);}
+        );
     });
 }
 

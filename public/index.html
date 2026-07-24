@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Virtual Theatre Control</title>
+    <link rel="stylesheet" href="./src/teleport-map.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -166,12 +167,22 @@
                                             class="absolute inset-0 hidden pointer-events-none"
                                         ></div>
 
-                                        <div
-                                            id="selectedMapPin"
-                                            class="absolute left-[50%] top-[50%] -translate-x-1/2 -translate-y-full text-blue-500 pointer-events-none hidden"
+                                        <svg
+                                            id="vrViewOverlay"
+                                            class="vr-view-overlay hidden"
+                                            viewBox="0 0 100 100"
+                                            preserveAspectRatio="none"
+                                            aria-hidden="true"
                                         >
-                                            <i data-lucide="map-pin" class="w-8 h-8 fill-blue-500/40"></i>
-                                        </div>
+                                            <polygon id="vrFovPolygon"></polygon>
+                                            <line id="vrHeadingLine"></line>
+                                            <circle id="vrUserDot" r="1.15"></circle>
+                                        </svg>
+
+                                        <div
+                                            id="teleportPointsOverlay"
+                                            class="teleport-points-overlay"
+                                        ></div>
                                     </div>
                                 </div>
 
@@ -245,27 +256,34 @@
                         <div class="col-span-3 bg-[#11141c] border border-gray-800/40 rounded-xl p-3 flex flex-col min-h-0 overflow-hidden">
                             <span class="text-xs font-bold tracking-wider text-gray-400 block mb-2">SELECTED INFO</span>
                             <div class="flex-grow bg-[#06080c]/30 rounded-lg p-4 text-xs flex flex-col justify-between">
+                                <span id="selectedId" class="hidden">--</span>
                                 <div class="grid grid-cols-[72px_1fr] gap-y-4">
-                                    <span class="text-gray-400">ID:</span>
-                                    <span id="selectedId" class="text-gray-100">--</span>
-
                                     <span class="text-gray-400">Name:</span>
-                                    <span id="selectedName" class="text-gray-100">--</span>
+                                    <span id="selectedName" class="text-gray-100">No teleport point selected</span>
 
                                     <span class="text-gray-400">Type:</span>
-                                    <span id="selectedType" class="text-gray-100">Teleport Region</span>
+                                    <span id="selectedType" class="text-gray-100">--</span>
 
                                     <span class="text-gray-400">Position:</span>
-                                    <span id="selectedPosition" class="text-gray-100 font-mono">X: --　Z: --</span>
+                                    <span id="selectedPosition" class="text-gray-100 font-mono">--</span>
 
-                                    <span class="text-gray-400">Direction:</span>
-                                    <span id="selectedDirection" class="text-gray-100 font-mono">0&deg;</span>
+                                    <span class="text-gray-400">VR View Direction:</span>
+                                    <span id="selectedDirection" class="text-gray-100 font-mono">--</span>
+
                                 </div>
 
-                                <div class="flex justify-end">
+                                <div class="flex items-center justify-between gap-3 pt-3">
                                     <div class="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
                                         <i data-lucide="map-pin" class="w-5 h-5 fill-blue-500/40"></i>
                                     </div>
+
+                                    <button
+                                        id="requestTeleportButton"
+                                        type="button"
+                                        disabled
+                                        class="min-w-[150px] px-3 py-2 rounded-md border border-blue-500/40 bg-blue-500/15 text-blue-300 text-[11px] font-semibold transition enabled:hover:bg-blue-500/25 disabled:cursor-not-allowed disabled:opacity-40">
+                                        Select a Teleprt Point
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -613,7 +631,39 @@
             </div>
         </div>
     </div>
+    <div
+        id="teleportRequestModal"
+        class="hidden fixed inset-0 z-[100] bg-black/65 items-center justify-center p-6"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="teleportRequestTitle"
+    >
+        <div class="w-full max-w-[390px] rounded-xl border border-gray-700 bg-[#11141c] p-5 shadow-2xl">
+            <div 
+                id="teleportRequestTitle"
+                class="text-sm font-semibold text-white"
+            >Request Teleport</div>
 
+            <div 
+                id="teleportRequestMessage"
+                class="mt-3 text-sm leading-6 text-gray-300"
+            >Send a teleport request?</div>
+
+            <div class="mt-5 flex justify-end gap-2">
+                <button
+                    id="cancelTeleportRequest"
+                    type="button"
+                    class="px-4 py-2 rounded-md border border-gray-700 bg-white/5 text-xs text-gray-300 hover:bg-white-10 transition"
+                >Cancel</button>
+
+                <button
+                    id="confirmTeleportRequest"
+                    type="button"
+                    class="px-4 py-2 rounded-md border border-blue-500/60 bg-blue-500/20 text-xs text-blue-200 hover:bg-blue-500/30 transition"
+                >Send Request</button>
+            </div>
+        </div>    
+    </div>
     <footer class="h-10 w-full px-6 bg-[#090c12] border-t border-gray-800/40 flex items-center justify-between text-xs text-gray-500 flex-shrink-0 z-20">
         <div class="flex items-center space-x-1">
             <i data-lucide="scan" class="w-3.5 h-3.5 mr-1"></i>

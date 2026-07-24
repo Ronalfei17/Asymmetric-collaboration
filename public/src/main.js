@@ -1,4 +1,4 @@
-import { connectControlServer, closeControlServer, sendControlMessage } from './control-channel.js';
+import { connectControlServer, closeControlServer, sendControlMessage, sendRawControlMessage, subscribeControlMessages, subscribeControlOpen } from './control-channel.js';
 import { connectVideoRelay, closeVideoRelay, startVideoStream, stopVideoStream } from './video-stream.js';
 import { setupLightingControl } from './lighting-control.js';
 import { setupTeleportMap } from './teleport-map.js';
@@ -24,7 +24,7 @@ setupStatus();
 setupSidebar();
 setupLightingControl(sendControlMessage);
 setupFixtureLibrary();
-setupTeleportMap(sendControlMessage);
+setupTeleportMap({sendRawControlMessage, subscribeControlMessages, subscribeControlOpen});
 setupCueList(sendControlMessage);
 setupMapSwitcher();
 setupLightingMapOverlay();

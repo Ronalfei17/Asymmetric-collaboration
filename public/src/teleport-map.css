@@ -1,0 +1,160 @@
+.teleport-points-overlay,
+.vr-view-overlay {
+    position: absolute;
+    inset: 0;
+}
+
+.teleport-points-overlay {
+    pointer-events: none;
+    z-index: 12;
+}
+
+.vr-view-overlay {
+    pointer-events: none;
+    z-index: 10;
+    overflow: visible;
+}
+
+.teleport-point-marker {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    transform: translate(-50%, -50%);
+    border-radius: 9999px;
+
+    /* Default / unselected: neutral grey */
+    border: 2px solid rgba(148, 163, 184, 0.9);
+    background: rgba(51, 65, 85, 0.88);
+    box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.12);
+
+    pointer-events: auto;
+    cursor: pointer;
+
+    transition:
+        transform 140ms ease,
+        border-color 140ms ease,
+        background 140ms ease,
+        box-shadow 140ms ease,
+        opacity 140ms ease;
+}
+
+.teleport-point-marker::after {
+    content: attr(data-short-label);
+    position: absolute;
+    left: 50%;
+    top: 25px;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    padding: 2px 6px;
+    border-radius: 5px;
+    background: rgba(6, 8, 12, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    color: rgb(203, 213, 225);
+    font-size: 9px;
+    line-height: 1.2;
+    opacity: 0;
+    transition: opacity 120ms ease;
+}
+
+.teleport-point-marker:hover,
+.teleport-point-marker:focus-visible {
+    transform: translate(-50%, -50%) scale(1.12);
+    outline: none;
+}
+
+.teleport-point-marker:hover::after,
+.teleport-point-marker:focus-visible::after,
+.teleport-point-marker.is-selected::after,
+.teleport-point-marker.is-pending::after,
+.teleport-point-marker.is-current::after {
+    opacity: 1;
+}
+
+/*
+ * Selected target and pending target:
+ * muted blue-grey, visually secondary to the current Quest position.
+ */
+.teleport-point-marker.is-selected,
+.teleport-point-marker.is-pending {
+    border-color: rgba(96, 165, 250, 0.92);
+    background: rgba(51, 65, 85, 0.96);
+    box-shadow:
+        0 0 0 5px rgba(59, 130, 246, 0.13),
+        0 0 12px rgba(59, 130, 246, 0.28);
+}
+
+/* Pending keeps the same blue-grey palette, with a subtle pulse. */
+.teleport-point-marker.is-pending {
+    animation: teleport-pending-pulse 1.15s ease-in-out infinite;
+}
+
+/*
+ * Current Quest point:
+ * bright blue selected state.
+ *
+ * These combined selectors ensure currentPointId wins when the same point
+ * is also selected or pending.
+ */
+.teleport-point-marker.is-current,
+.teleport-point-marker.is-current.is-selected,
+.teleport-point-marker.is-current.is-pending {
+    border-color: rgb(191, 219, 254);
+    background: rgb(37, 99, 235);
+    box-shadow:
+        0 0 0 5px rgba(59, 130, 246, 0.24),
+        0 0 20px rgba(59, 130, 246, 0.72);
+    animation: none;
+    opacity: 1;
+}
+
+.teleport-point-marker:disabled {
+    cursor: default;
+}
+
+/*
+ * Other points become slightly dimmer while one request is pending.
+ * The pending marker itself keeps its own blue-grey state.
+ */
+.teleport-point-marker:disabled:not(.is-pending):not(.is-current) {
+    opacity: 0.48;
+}
+
+@keyframes teleport-pending-pulse {
+    0%,
+    100% {
+        box-shadow:
+            0 0 0 4px rgba(59, 130, 246, 0.10),
+            0 0 8px rgba(59, 130, 246, 0.20);
+    }
+
+    50% {
+        box-shadow:
+            0 0 0 8px rgba(59, 130, 246, 0.17),
+            0 0 18px rgba(59, 130, 246, 0.38);
+    }
+}
+
+#vrFovPolygon {
+    fill: rgba(59, 130, 246, 0.16);
+    stroke: rgba(96, 165, 250, 0.82);
+    stroke-width: 0.45;
+    vector-effect: non-scaling-stroke;
+}
+
+#vrHeadingLine {
+    stroke: rgba(147, 197, 253, 0.98);
+    stroke-width: 0.65;
+    vector-effect: non-scaling-stroke;
+}
+
+#vrUserDot {
+    fill: rgb(59, 130, 246);
+    stroke: rgba(219, 234, 254, 0.98);
+    stroke-width: 0.55;
+    vector-effect: non-scaling-stroke;
+    filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.85));
+}
+
+.teleport-overlay-hidden {
+    display: none;
+}
