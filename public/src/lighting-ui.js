@@ -277,6 +277,7 @@ function applyQuickAnglePreset(fixture, preset) {
     const fixedValue = getElement('quickAngleFixedValue');
     const optionsWrap = getElement('quickAngleOptionsWrap');
     const slider = getElement('fieldAngleSlider');
+    const value = getElement('fieldAngleValue');
 
     const minLabel = getElement('fieldAngleMinLabel');
     const maxLabel = getElement('fieldAngleMaxLabel');
@@ -287,9 +288,9 @@ function applyQuickAnglePreset(fixture, preset) {
     const angleMin = preset.fieldAngleMin ?? preset.beamAngleMin;
     const angleMax = preset.fieldAngleMax ?? preset.beamAngleMax;
     const defaultAngle =
-        fixture.defaultState?.fieldAngle ??
         preset.defaultFieldAngle ??
         preset.defaultBeamAngle ??
+        fixture.defaultState?.fieldAngle ??
         angleOptions?.[0] ??
         angleMin ??
         30;
@@ -306,6 +307,8 @@ function applyQuickAnglePreset(fixture, preset) {
     fixedWrap?.classList.toggle('flex', isFixed);
     optionsWrap?.classList.toggle('hidden', !hasOptions);
     optionsWrap?.classList.toggle('flex', hasOptions);
+
+    value?.classList.toggle('hidden', hasOptions || isFixed);
 
     if (hasOptions) {
         const selectedAngle = angleOptions.includes(Number(defaultAngle))
