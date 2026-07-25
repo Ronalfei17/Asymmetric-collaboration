@@ -149,6 +149,8 @@ const MAP_CALIBRATION_REFERENCES =
     );
 
 const VIEW_RANGE_METRES = 3.0;
+const FOV_ARC_SEGMENTS = 24;
+
 
 const DEFAULT_VIEW_BY_MAP_TYPE = Object.freeze({
     theatre: {
@@ -890,54 +892,71 @@ export function setupTeleportMap({
             };
         }
 
-        const leftWorld = pointFromYaw(
-            originX,
-            originZ,
-            yaw - horizontalFov / 2,
-            VIEW_RANGE_METRES
-        );
+        const safeHorizontalFov =
+            clamp(
+                horizontalFov,
+                10,
+                160
+            );
 
-        const rightWorld = pointFromYaw(
-            originX,
-            originZ,
-            yaw + horizontalFov / 2,
-            VIEW_RANGE_METRES
-        );
+        const arcPoints = [];
 
-        const headingWorld = pointFromYaw(
-            originX,
-            originZ,
-            yaw,
-            VIEW_RANGE_METRES * 0.72
-        );
+        for (
+            let index = 0;
+            index <= FOV_ARC_SEGMENTS;
+            index++
+        ) {
+            const ratio =
+                index / FOV_ARC_SEGMENTS;
 
-        const left = applyCurrentPointOffset(
-            worldToMap(
-                leftWorld.x,
-                leftWorld.z
-            )
-        );
+            const sampleYaw =
+                yaw -
+                safeHorizontalFov / 2 +
+                safeHorizontalFov * ratio;
 
-        const right = applyCurrentPointOffset(
-            worldToMap(
-                rightWorld.x,
-                rightWorld.z
-            )
-        );
+            const sampleWorld =
+                pointFromYaw(
+                    originX,
+                    originZ,
+                    sampleYaw,
+                    VIEW_RANGE_METRES
+                );
 
-        const heading = applyCurrentPointOffset(
-            worldToMap(
-                headingWorld.x,
-                headingWorld.z
-            )
-        );
+            const sampleMap =
+                applyCurrentPointOffset(
+                    worldToMap(
+                        sampleWorld.x,
+                        sampleWorld.z
+                    )
+                );
+
+            arcPoints.push(
+                `${sampleMap.left},${sampleMap.top}`
+            );
+        }
+
+        const headingWorld =
+            pointFromYaw(
+                originX,
+                originZ,
+                yaw,
+                VIEW_RANGE_METRES * 0.72
+            );
+
+        const heading =
+            applyCurrentPointOffset(
+                worldToMap(
+                    headingWorld.x,
+                    headingWorld.z
+                )
+            );
 
         vrFovPolygon?.setAttribute(
             'points',
             [
                 `${centre.left},${centre.top}`,
-                `${left.left},${left.top}`,
-                `${right.left},${right.top}`
+                ...arcPoints,
+                `${centre.left},${centre.top}`
             ].join(' ')
         );
 
