@@ -8,6 +8,14 @@ function cloneState(state = {}) {
         nextState.segments = state.segments.map(color => ({ ...color }));
     }
 
+    if (state.colorA && typeof state.colorA === 'object') {
+        nextState.colorA = { ...state.colorA };
+    }
+
+    if (state.colorB && typeof state.colorB === 'object') {
+        nextState.colorB = { ...state.colorB };
+    }
+
     return nextState;
 }
 
@@ -16,10 +24,22 @@ function safeNumber(value, fallback = 0) {
     return Number.isFinite(number) ? number : fallback;
 }
 
-function safeBoolean(value, fallback = true) {
+function safeBoolean(value, fallback = false) {
     if (value === true || value === 'true') return true;
     if (value === false || value === 'false') return false;
     return fallback;
+}
+
+function normalizeColor255(value, fallback = 255) {
+    const number = safeNumber(value, fallback);
+
+    if (number >= 0 && number <= 1) {
+        return Math.round(number * 255);
+    }
+
+    return Math.round(
+        Math.max(0, Math.min(255, number))
+    );
 }
 
 export function getFixtureState(fixture) {
@@ -47,6 +67,112 @@ export function updateFixtureState(fixture, partialState) {
     return nextState;
 }
 
+export function applyLightingStateSnapshot(snapshotItems = [], fixtures = []) {
+    if (!Array.isArray(snapshotItems)) {
+        console.warn(
+            '[LightingState] Invalid lighting state snapshot:',
+            snapshotItems
+        );
+        return 0;
+    }
+
+    const fixtureById = new Map(
+        fixtures.map(fixture => [
+            Number(fixture.lightId),
+            fixture
+        ])
+    );
+
+    let appliedCount = 0;
+
+    snapshotItems.forEach(item => {
+        const lightId = Number(item.lightId);
+
+        if (!Number.isFinite(lightId)) {
+            return;
+        }
+
+        const fixture = fixtureById.get(lightId);
+        const defaultState = fixture
+            ? cloneState(fixture.defaultState)
+            : {};
+
+        const currentState =
+            fixtureStateMap.get(lightId) ||
+            defaultState;
+
+        const nextState = {
+            ...defaultState,
+            ...currentState,
+
+            isOn: safeBoolean(
+                item.isOn,
+                currentState.isOn ?? defaultState.isOn ?? false
+            ),
+
+            intensity: safeNumber(
+                item.intensity,
+                currentState.intensity ?? defaultState.intensity ?? 0
+            ),
+
+            r: normalizeColor255(
+                item.r,
+                currentState.r ?? defaultState.r ?? 255
+            ),
+
+            g: normalizeColor255(
+                item.g,
+                currentState.g ?? defaultState.g ?? 255
+            ),
+
+            b: normalizeColor255(
+                item.b,
+                currentState.b ?? defaultState.b ?? 255
+            ),
+
+            fieldAngle: safeNumber(
+                item.fieldAngle,
+                currentState.fieldAngle ?? defaultState.fieldAngle ?? 30
+            ),
+
+            beamSize: safeNumber(
+                item.beamSize,
+                currentState.beamSize ?? defaultState.beamSize ?? 45
+            ),
+
+            softness: safeNumber(
+                item.softness,
+                currentState.softness ?? defaultState.softness ?? 0.75
+            ),
+
+            pan: safeNumber(
+                item.pan,
+                currentState.pan ?? defaultState.pan ?? 0
+            ),
+
+            tilt: safeNumber(
+                item.tilt,
+                currentState.tilt ?? defaultState.tilt ?? 0
+            ),
+
+            strobeHz: safeNumber(
+                item.strobeHz,
+                currentState.strobeHz ?? defaultState.strobeHz ?? 0
+            )
+        };
+
+        fixtureStateMap.set(lightId, nextState);
+        appliedCount += 1;
+    });
+
+    console.log(
+        '[LightingState] Applied Unity lighting snapshot:',
+        appliedCount
+    );
+
+    return appliedCount;
+}
+
 export function buildLightingPayload(fixture, state) {
     return {
         lightId: fixture.lightId,
@@ -58,7 +184,7 @@ export function buildLightingPayload(fixture, state) {
         fixtureModel: fixture.fixtureModel,
         modelLabel: fixture.modelLabel,
 
-        isOn: safeBoolean(state.isOn, true),
+        isOn: safeBoolean(state.isOn, false),
         intensity: safeNumber(state.intensity, 0),
 
         r: safeNumber(state.r, 255) / 255,
