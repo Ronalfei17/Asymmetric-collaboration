@@ -1,5 +1,6 @@
 import {
     FIXTURE_TYPES,
+    FIXTURES,
     getFixturesByType,
     getFixtureById
 } from './lighting-fixture.js';
@@ -28,6 +29,47 @@ export function setupLightingControl(sendControlMessage) {
     let selectedFixture = getFixturesByType(selectedFixtureType)[0] || null;
     let sendTimer = null;
 
+    function renderActiveLightTags(){
+        const tagContainer = document.getElementById('activeLightTags');
+        const countElement = document.getElementById('activeLightCount');
+
+        if (!tagContainer) return;
+
+        const activeFixtures = FIXTURES.filter(fixture => {const state = getFixtureState(fixture);
+            if (!state) return false;
+            return state.isOn ===true;
+        });
+
+        tagContainer.innerHTML = '';
+        if (countElement) {countElement.textContent = String(activeFixtures.length);}
+        if (activeFixtures.length === 0) {const emptyLabel = document.createElement('span');
+            emptyLabel.className = ['text-[11px]', '[text-gray-500]'].join('');
+            emptyLabel.textContent = 'No active lights';
+            agContainer.appendChild(emptyLabel);
+            return;
+        }
+
+        activeFixtures.forEach(fixture => {const tag = document.createElement('span');
+            tag.className = [
+                'shrink-0',
+                'inline-flex',
+                'items-center',
+                'rounded-full',
+                'border',
+                'border-emerald-400/40',
+                'bg-emerald-400/10',
+                'px-2',
+                'py-0.5',
+                'text-[11px]',
+                'font-semibold',
+                'text-emerald-300',
+                'cursor-default'
+            ].join(' ');
+            tag.textContent = fixture.displayId || `CH ${fixture.lightId}`;
+            tagContainer.appendChild(tag);
+        });
+    }
+
     function renderAll() {
         renderFixtureTypeCapsules({
             selectedFixtureType,
@@ -42,14 +84,17 @@ export function setupLightingControl(sendControlMessage) {
 
         updatePanelVisibility(selectedFixtureType, selectedFixture);
 
-        if (!selectedFixture) return;
-
+        if (!selectedFixture) {
+            renderActiveLightTags();
+            return;
+        }
         applyFixturePresetToUI(selectedFixture);
 
         const fixtureState = getFixtureState(selectedFixture);
         writeLightingValuesToUI(fixtureState, selectedFixture);
 
         updateSelectedInfoPanel(selectedFixture);
+        renderActiveLightTags();
     }
 
     function handleSelectType(nextType) {
@@ -177,7 +222,7 @@ export function setupLightingControl(sendControlMessage) {
 
         if (options.render) {
             renderAll();
-        }
+        } else {renderActiveLightTags();}
 
         scheduleSendCurrentFixtureState();
     });
