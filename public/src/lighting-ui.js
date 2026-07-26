@@ -9,6 +9,13 @@ import {
     getMovingModelPreset
 } from './lighting-fixture.js';
 
+import {
+    clamp,
+    rgbToHex,
+    rgbToHsv,
+    hsvToRgb
+} from './lighting-color-utils.js';
+
 function getElement(id) {
     return document.getElementById(id);
 }
@@ -46,14 +53,6 @@ function getFixturePreset(fixture) {
     }
 
     return null;
-}
-
-function toHex(value) {
-    return Number(value).toString(16).padStart(2, '0').toUpperCase();
-}
-
-function rgbToHex(r, g, b) {
-    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
 function createDefaultSegments(count = 8) {
@@ -94,57 +93,6 @@ function getSelectedLedSegmentMode() {
     );
 }
 
-function clamp(value, min, max) {
-    return Math.min(max, Math.max(min, value));
-}
-
-function rgbToHsv(r, g, b) {
-    r /= 255;
-    g /= 255;
-    b /= 255;
-
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    const delta = max - min;
-
-    let h = 0;
-
-    if (delta !== 0) {
-        if (max === r) h = 60 * (((g - b) / delta) % 6);
-        else if (max === g) h = 60 * ((b - r) / delta + 2);
-        else h = 60 * ((r - g) / delta + 4);
-    }
-
-    if (h < 0) h += 360;
-
-    const s = max === 0 ? 0 : delta / max;
-    const v = max;
-
-    return { h, s, v };
-}
-
-function hsvToRgb(h, s, v) {
-    const c = v * s;
-    const x = c * (1 - Math.abs((h / 60) % 2 - 1));
-    const m = v - c;
-
-    let r = 0;
-    let g = 0;
-    let b = 0;
-
-    if (h < 60) [r, g, b] = [c, x, 0];
-    else if (h < 120) [r, g, b] = [x, c, 0];
-    else if (h < 180) [r, g, b] = [0, c, x];
-    else if (h < 240) [r, g, b] = [0, x, c];
-    else if (h < 300) [r, g, b] = [x, 0, c];
-    else [r, g, b] = [c, 0, x];
-
-    return {
-        r: Math.round((r + m) * 255),
-        g: Math.round((g + m) * 255),
-        b: Math.round((b + m) * 255)
-    };
-}
 // [新增] Fixture Type 胶囊按钮样式和显示策略
 // [修改] 胶囊按钮样式
 function capsuleClass(isActive) {
@@ -250,7 +198,7 @@ export function applyFixturePresetToUI(fixture) {
 
 function updateQuickAngleOptionActive(angle) {
     document.querySelectorAll('.quick-angle-option').forEach(option => {
-        const isActive = Number(option.dataset.angle) === Number(angle);
+        const isActive = Math.abs(Number(option.dataset.angle) - Number(angle)) < 0.01;
         const dot = option.querySelector('.quick-angle-dot');
 
         option.classList.toggle('border-blue-500', isActive);
@@ -886,21 +834,30 @@ export function readLightingValuesFromUI() {
     const detailPage = getElement('page-light');
     const isDetailPageActive = detailPage && !detailPage.classList.contains('hidden');
 
-    const detailState = isDetailPageActive
-        ? readDetailLightingValuesFromUI()
-        : {};
-
-    return {
-        ...detailState,
+    const quickState = {
         isOn: powerToggle ? toBoolean(powerToggle.dataset.on, true) : true,
         intensity: intensitySlider ? Number(intensitySlider.value) / 100 : 0,
         fieldAngle: fieldAngleSlider ? Number(fieldAngleSlider.value) : undefined,
         pan: panSlider ? Number(panSlider.value) : 0,
         tilt: tiltSlider ? Number(tiltSlider.value) : 0
     };
+
+    const detailState = isDetailPageActive
+        ? readDetailLightingValuesFromUI()
+        : {};
+
+    return {
+        ...quickState,
+        ...detailState
+    };
 }
 
 function readDetailLightingValuesFromUI() {
+    const detailPowerState = getElement('detailPowerState');
+    const detailIntensitySlider = getElement('detailIntensitySlider');
+    const detailFieldAngleSlider = getElement('detailFieldAngleSlider');
+    const detailPanSlider = getElement('detailPanSlider');
+    const detailTiltSlider = getElement('detailTiltSlider');
     const detailRedSlider = getElement('detailRedSlider');
     const detailGreenSlider = getElement('detailGreenSlider');
     const detailBlueSlider = getElement('detailBlueSlider');
@@ -912,6 +869,12 @@ function readDetailLightingValuesFromUI() {
     const detailColorBlazePanel = getElement('detailColorBlazePanel');
 
     const state = {};
+
+    if (detailPowerState) state.isOn = toBoolean(detailPowerState.dataset.on, true);
+    if (detailIntensitySlider) state.intensity = Number(detailIntensitySlider.value) / 100;
+    if (detailFieldAngleSlider) state.fieldAngle = Number(detailFieldAngleSlider.value);
+    if (detailPanSlider) state.pan = Number(detailPanSlider.value);
+    if (detailTiltSlider) state.tilt = Number(detailTiltSlider.value);
 
     if (detailRedSlider) state.r = Number(detailRedSlider.value);
     if (detailGreenSlider) state.g = Number(detailGreenSlider.value);
@@ -993,6 +956,12 @@ function renderDetailLightingPanel(fixture, state = {}) {
                 </div>
             </div>
 
+            
+            <div class="grid grid-cols-2 gap-3">
+                ${renderDetailPowerBlock(state)}
+                ${renderDetailIntensityBlock(state)}
+            </div>
+            
             <div class="grid grid-cols-2 gap-3">
                 ${renderDetailRgbBlock(r, g, b, hex)}
                 ${renderDetailStrobeBlock(state)}
@@ -1008,6 +977,57 @@ function renderDetailLightingPanel(fixture, state = {}) {
             ${fixture.fixtureType === FIXTURE_TYPES.LED && isAdvancedLed ? renderDetailColorBlazeBlock(state) : ''}
         </div>
     `;
+}
+
+function detailPowerButtonClass(isActive) {
+    return [
+        'h-10 rounded-md border text-xs font-semibold transition',
+        isActive
+            ? 'bg-blue-500/70 border-blue-400 text-white'
+            : 'bg-white/5 border-gray-700 text-gray-300 hover:bg-white/10'
+    ].join(' ');
+}
+
+function renderDetailPowerBlock(state) {
+    const isOn = toBoolean(state.isOn, true);
+
+    return `
+        <section class="rounded-lg border border-gray-800 bg-[#0b0f16] p-3">
+            <div class="text-blue-400 text-xs font-bold mb-3">POWER</div>
+            <div id="detailPowerState" data-on="${isOn}" class="grid grid-cols-2 gap-2">
+                <button type="button" data-detail-power="true" class="${detailPowerButtonClass(isOn)}">ON</button>
+                <button type="button" data-detail-power="false" class="${detailPowerButtonClass(!isOn)}">OFF</button>
+            </div>
+        </section>
+    `;
+}
+
+function renderDetailIntensityBlock(state) {
+    const value = Math.round(Number(state.intensity ?? 0.78) * 100);
+
+    return `
+        <section class="rounded-lg border border-gray-800 bg-[#0b0f16] p-3">
+            <div class="text-orange-400 text-xs font-bold mb-3">INTENSITY</div>
+            <input id="detailIntensitySlider" type="range" min="0" max="100" value="${value}" class="w-full accent-blue-500">
+            <div class="flex justify-between text-[11px] text-gray-400 mt-1">
+                <span>0%</span>
+                <span>100%</span>
+            </div>
+            <div id="detailIntensityValue" class="mx-auto mt-2 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">${value}%</div>
+        </section>
+    `;
+}
+
+function updateDetailPowerState(isOn) {
+    const powerState = getElement('detailPowerState');
+    if (!powerState) return;
+
+    powerState.dataset.on = String(isOn);
+
+    powerState.querySelectorAll('[data-detail-power]').forEach(button => {
+        const isActive = toBoolean(button.dataset.detailPower, false) === isOn;
+        button.className = detailPowerButtonClass(isActive);
+    });
 }
 
 function renderDetailRgbBlock(r, g, b, hex) {
@@ -1557,6 +1577,12 @@ export function setupLightingInputListeners(onInput) {
     detailPanel?.addEventListener('input', event => {
         const target = event.target;
 
+        if (target.id === 'detailIntensitySlider') {
+            const value = getElement('detailIntensityValue');
+            if (value) value.textContent = `${target.value}%`;
+        }
+
+
         if (target.id === 'detailRedSlider' || target.id === 'detailGreenSlider' || target.id === 'detailBlueSlider') {
             updateDetailRGBUI();
 
@@ -1630,6 +1656,16 @@ export function setupLightingInputListeners(onInput) {
     });
 
     detailPanel?.addEventListener('click', event => {
+        const powerButton = event.target.closest('[data-detail-power]');
+        if (powerButton) {
+            const nextState = toBoolean(powerButton.dataset.detailPower, true);
+
+            updateDetailPowerState(nextState);
+            setPowerState(nextState);
+            onInput();
+            return;
+        }
+
         const angleButton = event.target.closest('[data-detail-angle]');
         if (angleButton) {
             const angle = Number(angleButton.dataset.detailAngle);
