@@ -227,11 +227,11 @@ function getAngleConfig(fixture) {
     const angleMax = preset.fieldAngleMax ?? preset.beamAngleMax;
 
     const defaultAngle = Number(
-        fixture?.defaultState?.fieldAngle ??
         preset.defaultFieldAngle ??
         preset.defaultBeamAngle ??
         angleOptions?.[0] ??
         angleMin ??
+        fixture?.defaultState?.fieldAngle ??
         30
     );
 
@@ -273,6 +273,56 @@ function getCurrentAngleFromUI(fixture) {
     return Number.isFinite(value) ? value : defaultAngle;
 }
 
+function formatAngle(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return '--';
+
+    return Number.isInteger(number)
+        ? String(number)
+        : number.toFixed(1);
+}
+
+function sanitizeAngleForFixture(fixture, rawAngle) {
+    const {
+        angleOptions,
+        angleMin,
+        angleMax,
+        defaultAngle,
+        hasOptions,
+        isFixed
+    } = getAngleConfig(fixture);
+
+    if (isFixed) {
+        return defaultAngle;
+    }
+
+    const value = Number(rawAngle);
+
+    if (hasOptions) {
+        const matchedAngle = angleOptions.find(angle =>
+            Math.abs(Number(angle) - value) < 0.01
+        );
+
+        return matchedAngle !== undefined
+            ? Number(matchedAngle)
+            : defaultAngle;
+    }
+
+    if (!Number.isFinite(value)) {
+        return defaultAngle;
+    }
+
+    if (angleMin !== undefined && value < Number(angleMin)) {
+        return Number(angleMin);
+    }
+
+    if (angleMax !== undefined && value > Number(angleMax)) {
+        return Number(angleMax);
+    }
+
+    return value;
+}
+
 function applyQuickAnglePreset(fixture, preset) {
     const sliderWrap = getElement('quickAngleSliderWrap');
     const fixedWrap = getElement('quickAngleFixedWrap');
@@ -304,9 +354,11 @@ function applyQuickAnglePreset(fixture, preset) {
     value?.classList.toggle('hidden', hasOptions || isFixed);
 
     if (hasOptions) {
-        const selectedAngle = angleOptions.includes(Number(defaultAngle))
+        const selectedAngle = angleOptions.some(angle =>
+            Math.abs(Number(angle) - Number(defaultAngle)) < 0.01
+        )
             ? Number(defaultAngle)
-            : Number(preset.defaultFieldAngle ?? preset.defaultBeamAngle ?? angleOptions[0]);
+            : Number(angleOptions[0]);
 
         if (slider) {
             slider.value = selectedAngle;
@@ -1058,14 +1110,14 @@ export function writeLightingValuesToUI(state, fixture) {
     if (panSlider && state.pan !== undefined) panSlider.value = state.pan;
     if (tiltSlider && state.tilt !== undefined) tiltSlider.value = state.tilt;
 
+    const cleanFieldAngle = sanitizeAngleForFixture(fixture, state.fieldAngle);
+
     const fieldAngleSlider = getElement('fieldAngleSlider');
-    if (fieldAngleSlider && state.fieldAngle !== undefined) {
-        fieldAngleSlider.value = state.fieldAngle;
+    if (fieldAngleSlider) {
+        fieldAngleSlider.value = cleanFieldAngle;
     }
 
-    if (state.fieldAngle !== undefined) {
-        updateQuickAngleOptionActive(state.fieldAngle);
-    }
+    updateQuickAngleOptionActive(cleanFieldAngle);
 
     writeQuickColorValuesToUI(state);
     if (isAdvancedLedFixture(fixture)) {
@@ -1234,7 +1286,7 @@ function renderDetailAngleBlock(fixture, preset, state, title) {
     const angleConfig = getAngleConfig(fixture);
     const { angleOptions, angleMin, angleMax, defaultAngle, hasOptions, isFixed } = angleConfig;
 
-    let value = Number(state.fieldAngle ?? defaultAngle);
+    let value = sanitizeAngleForFixture(fixture, state.fieldAngle ?? defaultAngle);
 
     if (isFixed) {
         value = defaultAngle;
@@ -1273,8 +1325,8 @@ function renderDetailAngleBlock(fixture, preset, state, title) {
         `;
     }
 
-    const min = angleMin ?? value;
-    const max = angleMax ?? value;
+    const min = angleMin ?? defaultAngle;
+    const max = angleMax ?? defaultAngle;
 
     return `
         <section class="rounded-lg border border-gray-800 bg-[#0b0f16] p-3">
@@ -1282,15 +1334,15 @@ function renderDetailAngleBlock(fixture, preset, state, title) {
 
             ${isFixed ? `
                 <div class="h-24 flex items-center justify-center">
-                    <div class="px-6 py-3 rounded-lg border border-gray-700 bg-white/5 text-2xl">${value}&deg;</div>
+                    <div class="px-6 py-3 rounded-lg border border-gray-700 bg-white/5 text-2xl">${formatAngle(value)}&deg;</div>
                 </div>
             ` : `
                 <input id="detailFieldAngleSlider" type="range" min="${min}" max="${max}" step="0.1" value="${value}" class="w-full accent-blue-500">
                 <div class="flex justify-between text-[11px] text-gray-400 mt-1">
-                    <span>${min}&deg;</span>
-                    <span>${max}&deg;</span>
+                    <span>${formatAngle(min)}&deg;</span>
+                    <span>${formatAngle(max)}&deg;</span>
                 </div>
-                <div id="detailFieldAngleValue" class="mx-auto mt-3 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">${value}&deg;</div>
+                <div id="detailFieldAngleValue" class="mx-auto mt-3 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">${formatAngle(value)}&deg;</div>
             `}
         </section>
     `;
