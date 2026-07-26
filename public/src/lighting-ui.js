@@ -219,6 +219,60 @@ function updateQuickAngleOptionActive(angle) {
     });
 }
 
+function getAngleConfig(fixture) {
+    const preset = getFixturePreset(fixture) || {};
+
+    const angleOptions = preset.fieldAngleOptions ?? preset.beamAngleOptions;
+    const angleMin = preset.fieldAngleMin ?? preset.beamAngleMin;
+    const angleMax = preset.fieldAngleMax ?? preset.beamAngleMax;
+
+    const defaultAngle = Number(
+        fixture?.defaultState?.fieldAngle ??
+        preset.defaultFieldAngle ??
+        preset.defaultBeamAngle ??
+        angleOptions?.[0] ??
+        angleMin ??
+        30
+    );
+
+    const hasOptions = Array.isArray(angleOptions) && angleOptions.length > 0;
+    const isFixed =
+        Boolean(preset.fieldAngleFixed) ||
+        (!hasOptions &&
+            angleMin !== undefined &&
+            angleMax !== undefined &&
+            Number(angleMin) === Number(angleMax));
+
+    return {
+        preset,
+        angleOptions,
+        angleMin,
+        angleMax,
+        defaultAngle,
+        hasOptions,
+        isFixed
+    };
+}
+
+function getCurrentAngleFromUI(fixture) {
+    const { angleOptions, defaultAngle, hasOptions, isFixed } = getAngleConfig(fixture);
+    const slider = getElement('fieldAngleSlider');
+
+    if (isFixed) return defaultAngle;
+
+    const value = Number(slider?.value);
+
+    if (hasOptions) {
+        const isValidOption = angleOptions.some(angle =>
+            Math.abs(Number(angle) - value) < 0.01
+        );
+
+        return isValidOption ? value : defaultAngle;
+    }
+
+    return Number.isFinite(value) ? value : defaultAngle;
+}
+
 function applyQuickAnglePreset(fixture, preset) {
     const sliderWrap = getElement('quickAngleSliderWrap');
     const fixedWrap = getElement('quickAngleFixedWrap');
@@ -232,23 +286,14 @@ function applyQuickAnglePreset(fixture, preset) {
 
     if (!preset) return;
 
-    const angleOptions = preset.fieldAngleOptions ?? preset.beamAngleOptions;
-    const angleMin = preset.fieldAngleMin ?? preset.beamAngleMin;
-    const angleMax = preset.fieldAngleMax ?? preset.beamAngleMax;
-    const defaultAngle =
-        preset.defaultFieldAngle ??
-        preset.defaultBeamAngle ??
-        fixture.defaultState?.fieldAngle ??
-        angleOptions?.[0] ??
-        angleMin ??
-        30;
-
-    const hasOptions = Array.isArray(angleOptions) && angleOptions.length > 0;
-    const isFixed = Boolean(preset.fieldAngleFixed) || (
-        angleMin !== undefined &&
-        angleMax !== undefined &&
-        Number(angleMin) === Number(angleMax)
-    );
+    const {
+        angleOptions,
+        angleMin,
+        angleMax,
+        defaultAngle,
+        hasOptions,
+        isFixed
+    } = getAngleConfig(fixture);
 
     sliderWrap?.classList.toggle('hidden', hasOptions || isFixed);
     fixedWrap?.classList.toggle('hidden', !isFixed);
@@ -824,12 +869,11 @@ function updateColorBlazeUI() {
     if (bValue) bValue.innerText = b;
 }
 
-export function readLightingValuesFromUI() {
+export function readLightingValuesFromUI(fixture) {
     const powerToggle = getElement('powerToggle');
     const intensitySlider = getElement('intensitySlider');
     const panSlider = getElement('panSlider');
     const tiltSlider = getElement('tiltSlider');
-    const fieldAngleSlider = getElement('fieldAngleSlider');
 
     const detailPage = getElement('page-light');
     const isDetailPageActive = detailPage && !detailPage.classList.contains('hidden');
@@ -837,13 +881,13 @@ export function readLightingValuesFromUI() {
     const quickState = {
         isOn: powerToggle ? toBoolean(powerToggle.dataset.on, true) : true,
         intensity: intensitySlider ? Number(intensitySlider.value) / 100 : 0,
-        fieldAngle: fieldAngleSlider ? Number(fieldAngleSlider.value) : undefined,
+        fieldAngle: getCurrentAngleFromUI(fixture),
         pan: panSlider ? Number(panSlider.value) : 0,
         tilt: tiltSlider ? Number(tiltSlider.value) : 0
     };
 
     const detailState = isDetailPageActive
-        ? readDetailLightingValuesFromUI()
+        ? readDetailLightingValuesFromUI(fixture)
         : {};
 
     return {
@@ -852,7 +896,7 @@ export function readLightingValuesFromUI() {
     };
 }
 
-function readDetailLightingValuesFromUI() {
+function readDetailLightingValuesFromUI(fixture) {
     const detailPowerState = getElement('detailPowerState');
     const detailIntensitySlider = getElement('detailIntensitySlider');
     const detailFieldAngleSlider = getElement('detailFieldAngleSlider');
@@ -869,10 +913,15 @@ function readDetailLightingValuesFromUI() {
     const detailColorBlazePanel = getElement('detailColorBlazePanel');
 
     const state = {};
+    const { hasOptions, isFixed } = getAngleConfig(fixture);
 
     if (detailPowerState) state.isOn = toBoolean(detailPowerState.dataset.on, true);
     if (detailIntensitySlider) state.intensity = Number(detailIntensitySlider.value) / 100;
-    if (detailFieldAngleSlider) state.fieldAngle = Number(detailFieldAngleSlider.value);
+
+    if (detailFieldAngleSlider && !hasOptions && !isFixed) {
+        state.fieldAngle = Number(detailFieldAngleSlider.value);
+    }
+
     if (detailPanSlider) state.pan = Number(detailPanSlider.value);
     if (detailTiltSlider) state.tilt = Number(detailTiltSlider.value);
 
@@ -1081,30 +1130,50 @@ function renderDetailStrobeBlock(state) {
 }
 
 function renderDetailAngleBlock(fixture, preset, state, title) {
-    const value = Number(state.fieldAngle ?? fixture.defaultState?.fieldAngle ?? preset?.defaultFieldAngle ?? preset?.defaultBeamAngle ?? 30);
+    const angleConfig = getAngleConfig(fixture);
+    const { angleOptions, angleMin, angleMax, defaultAngle, hasOptions, isFixed } = angleConfig;
 
-    if (Array.isArray(preset?.beamAngleOptions)) {
+    let value = Number(state.fieldAngle ?? defaultAngle);
+
+    if (isFixed) {
+        value = defaultAngle;
+    }
+
+    if (hasOptions) {
+        const isValidOption = angleOptions.some(angle =>
+            Math.abs(Number(angle) - value) < 0.01
+        );
+
+        if (!isValidOption) {
+            value = defaultAngle;
+        }
+    }
+
+    if (hasOptions) {
         return `
             <section class="rounded-lg border border-gray-800 bg-[#0b0f16] p-3">
                 <div class="text-blue-400 text-xs font-bold mb-3">${title.toUpperCase()}</div>
                 <div class="grid grid-cols-2 gap-2">
-                    ${preset.beamAngleOptions.map(angle => `
-                        <button
-                            type="button"
-                            class="detail-angle-option px-3 py-2 rounded-md border ${Number(angle) === value ? 'border-blue-500 bg-blue-500/20 text-blue-200' : 'border-gray-700 bg-white/5 text-gray-300'}"
-                            data-detail-angle="${angle}"
-                        >
-                            ${angle}&deg;
-                        </button>
-                    `).join('')}
+                    ${angleOptions.map(angle => {
+                        const isActive = Math.abs(Number(angle) - value) < 0.01;
+
+                        return `
+                            <button
+                                type="button"
+                                class="detail-angle-option px-3 py-2 rounded-md border ${isActive ? 'border-blue-500 bg-blue-500/20 text-blue-200' : 'border-gray-700 bg-white/5 text-gray-300'}"
+                                data-detail-angle="${angle}"
+                            >
+                                ${angle}&deg;
+                            </button>
+                        `;
+                    }).join('')}
                 </div>
             </section>
         `;
     }
 
-    const min = preset?.beamAngleMin ?? preset?.fieldAngleMin ?? value;
-    const max = preset?.beamAngleMax ?? preset?.fieldAngleMax ?? value;
-    const isFixed = preset?.fieldAngleFixed || min === max;
+    const min = angleMin ?? value;
+    const max = angleMax ?? value;
 
     return `
         <section class="rounded-lg border border-gray-800 bg-[#0b0f16] p-3">
@@ -1675,6 +1744,8 @@ export function setupLightingInputListeners(onInput) {
                 quick.value = angle;
                 updateFieldAngleUI();
             }
+            
+            updateQuickAngleOptionActive(angle);
 
             document.querySelectorAll('.detail-angle-option').forEach(button => {
                 button.classList.toggle('border-blue-500', button === angleButton);

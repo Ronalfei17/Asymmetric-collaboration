@@ -136,9 +136,9 @@ export const PROFILE_MODEL_PRESETS = {
 
 export const LED_MODEL_PRESETS = {
     [LED_MODELS.COLORBLAZE]: {
-        fieldAngleMin: 60,
-        fieldAngleMax: 60,
-        defaultFieldAngle: 60,
+        fieldAngleMin: 10,
+        fieldAngleMax: 10,
+        defaultFieldAngle: 10,
         fieldAngleFixed: true,
 
         supportsRGB: true,
@@ -176,9 +176,9 @@ export const LED_MODEL_PRESETS = {
     },
 
     [LED_MODELS.LUSTR_D60]: {
-        fieldAngleMin: 17,
-        fieldAngleMax: 17,
-        defaultFieldAngle: 17,
+        fieldAngleMin: 60,
+        fieldAngleMax: 60,
+        defaultFieldAngle: 60,
         fieldAngleFixed: true,
         supportsRGB: true,
         supportsStrobe: true,
@@ -304,8 +304,7 @@ function createDefaultState({
     softness = 0.75,
     pan = 0,
     tilt = 0,
-    strobe = 0,
-    strobeHz = strobe,
+    strobeHz = 0,
     ledMode = 'solid',
     segmentMode = 8,
     selectedSegment = 0,
@@ -375,11 +374,13 @@ function createFixture({
 
     const presetDefaultState = {
         fieldAngle:
-            preset.defaultFieldAngle
-            ?? preset.defaultBeamAngle
-            ?? preset.fieldAngleMin
-            ?? preset.beamAngleMin
-            ?? 30,
+        preset.defaultFieldAngle
+        ?? preset.defaultBeamAngle
+        ?? preset.defaultBeamSize
+        ?? preset.fieldAngleMin
+        ?? preset.beamAngleMin
+        ?? preset.beamSizeMin
+        ?? 30,
 
         beamSize: preset.defaultBeamSize ?? 45,
         softness: preset.defaultSoftness ?? 0.75,
@@ -754,8 +755,6 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 36,
-            strobe: 0
         }
     }),
 
@@ -769,8 +768,6 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 36,
-            strobe: 0
         }
     }),
 
@@ -784,8 +781,6 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 36,
-            strobe: 0
         }
     }),
 
@@ -799,8 +794,6 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 36,
-            strobe: 0
         }
     }),
 
@@ -814,8 +807,6 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 36,
-            strobe: 0
         }
     }),
 
@@ -829,8 +820,6 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 36,
-            strobe: 0
         }
     }),
     // LED - Lustr+ 25–50° - Light ID / Channel: 407, 408, 409, 410, 411, 412
@@ -844,8 +833,6 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 35,
-            strobe: 0
         }
     }),
 
@@ -859,8 +846,6 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 35,
-            strobe: 0
         }
     }),
 
@@ -874,8 +859,6 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 35,
-            strobe: 0
         }
     }),
 
@@ -889,8 +872,6 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 35,
-            strobe: 0
         }
     }),
 
@@ -904,8 +885,6 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 35,
-            strobe: 0
         }
     }),
 
@@ -919,8 +898,6 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 35,
-            strobe: 0
         }
     }),
     // LED - Lustr+ D60 - Light ID / Channel: 201, 202, 203, 204
@@ -935,8 +912,6 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 17,
-            strobe: 0
         }
     }),
 
@@ -951,8 +926,6 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 17,
-            strobe: 0
         }
     }),
 
@@ -967,8 +940,6 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 17,
-            strobe: 0
         }
     }),
 
@@ -983,8 +954,6 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-            fieldAngle: 17,
-            strobe: 0
         }
     }),
     // LED - Color Kinetics ColorBlaze 48 - Light ID / Channel: 117-124, 125-132, 133-140, 141-148, 149-156, 157-164, 101-108, 109-116
@@ -1003,8 +972,6 @@ export const FIXTURES = [
             g: 128,
             b: 64,
 
-            fieldAngle: 60,
-
             ledMode: 'solid',
 
             colorA: {
@@ -1022,7 +989,7 @@ export const FIXTURES = [
             },
 
             segmentMode: 8,
-            selectedSegment: 1,
+            selectedSegment: 0,
 
             direction: 'forward',
             repeatMode: 'single',
@@ -1049,8 +1016,6 @@ export const FIXTURES = [
             g: 128,
             b: 64,
 
-            fieldAngle: 60,
-
             ledMode: 'solid',
 
             colorA: {
@@ -1068,7 +1033,7 @@ export const FIXTURES = [
             },
 
             segmentMode: 8,
-            selectedSegment: 1,
+            selectedSegment: 0,
 
             direction: 'forward',
             repeatMode: 'single',
@@ -1095,8 +1060,6 @@ export const FIXTURES = [
             g: 128,
             b: 64,
 
-            fieldAngle: 60,
-
             ledMode: 'solid',
 
             colorA: {
@@ -1114,7 +1077,7 @@ export const FIXTURES = [
             },
 
             segmentMode: 8,
-            selectedSegment: 1,
+            selectedSegment: 0,
 
             direction: 'forward',
             repeatMode: 'single',
@@ -1141,8 +1104,6 @@ export const FIXTURES = [
             g: 128,
             b: 64,
 
-            fieldAngle: 60,
-
             ledMode: 'solid',
 
             colorA: {
@@ -1160,7 +1121,7 @@ export const FIXTURES = [
             },
 
             segmentMode: 8,
-            selectedSegment: 1,
+            selectedSegment: 0,
 
             direction: 'forward',
             repeatMode: 'single',
@@ -1187,8 +1148,6 @@ export const FIXTURES = [
             g: 128,
             b: 64,
 
-            fieldAngle: 60,
-
             ledMode: 'solid',
 
             colorA: {
@@ -1206,7 +1165,7 @@ export const FIXTURES = [
             },
 
             segmentMode: 8,
-            selectedSegment: 1,
+            selectedSegment: 0,
 
             direction: 'forward',
             repeatMode: 'single',
@@ -1233,8 +1192,6 @@ export const FIXTURES = [
             g: 128,
             b: 64,
 
-            fieldAngle: 60,
-
             ledMode: 'solid',
 
             colorA: {
@@ -1252,7 +1209,7 @@ export const FIXTURES = [
             },
 
             segmentMode: 8,
-            selectedSegment: 1,
+            selectedSegment: 0,
 
             direction: 'forward',
             repeatMode: 'single',
@@ -1279,8 +1236,6 @@ export const FIXTURES = [
             g: 128,
             b: 64,
 
-            fieldAngle: 60,
-
             ledMode: 'solid',
 
             colorA: {
@@ -1298,7 +1253,7 @@ export const FIXTURES = [
             },
 
             segmentMode: 8,
-            selectedSegment: 1,
+            selectedSegment: 0,
 
             direction: 'forward',
             repeatMode: 'single',
@@ -1325,8 +1280,6 @@ export const FIXTURES = [
             g: 128,
             b: 64,
 
-            fieldAngle: 60,
-
             ledMode: 'solid',
 
             colorA: {
@@ -1344,7 +1297,7 @@ export const FIXTURES = [
             },
 
             segmentMode: 8,
-            selectedSegment: 1,
+            selectedSegment: 0,
 
             direction: 'forward',
             repeatMode: 'single',
@@ -1367,7 +1320,7 @@ export const FIXTURES = [
             g: 128,
             b: 64,
             fieldAngle: 90,
-            strobe: 0
+            strobeHz: 0
         }
     }),
 
@@ -1382,7 +1335,7 @@ export const FIXTURES = [
             g: 128,
             b: 64,
             fieldAngle: 90,
-            strobe: 0
+            strobeHz: 0
         }
     }),
 
@@ -1397,7 +1350,7 @@ export const FIXTURES = [
             g: 128,
             b: 64,
             fieldAngle: 90,
-            strobe: 0
+            strobeHz: 0
         }
     }),
     // Fresnel - Selecon Rama 7" Fresnel - Light ID / Channel: 20, 22, 25, 26, 32, 33

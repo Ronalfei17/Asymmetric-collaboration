@@ -45,7 +45,7 @@ export function setupLightingControl(sendControlMessage) {
         if (activeFixtures.length === 0) {const emptyLabel = document.createElement('span');
             emptyLabel.className = ['text-[11px]', '[text-gray-500]'].join('');
             emptyLabel.textContent = 'No active lights';
-            agContainer.appendChild(emptyLabel);
+            tagContainer.appendChild(emptyLabel);
             return;
         }
 
@@ -125,7 +125,7 @@ export function setupLightingControl(sendControlMessage) {
     function sendCurrentFixtureState() {
         if (!selectedFixture) return;
 
-        const uiState = readLightingValuesFromUI();
+        const uiState = readLightingValuesFromUI(selectedFixture);
 
         const nextState = updateFixtureState(
             selectedFixture,
@@ -213,7 +213,7 @@ export function setupLightingControl(sendControlMessage) {
     setupLightingInputListeners((options = {}) => {
         if (!selectedFixture) return;
 
-        const uiState = readLightingValuesFromUI();
+        const uiState = readLightingValuesFromUI(selectedFixture);
 
         updateFixtureState(
             selectedFixture,
