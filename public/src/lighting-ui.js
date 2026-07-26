@@ -471,6 +471,46 @@ function updateRGB() {
     updateWheelMarkerFromRGB();
 }
 
+function writeQuickColorValuesToUI(state) {
+    if (!state) return;
+
+    const redSlider = getElement('redSlider');
+    const greenSlider = getElement('greenSlider');
+    const blueSlider = getElement('blueSlider');
+
+    if (redSlider && state.r !== undefined) {
+        redSlider.value = state.r;
+    }
+
+    if (greenSlider && state.g !== undefined) {
+        greenSlider.value = state.g;
+    }
+
+    if (blueSlider && state.b !== undefined) {
+        blueSlider.value = state.b;
+    }
+
+    updateRGB();
+
+    const ledRedSlider = getElement('ledColorRSlider');
+    const ledGreenSlider = getElement('ledColorGSlider');
+    const ledBlueSlider = getElement('ledColorBSlider');
+
+    if (ledRedSlider && state.r !== undefined) {
+        ledRedSlider.value = state.r;
+    }
+
+    if (ledGreenSlider && state.g !== undefined) {
+        ledGreenSlider.value = state.g;
+    }
+
+    if (ledBlueSlider && state.b !== undefined) {
+        ledBlueSlider.value = state.b;
+    }
+
+    updateColorBlazeUI();
+}
+
 function updateDetailRGBUI() {
     const r = Number(getElement('detailRedSlider')?.value || 255);
     const g = Number(getElement('detailGreenSlider')?.value || 128);
@@ -650,10 +690,56 @@ function writeColorBlazeValuesToUI(state) {
     updateColorBlazeUI();
 }
 
+function readQuickColorValuesFromUI() {
+    const redSlider = getElement('redSlider');
+    const greenSlider = getElement('greenSlider');
+    const blueSlider = getElement('blueSlider');
+
+    if (redSlider && greenSlider && blueSlider) {
+        return {
+            r: Number(redSlider.value),
+            g: Number(greenSlider.value),
+            b: Number(blueSlider.value)
+        };
+    }
+
+    const ledRedSlider = getElement('ledColorRSlider');
+    const ledGreenSlider = getElement('ledColorGSlider');
+    const ledBlueSlider = getElement('ledColorBSlider');
+
+    if (ledRedSlider && ledGreenSlider && ledBlueSlider) {
+        return {
+            r: Number(ledRedSlider.value),
+            g: Number(ledGreenSlider.value),
+            b: Number(ledBlueSlider.value)
+        };
+    }
+
+    return {};
+}
+
 function readColorBlazeValuesFromUI() {
     const mode = getSelectedLedMode();
     const segmentMode = Number(getSelectedLedSegmentMode() || 8);
     const selectedSegment = Number(currentLedState.selectedSegment || 0);
+
+    const r = Number(
+        getElement('ledColorRSlider')?.value ??
+        getElement('detailRedSlider')?.value ??
+        255
+    );
+
+    const g = Number(
+        getElement('ledColorGSlider')?.value ??
+        getElement('detailGreenSlider')?.value ??
+        128
+    );
+
+    const b = Number(
+        getElement('ledColorBSlider')?.value ??
+        getElement('detailBlueSlider')?.value ??
+        64
+    );
 
     const segments = currentLedState.segments?.length
         ? [...currentLedState.segments]
@@ -668,6 +754,9 @@ function readColorBlazeValuesFromUI() {
     }
 
     return {
+        r,
+        g,
+        b,
         ledMode: mode,
         segmentMode,
         selectedSegment,
@@ -833,6 +922,7 @@ export function readLightingValuesFromUI() {
 
     const detailPage = getElement('page-light');
     const isDetailPageActive = detailPage && !detailPage.classList.contains('hidden');
+    const colorBlazePanel = getElement('colorBlazePanel');
 
     const quickState = {
         isOn: powerToggle ? toBoolean(powerToggle.dataset.on, true) : true,
@@ -842,12 +932,19 @@ export function readLightingValuesFromUI() {
         tilt: tiltSlider ? Number(tiltSlider.value) : 0
     };
 
+    const quickColorState = readQuickColorValuesFromUI();
+    const quickColorBlazeState = colorBlazePanel
+        ? readColorBlazeValuesFromUI()
+        : {};
+
     const detailState = isDetailPageActive
         ? readDetailLightingValuesFromUI()
         : {};
 
     return {
         ...quickState,
+        ...quickColorState,
+        ...quickColorBlazeState,
         ...detailState
     };
 }
@@ -921,6 +1018,10 @@ export function writeLightingValuesToUI(state, fixture) {
         updateQuickAngleOptionActive(state.fieldAngle);
     }
 
+    writeQuickColorValuesToUI(state);
+    if (isAdvancedLedFixture(fixture)) {
+        writeColorBlazeValuesToUI(state);
+    }
     updateIntensityUI();
     updatePanTiltUI();
     updateFieldAngleUI();

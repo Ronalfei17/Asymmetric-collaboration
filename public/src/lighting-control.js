@@ -8,7 +8,8 @@ import {
 import {
     getFixtureState,
     updateFixtureState,
-    buildLightingPayload
+    buildLightingPayload,
+    applyLightingStateSnapshot
 } from './lighting-state.js';
 
 import {
@@ -22,12 +23,18 @@ import {
     setupLightingInputListeners
 } from './lighting-ui.js';
 
+import {
+    subscribeControlMessages,
+    subscribeControlOpen
+} from './control-channel.js';
+
 let lightingController = null;
 
 export function setupLightingControl(sendControlMessage) {
     let selectedFixtureType = FIXTURE_TYPES.PROFILE;
     let selectedFixture = getFixturesByType(selectedFixtureType)[0] || null;
     let sendTimer = null;
+    let hasReceivedUnityLightingSnapshot = false;
 
     function renderActiveLightTags(){
         const tagContainer = document.getElementById('activeLightTags');
@@ -35,17 +42,29 @@ export function setupLightingControl(sendControlMessage) {
 
         if (!tagContainer) return;
 
-        const activeFixtures = FIXTURES.filter(fixture => {const state = getFixtureState(fixture);
+        tagContainer.innerHTML = '';
+        if (!hasReceivedUnityLightingSnapshot) {
+            if (countElement) {
+                countElement.textContent = '--';
+            }
+
+            const syncingLabel = document.createElement('span');
+            syncingLabel.className = ['text-[11px]', 'text-gray-500'].join(' ');
+            syncingLabel.textContent = 'Syncing Unity lights...';
+            tagContainer.appendChild(syncingLabel);
+            return;
+        }
+
+        const activeFixtures = FIXTURES.filter(fixture => { const state = getFixtureState(fixture);
             if (!state) return false;
-            return state.isOn ===true;
+            return state.isOn === true
         });
 
-        tagContainer.innerHTML = '';
         if (countElement) {countElement.textContent = String(activeFixtures.length);}
         if (activeFixtures.length === 0) {const emptyLabel = document.createElement('span');
-            emptyLabel.className = ['text-[11px]', '[text-gray-500]'].join('');
+            emptyLabel.className = ['text-[11px]', 'text-gray-500'].join(' ');
             emptyLabel.textContent = 'No active lights';
-            agContainer.appendChild(emptyLabel);
+            tagContainer.appendChild(emptyLabel);
             return;
         }
 
@@ -110,7 +129,7 @@ export function setupLightingControl(sendControlMessage) {
         selectFixture(firstFixtureOfType, {
             emit: true,
             source: 'lighting-control',
-            send: true
+            send: false
         });
     }
 
@@ -118,7 +137,7 @@ export function setupLightingControl(sendControlMessage) {
         selectFixture(fixture, {
             emit: true,
             source: 'lighting-control',
-            send: true
+            send: false
         });
     }
 
@@ -137,7 +156,20 @@ export function setupLightingControl(sendControlMessage) {
             nextState
         );
 
+        console.log('[WebLightingSend]', {
+            lightId: payload.lightId,
+            type: payload.fixtureType,
+            model: payload.fixtureModel,
+            isOn: payload.isOn,
+            intensity: payload.intensity,
+            fieldAngle: payload.fieldAngle,
+            beamSize: payload.beamSize,
+            pan: payload.pan,
+            tilt: payload.tilt
+        });
+
         sendControlMessage('lighting-fixture', payload);
+        renderActiveLightTags();
     }
 
     function scheduleSendCurrentFixtureState() {
@@ -146,6 +178,38 @@ export function setupLightingControl(sendControlMessage) {
         sendTimer = setTimeout(() => {
             sendCurrentFixtureState();
         }, 40);
+    }
+
+    function requestUnityLightingState(reason = 'manual') {
+        sendControlMessage('request-lighting-state', {
+            reason,
+            requestedAt: Date.now()
+        });
+
+        console.log('[LightingControl] Requested Unity lighting state:', reason);
+    }
+
+    function handleUnityLightingStateSnapshot(message) {
+        const fixtures = message?.payload?.fixtures;
+
+        if (!Array.isArray(fixtures)) {
+            console.warn('[LightingControl] Invalid lighting-state-snapshot:', message);
+            return;
+        }
+
+        const appliedCount = applyLightingStateSnapshot(
+            fixtures,
+            FIXTURES
+        );
+
+        hasReceivedUnityLightingSnapshot = true;
+
+        console.log(
+            '[LightingControl] Unity lighting snapshot applied:',
+            appliedCount
+        );
+
+        renderAll();
     }
 
     function findFixtureById(lightId) {
@@ -206,7 +270,7 @@ export function setupLightingControl(sendControlMessage) {
         selectFixtureById(lightId, {
             emit: false,
             source,
-            send: true
+            send: false
         });
     });
 
@@ -227,6 +291,24 @@ export function setupLightingControl(sendControlMessage) {
         scheduleSendCurrentFixtureState();
     });
 
+    subscribeControlOpen(() => {
+        requestUnityLightingState('control-channel-open');
+    });
+
+    subscribeControlMessages(message => {
+        if (!message || message.type !== 'lighting-state-snapshot') {
+            return;
+        }
+
+        handleUnityLightingStateSnapshot(message);
+    });
+
+    setTimeout(() => {
+        if (!hasReceivedUnityLightingSnapshot) {
+            requestUnityLightingState('setup-delayed');
+        }
+    }, 800);
+
     lightingController = {
         selectFixtureById,
         getSelectedFixture: () => selectedFixture,
@@ -234,9 +316,7 @@ export function setupLightingControl(sendControlMessage) {
     };
 
     renderAll();
-    sendCurrentFixtureState();
 }
-
 
 export function selectLightingFixtureById(lightId) {
     if (!lightingController) {
@@ -244,7 +324,11 @@ export function selectLightingFixtureById(lightId) {
         return;
     }
 
-    lightingController.selectFixtureById(lightId);
+    lightingController.selectFixtureById(lightId, {
+        emit: true,
+        source: 'external',
+        send: false
+    });
 }
 
 export function getSelectedLightingFixture() {
