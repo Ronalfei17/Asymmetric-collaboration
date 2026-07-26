@@ -1056,7 +1056,6 @@ function readDetailLightingValuesFromUI(fixture) {
     const detailBlueSlider = getElement('detailBlueSlider');
     const detailStrobeHzSlider = getElement('detailStrobeHzSlider');
 
-    const detailBeamSizeSlider = getElement('detailBeamSizeSlider');
     const detailSoftnessSlider = getElement('detailSoftnessSlider');
 
     const detailColorBlazePanel = getElement('detailColorBlazePanel');
@@ -1079,7 +1078,6 @@ function readDetailLightingValuesFromUI(fixture) {
     if (detailBlueSlider) state.b = Number(detailBlueSlider.value);
     if (detailStrobeHzSlider) state.strobeHz = Number(detailStrobeHzSlider.value);
 
-    if (detailBeamSizeSlider) state.beamSize = Number(detailBeamSizeSlider.value);
     if (detailSoftnessSlider) state.softness = Number(detailSoftnessSlider.value);
 
     if (detailColorBlazePanel) {
@@ -1387,20 +1385,25 @@ function renderDetailAimBlock(fixture, preset, state) {
 }
 
 function renderDetailFresnelBlock(state) {
+    const softness = clamp(Number(state.softness ?? 0.75), 0, 1);
+
     return `
         <section class="rounded-lg border border-gray-800 bg-[#0b0f16] p-3">
-            <div class="text-yellow-400 text-xs font-bold mb-3">FRESNEL BEAM</div>
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <div class="text-xs text-gray-300 mb-1">Beam Size</div>
-                    <input id="detailBeamSizeSlider" type="range" min="0" max="100" value="${state.beamSize ?? 45}" class="w-full accent-yellow-500">
-                    <div id="detailBeamSizeValue" class="mx-auto mt-2 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">${state.beamSize ?? 45}&deg;</div>
-                </div>
+            <div class="text-purple-400 text-xs font-bold mb-3">EDGE SOFTNESS</div>
 
-                <div>
-                    <div class="text-xs text-gray-300 mb-1">Softness</div>
-                    <input id="detailSoftnessSlider" type="range" min="0" max="1" step="0.01" value="${state.softness ?? 0.75}" class="w-full accent-purple-500">
-                    <div id="detailSoftnessValue" class="mx-auto mt-2 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">${Math.round(Number(state.softness ?? 0.75) * 100)}%</div>
+            <div>
+                <div class="text-xs text-gray-300 mb-1">Softness</div>
+                <input
+                    id="detailSoftnessSlider"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value="${softness}"
+                    class="w-full accent-purple-500"
+                >
+                <div id="detailSoftnessValue" class="mx-auto mt-2 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">
+                    ${Math.round(softness * 100)}%
                 </div>
             </div>
         </section>
@@ -1857,11 +1860,6 @@ export function setupLightingInputListeners(onInput) {
                 quick.value = target.value;
                 updatePanTiltUI();
             }
-        }
-
-        if (target.id === 'detailBeamSizeSlider') {
-            const value = getElement('detailBeamSizeValue');
-            if (value) value.innerHTML = `${target.value}&deg;`;
         }
 
         if (target.id === 'detailSoftnessSlider') {
