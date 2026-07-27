@@ -699,15 +699,6 @@ function updateFieldAngleUI() {
     }
 }
 
-function updateBeamSizeUI() {
-    const slider = getElement('beamSizeSlider');
-    const value = getElement('beamSizeValue');
-
-    if (slider && value) {
-        value.innerText = `${slider.value}°`;
-    }
-}
-
 function updateSoftnessUI() {
     const slider = getElement('softnessSlider');
     const value = getElement('softnessValue');
@@ -1657,13 +1648,6 @@ export function setupLightingInputListeners(onInput) {
         onInput();
     });
 
-    const beamSizeSlider = getElement('beamSizeSlider');
-
-    beamSizeSlider?.addEventListener('input', () => {
-        updateBeamSizeUI();
-        onInput();
-    });
-
     const softnessSlider = getElement('softnessSlider');
 
     softnessSlider?.addEventListener('input', () => {
@@ -1966,7 +1950,6 @@ export function setupLightingInputListeners(onInput) {
     updatePanTiltUI();
 
     updateFieldAngleUI();
-    updateBeamSizeUI();
     updateSoftnessUI();
     updateStrobeUI();
     updateColorBlazeUI();
