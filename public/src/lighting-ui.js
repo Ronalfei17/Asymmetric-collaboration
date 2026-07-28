@@ -1066,20 +1066,25 @@ function readDetailLightingValuesFromUI(fixture) {
     const detailIntensitySlider = getElement('detailIntensitySlider');
     const detailPanSlider = getElement('detailPanSlider');
     const detailTiltSlider = getElement('detailTiltSlider');
+
     const detailRedSlider = getElement('detailRedSlider');
     const detailGreenSlider = getElement('detailGreenSlider');
     const detailBlueSlider = getElement('detailBlueSlider');
     const detailStrobeHzSlider = getElement('detailStrobeHzSlider');
 
     const detailSoftnessSlider = getElement('detailSoftnessSlider');
-
     const detailColorBlazePanel = getElement('detailColorBlazePanel');
 
     const state = {};
-    const { hasOptions, isFixed } = getAngleConfig(fixture);
+    const isAdvancedLed = isAdvancedLedFixture(fixture);
 
-    if (detailPowerState) state.isOn = toBoolean(detailPowerState.dataset.on, true);
-    if (detailIntensitySlider) state.intensity = Number(detailIntensitySlider.value) / 100;
+    if (detailPowerState) {
+        state.isOn = toBoolean(detailPowerState.dataset.on, true);
+    }
+
+    if (detailIntensitySlider) {
+        state.intensity = Number(detailIntensitySlider.value) / 100;
+    }
 
     const detailAngle = getDetailAngleFromUI(fixture);
 
@@ -1087,23 +1092,45 @@ function readDetailLightingValuesFromUI(fixture) {
         state.fieldAngle = detailAngle;
     }
 
-    if (detailPanSlider) state.pan = Number(detailPanSlider.value);
-    if (detailTiltSlider) state.tilt = Number(detailTiltSlider.value);
+    if (detailPanSlider) {
+        state.pan = Number(detailPanSlider.value);
+    }
 
-    if (detailRedSlider) state.r = Number(detailRedSlider.value);
-    if (detailGreenSlider) state.g = Number(detailGreenSlider.value);
-    if (detailBlueSlider) state.b = Number(detailBlueSlider.value);
-    if (detailStrobeHzSlider) state.strobeHz = Number(detailStrobeHzSlider.value);
+    if (detailTiltSlider) {
+        state.tilt = Number(detailTiltSlider.value);
+    }
 
-    if (detailSoftnessSlider) state.softness = Number(detailSoftnessSlider.value);
+    if (detailSoftnessSlider) {
+        state.softness = Number(detailSoftnessSlider.value);
+    }
 
-    if (detailColorBlazePanel) {
+    // 普通灯：读取普通 RGB / Strobe
+    if (!isAdvancedLed) {
+        if (detailRedSlider) state.r = Number(detailRedSlider.value);
+        if (detailGreenSlider) state.g = Number(detailGreenSlider.value);
+        if (detailBlueSlider) state.b = Number(detailBlueSlider.value);
+        if (detailStrobeHzSlider) state.strobeHz = Number(detailStrobeHzSlider.value);
+    }
+
+    // ColorBlaze 48：RGB / Strobe / Segment 都从高级模式面板读取
+    if (isAdvancedLed && detailColorBlazePanel) {
         state.ledMode = detailColorBlazePanel.dataset.ledMode || 'solid';
         state.segmentMode = Number(detailColorBlazePanel.dataset.ledSegments || 8);
+        state.selectedSegment = currentLedState.selectedSegment;
+        state.segments = currentLedState.segments;
+
         state.chaseSpeed = Number(getElement('detailLedChaseSpeedSlider')?.value || 1.5);
         state.direction = detailColorBlazePanel.dataset.ledDirection || 'forward';
-        state.segments = currentLedState.segments;
-        state.selectedSegment = currentLedState.selectedSegment;
+        state.repeatMode = detailColorBlazePanel.dataset.ledRepeatMode || 'single';
+        state.strobeHz = Number(getElement('detailLedStrobeHzSlider')?.value || 0);
+
+        const selectedColor = currentLedState.segments?.[currentLedState.selectedSegment];
+
+        if (selectedColor) {
+            state.r = Number(selectedColor.r);
+            state.g = Number(selectedColor.g);
+            state.b = Number(selectedColor.b);
+        }
     }
 
     return state;
@@ -1160,6 +1187,19 @@ function renderDetailLightingPanel(fixture, state = {}) {
     const b = Number(state.b ?? 64);
     const hex = rgbToHex(r, g, b);
 
+    const standardColorAndStrobe = isAdvancedLed
+        ? ''
+        : `
+            <div class="grid grid-cols-2 gap-3">
+                ${renderDetailRgbBlock(r, g, b, hex)}
+                ${renderDetailStrobeBlock(state)}
+            </div>
+        `;
+
+    const colorBlazeAdvanced = isAdvancedLed
+        ? renderDetailColorBlazeBlock(state)
+        : '';
+        
     panel.innerHTML = `
         <div class="space-y-3" data-detail-fixture-id="${fixture.lightId}">
             <div class="rounded-lg border border-gray-800 bg-[#0b0f16] p-3">
@@ -1179,10 +1219,7 @@ function renderDetailLightingPanel(fixture, state = {}) {
                 ${renderDetailIntensityBlock(state)}
             </div>
             
-            <div class="grid grid-cols-2 gap-3">
-                ${renderDetailRgbBlock(r, g, b, hex)}
-                ${renderDetailStrobeBlock(state)}
-            </div>
+           ${standardColorAndStrobe}
 
             <div class="grid grid-cols-2 gap-3">
                 ${renderDetailAngleBlock(fixture, preset, state, angleTitle)}
@@ -1191,9 +1228,12 @@ function renderDetailLightingPanel(fixture, state = {}) {
 
             ${fixture.fixtureType === FIXTURE_TYPES.FRESNEL ? renderDetailFresnelBlock(state) : ''}
             ${fixture.fixtureType === FIXTURE_TYPES.MOVING ? renderDetailMovingBlock(fixture, preset, state) : ''}
-            ${fixture.fixtureType === FIXTURE_TYPES.LED && isAdvancedLed ? renderDetailColorBlazeBlock(state) : ''}
+            ${colorBlazeAdvanced}
         </div>
     `;
+
+    bindDetailRgbColorWheel();
+    updateDetailRgbWheelHandle(r, g, b);
 }
 
 function detailPowerButtonClass(isActive) {
@@ -1252,7 +1292,7 @@ function renderDetailRgbBlock(r, g, b, hex) {
         <section class="rounded-lg border border-gray-800 bg-[#0b0f16] p-3">
             <div class="text-red-400 text-xs font-bold mb-3">RGB COLOR</div>
 
-            <div class="grid grid-cols-[1fr_72px] gap-3 items-center">
+            <div class="grid grid-cols-[1fr_170px] gap-4 items-center">
                 <div class="space-y-3">
                     <label class="grid grid-cols-[18px_1fr_48px] gap-2 items-center text-xs">
                         <span class="text-red-400">R</span>
@@ -1275,10 +1315,128 @@ function renderDetailRgbBlock(r, g, b, hex) {
                     <div id="detailHexValue" class="w-28 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">${hex}</div>
                 </div>
 
-                <div id="detailColorPreview" class="w-16 h-16 rounded-lg border border-white/10 shadow-lg" style="background:${hex}"></div>
+                <div class="flex items-center justify-center gap-3">
+                    <div
+                        id="detailColorPreview"
+                        class="w-16 h-16 rounded-lg border border-white/10 shadow-lg shrink-0"
+                        style="background:${hex}"
+                    ></div>
+
+                    <div
+                        id="detailRgbColorWheel"
+                        class="relative h-24 w-24 shrink-0 rounded-full cursor-crosshair"
+                        style="background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);"
+                    >
+                        <div class="absolute inset-[28%] rounded-full bg-[#0b0f16]"></div>
+                        <div
+                            id="detailRgbColorWheelHandle"
+                            class="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow pointer-events-none"
+                        ></div>
+                    </div>
+                </div>
             </div>
         </section>
     `;
+}
+
+let isDraggingDetailRgbWheel = false;
+
+function setDetailRgbValues(r, g, b) {
+    r = Math.round(clamp(r, 0, 255));
+    g = Math.round(clamp(g, 0, 255));
+    b = Math.round(clamp(b, 0, 255));
+
+    const hex = rgbToHex(r, g, b);
+
+    const redSlider = getElement('detailRedSlider');
+    const greenSlider = getElement('detailGreenSlider');
+    const blueSlider = getElement('detailBlueSlider');
+
+    if (redSlider) redSlider.value = r;
+    if (greenSlider) greenSlider.value = g;
+    if (blueSlider) blueSlider.value = b;
+
+    getElement('detailRedValue') && (getElement('detailRedValue').textContent = r);
+    getElement('detailGreenValue') && (getElement('detailGreenValue').textContent = g);
+    getElement('detailBlueValue') && (getElement('detailBlueValue').textContent = b);
+
+    const hexElement = getElement('detailHexValue');
+    if (hexElement) {
+        if ('value' in hexElement) hexElement.value = hex;
+        else hexElement.textContent = hex;
+    }
+
+    const preview = getElement('detailColorPreview');
+    if (preview) preview.style.background = hex;
+
+    updateDetailRgbWheelHandle(r, g, b);
+
+    redSlider?.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+function updateDetailRgbWheelHandle(r, g, b) {
+    const wheel = getElement('detailRgbColorWheel');
+    const handle = getElement('detailRgbColorWheelHandle');
+    if (!wheel || !handle) return;
+
+    const { h, s } = rgbToHsv(r, g, b);
+    const size = wheel.clientWidth || 96;
+    const center = size / 2;
+    const radius = center * clamp(s, 0, 1);
+    const angle = (h - 90) * Math.PI / 180;
+
+    handle.style.left = `${center + Math.cos(angle) * radius}px`;
+    handle.style.top = `${center + Math.sin(angle) * radius}px`;
+}
+
+function updateDetailRgbFromWheel(event) {
+    const wheel = getElement('detailRgbColorWheel');
+    if (!wheel) return;
+
+    const rect = wheel.getBoundingClientRect();
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+    const dx = event.clientX - rect.left - cx;
+    const dy = event.clientY - rect.top - cy;
+
+    const distance = Math.min(Math.hypot(dx, dy), Math.min(cx, cy));
+    const h = (Math.atan2(dy, dx) * 180 / Math.PI + 90 + 360) % 360;
+    const s = clamp(distance / Math.min(cx, cy), 0, 1);
+
+    const current = rgbToHsv(
+        Number(getElement('detailRedSlider')?.value || 255),
+        Number(getElement('detailGreenSlider')?.value || 128),
+        Number(getElement('detailBlueSlider')?.value || 64)
+    );
+
+    const next = hsvToRgb(h, s, current.v || 1);
+    setDetailRgbValues(next.r, next.g, next.b);
+}
+
+function bindDetailRgbColorWheel() {
+    const wheel = getElement('detailRgbColorWheel');
+    if (!wheel || wheel.dataset.bound === 'true') return;
+
+    wheel.dataset.bound = 'true';
+
+    wheel.addEventListener('pointerdown', event => {
+        isDraggingDetailRgbWheel = true;
+        wheel.setPointerCapture(event.pointerId);
+        updateDetailRgbFromWheel(event);
+    });
+
+    wheel.addEventListener('pointermove', event => {
+        if (!isDraggingDetailRgbWheel) return;
+        updateDetailRgbFromWheel(event);
+    });
+
+    wheel.addEventListener('pointerup', () => {
+        isDraggingDetailRgbWheel = false;
+    });
+
+    wheel.addEventListener('pointercancel', () => {
+        isDraggingDetailRgbWheel = false;
+    });
 }
 
 function renderDetailStrobeBlock(state) {
