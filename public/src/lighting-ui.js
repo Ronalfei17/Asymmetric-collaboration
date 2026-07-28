@@ -432,15 +432,19 @@ function applyQuickAimPreset(fixture, preset) {
 export function updateSelectedInfoPanel(fixture) {
     if (!fixture) return;
 
+    const displayId = fixture.displayId || `CH ${fixture.lightId}`;
+    const fixtureName = fixture.label || fixture.name || '--';
+    const fixtureType = fixture.fixtureTypeLabel || fixture.fixtureType || '--';
+    const fixtureModel = fixture.modelLabel || fixture.fixtureModel || '--';
     const selectedId = getElement('selectedId');
     const selectedName = getElement('selectedName');
     const selectedType = getElement('selectedType');
     const selectedModel = getElement('selectedModel');
 
-    if (selectedId) selectedId.innerText = fixture.displayId || `CH ${fixture.lightId}`;
-    if (selectedName) selectedName.innerText = fixture.label || '--';
-    if (selectedType) selectedType.innerText = fixture.fixtureTypeLabel || fixture.fixtureType || '--';
-    if (selectedModel) selectedModel.innerText = fixture.modelLabel || fixture.fixtureModel || '--';
+    if (selectedId) selectedId.textContent = displayId;
+    if (selectedName) selectedName.textContent = fixtureName;
+    if (selectedType) selectedType.textContent = fixtureType;
+    if (selectedModel) selectedModel.textContent = fixtureModel;
 
     const detailSelectedFixtureId = getElement('detailSelectedFixtureId');
     const detailSelectedId = getElement('detailSelectedId');
@@ -449,23 +453,44 @@ export function updateSelectedInfoPanel(fixture) {
     const detailFixtureModeLabel = getElement('detailFixtureModeLabel');
 
     if (detailSelectedFixtureId) {
-        detailSelectedFixtureId.innerText = fixture.displayId || `CH ${fixture.lightId}`;
+        detailSelectedFixtureId.textContent = displayId;
     }
 
     if (detailSelectedId) {
-        detailSelectedId.innerText = fixture.displayId || `CH ${fixture.lightId}`;
+        detailSelectedId.textContent = displayId;
     }
 
     if (detailSelectedName) {
-        detailSelectedName.innerText = fixture.label || '--';
+        detailSelectedName.textContent = fixtureName;
     }
 
     if (detailSelectedType) {
-        detailSelectedType.innerText = fixture.fixtureTypeLabel || fixture.fixtureType || '--';
+        detailSelectedType.textContent = fixtureType;
     }
 
-    if (detailFixtureModeLabel) {
-        detailFixtureModeLabel.innerText = fixture.modelLabel || fixture.fixtureModel || 'Selected fixture';
+    const detailHeaderFixtureType = getElement('detailHeaderFixtureType');
+    const detailHeaderFixtureName = getElement('detailHeaderFixtureName');
+    const detailHeaderFixtureModel = getElement('detailHeaderFixtureModel');
+
+    if (detailHeaderFixtureType) {
+        detailHeaderFixtureType.textContent =
+            fixtureType;
+    }
+
+    if (detailHeaderFixtureName) {
+        detailHeaderFixtureName.textContent =
+            fixtureName;
+
+        detailHeaderFixtureName.title =
+            fixtureName;
+    }
+
+    if (detailHeaderFixtureModel) {
+        detailHeaderFixtureModel.textContent =
+            fixtureModel;
+
+        detailHeaderFixtureModel.title =
+            fixtureModel;
     }
 }
 
@@ -1202,18 +1227,7 @@ function renderDetailLightingPanel(fixture, state = {}) {
         
     panel.innerHTML = `
         <div class="space-y-3" data-detail-fixture-id="${fixture.lightId}">
-            <div class="rounded-lg border border-gray-800 bg-[#0b0f16] p-3">
-                <div class="flex items-center justify-between gap-3">
-                    <div>
-                        <div class="text-blue-400 text-xs font-bold">${fixture.fixtureTypeLabel}</div>
-                        <div class="text-gray-100 text-sm font-semibold mt-1">${fixture.label}</div>
-                        <div class="text-gray-500 text-xs mt-1">${fixture.modelLabel || ''}</div>
-                    </div>
-                    <div class="text-xs text-gray-400">${fixture.displayId || `CH ${fixture.lightId}`}</div>
-                </div>
-            </div>
 
-            
             <div class="grid grid-cols-2 gap-3">
                 ${renderDetailPowerBlock(state)}
                 ${renderDetailIntensityBlock(state)}
