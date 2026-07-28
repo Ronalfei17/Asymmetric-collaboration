@@ -135,11 +135,6 @@ export function applyLightingStateSnapshot(snapshotItems = [], fixtures = []) {
                 currentState.fieldAngle ?? defaultState.fieldAngle ?? 30
             ),
 
-            beamSize: safeNumber(
-                item.beamSize,
-                currentState.beamSize ?? defaultState.beamSize ?? 45
-            ),
-
             softness: safeNumber(
                 item.softness,
                 currentState.softness ?? defaultState.softness ?? 0.75
@@ -193,7 +188,6 @@ export function buildLightingPayload(fixture, state) {
 
         fieldAngle: safeNumber(state.fieldAngle, 30),
 
-        beamSize: safeNumber(state.beamSize, 45),
         softness: safeNumber(state.softness, 0.75),
 
         pan: safeNumber(state.pan, 0),

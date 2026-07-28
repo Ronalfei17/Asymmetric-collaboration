@@ -1020,7 +1020,13 @@ export function readLightingValuesFromUI(fixture) {
     };
 
     const quickColorState = readQuickColorValuesFromUI();
-    const quickColorBlazeState = colorBlazePanel
+    const isColorBlazeActive =
+        fixture &&
+        isAdvancedLedFixture(fixture) &&
+        colorBlazePanel &&
+        !colorBlazePanel.classList.contains('hidden');
+
+    const quickColorBlazeState = isColorBlazeActive
         ? readColorBlazeValuesFromUI()
         : {};
 
@@ -1036,10 +1042,28 @@ export function readLightingValuesFromUI(fixture) {
     };
 }
 
+function getDetailAngleFromUI(fixture) {
+    const { hasOptions, isFixed, defaultAngle } = getAngleConfig(fixture);
+
+    if (isFixed) {
+        return defaultAngle;
+    }
+
+    if (hasOptions) {
+        const activeOption = Array.from(document.querySelectorAll('.detail-angle-option'))
+            .find(option => option.classList.contains('border-blue-500'));
+
+        const angle = Number(activeOption?.dataset.detailAngle);
+        return Number.isFinite(angle) ? angle : defaultAngle;
+    }
+
+    const slider = getElement('detailFieldAngleSlider');
+    return slider ? Number(slider.value) : undefined;
+}
+
 function readDetailLightingValuesFromUI(fixture) {
     const detailPowerState = getElement('detailPowerState');
     const detailIntensitySlider = getElement('detailIntensitySlider');
-    const detailFieldAngleSlider = getElement('detailFieldAngleSlider');
     const detailPanSlider = getElement('detailPanSlider');
     const detailTiltSlider = getElement('detailTiltSlider');
     const detailRedSlider = getElement('detailRedSlider');
@@ -1057,8 +1081,10 @@ function readDetailLightingValuesFromUI(fixture) {
     if (detailPowerState) state.isOn = toBoolean(detailPowerState.dataset.on, true);
     if (detailIntensitySlider) state.intensity = Number(detailIntensitySlider.value) / 100;
 
-    if (detailFieldAngleSlider && !hasOptions && !isFixed) {
-        state.fieldAngle = Number(detailFieldAngleSlider.value);
+    const detailAngle = getDetailAngleFromUI(fixture);
+
+    if (detailAngle !== undefined) {
+        state.fieldAngle = detailAngle;
     }
 
     if (detailPanSlider) state.pan = Number(detailPanSlider.value);
@@ -1305,7 +1331,7 @@ function renderDetailAngleBlock(fixture, preset, state, title) {
                                 class="detail-angle-option px-3 py-2 rounded-md border ${isActive ? 'border-blue-500 bg-blue-500/20 text-blue-200' : 'border-gray-700 bg-white/5 text-gray-300'}"
                                 data-detail-angle="${angle}"
                             >
-                                ${angle}&deg;
+                                ${formatAngle(angle)}&deg;
                             </button>
                         `;
                     }).join('')}

@@ -233,9 +233,9 @@ export const LED_MODEL_PRESETS = {
 
 export const FRESNEL_MODEL_PRESETS = {
     [FRESNEL_MODELS.SELECON_RAMA_7_FRESNEL]: {
-        beamSizeMin: 7,
-        beamSizeMax: 50,
-        defaultBeamSize: 45,
+        fieldAngleMin: 14,
+        fieldAngleMax: 61,
+        defaultFieldAngle: 40,
         defaultSoftness: 0.8,
         aimPanMin: -180,
         aimPanMax: 180,
@@ -244,9 +244,9 @@ export const FRESNEL_MODEL_PRESETS = {
         aimPreviewOnly: true
     },
     [FRESNEL_MODELS.STRAND_CANTATA_F]: {
-        beamSizeMin: 8.7,
-        beamSizeMax: 50.7,
-        defaultBeamSize: 45,
+        fieldAngleMin: 8.6,
+        fieldAngleMax: 44.1,
+        defaultFieldAngle: 35,
         defaultSoftness: 0.75,
         aimPanMin: -180,
         aimPanMax: 180,
@@ -255,9 +255,9 @@ export const FRESNEL_MODEL_PRESETS = {
         aimPreviewOnly: true
     },
     [FRESNEL_MODELS.STARLETTE_FR]: {
-        beamSizeMin: 6,
-        beamSizeMax: 57,
-        defaultBeamSize: 40,
+        fieldAngleMin: 6,
+        fieldAngleMax: 57,
+        defaultFieldAngle: 45,
         defaultSoftness: 0.75,
         aimPanMin: -180,
         aimPanMax: 180,
@@ -275,9 +275,8 @@ export const MOVING_MODEL_PRESETS = {
         tiltMax: 166,
         defaultPan: 0,
         defaultTilt: 0,
-        beamAngleMin: 12,
-        beamAngleMax: 36,
-        defaultBeamAngle: 25,
+        fieldAngleMin: 12,
+        fieldAngleMax: 36,
         defaultFieldAngle: 25
     },
     [MOVING_MODELS.MARTIN_MAC_250]: {
@@ -287,8 +286,7 @@ export const MOVING_MODEL_PRESETS = {
         tiltMax: 144.5,
         defaultPan: 0,
         defaultTilt: 0,
-        beamAngleOptions: [12.1, 14.6, 17.5, 23.3],
-        defaultBeamAngle: 12.1,
+        fieldAngleOptions: [12.1, 14.6, 17.5, 23.3],
         defaultFieldAngle: 12.1
     }
 };
@@ -300,7 +298,6 @@ function createDefaultState({
     g = 230,
     b = 200,
     fieldAngle = 30,
-    beamSize = 45,
     softness = 0.75,
     pan = 0,
     tilt = 0,
@@ -323,7 +320,6 @@ function createDefaultState({
         g,
         b,
         fieldAngle,
-        beamSize,
         softness,
         pan,
         tilt,
@@ -372,50 +368,27 @@ function createFixture({
 }) {
     const preset = getModelPreset(fixtureType, fixtureModel) || {};
 
-    const presetDefaultState = {
-        fieldAngle:
+    const defaultFieldAngle =
         preset.defaultFieldAngle
-        ?? preset.defaultBeamAngle
-        ?? preset.defaultBeamSize
+        ?? preset.fieldAngleOptions?.[0]
         ?? preset.fieldAngleMin
-        ?? preset.beamAngleMin
-        ?? preset.beamSizeMin
-        ?? 30,
+        ?? 30;
 
-        beamSize: preset.defaultBeamSize ?? 45,
+    const presetDefaultState = {
+        fieldAngle: defaultFieldAngle,
+
         softness: preset.defaultSoftness ?? 0.75,
 
-        pan:
-            preset.defaultPan
-            ?? 0,
+        pan: preset.defaultPan ?? 0,
+        tilt: preset.defaultTilt ?? 0,
 
-        tilt:
-            preset.defaultTilt
-            ?? 0,
+        strobeHz: preset.defaultStrobeHz ?? 0,
 
-        strobeHz:
-            preset.defaultStrobeHz
-            ?? 0,
-
-        ledMode:
-            preset.defaultMode
-            ?? 'solid',
-
-        segmentMode:
-            preset.defaultSegmentMode
-            ?? 8,
-
-        direction:
-            preset.defaultDirection
-            ?? 'forward',
-
-        repeatMode:
-            preset.defaultRepeatMode
-            ?? 'single',
-
-        chaseSpeed:
-            preset.defaultChaseSpeed
-            ?? 1.5
+        ledMode: preset.defaultMode ?? 'solid',
+        segmentMode: preset.defaultSegmentMode ?? 8,
+        direction: preset.defaultDirection ?? 'forward',
+        repeatMode: preset.defaultRepeatMode ?? 'single',
+        chaseSpeed: preset.defaultChaseSpeed ?? 1.5
     };
 
     return {
@@ -1361,7 +1334,7 @@ export const FIXTURES = [
         fixtureModel: FRESNEL_MODELS.SELECON_RAMA_7_FRESNEL,
         defaultState: {
             intensity: 0.7,
-            beamSize: 45,
+            fieldAngle: 40,
             softness: 0.8
         }
     }),
@@ -1373,7 +1346,7 @@ export const FIXTURES = [
         fixtureModel: FRESNEL_MODELS.SELECON_RAMA_7_FRESNEL,
         defaultState: {
             intensity: 0.7,
-            beamSize: 45,
+            fieldAngle: 40,
             softness: 0.8
         }
     }),
@@ -1385,7 +1358,7 @@ export const FIXTURES = [
         fixtureModel: FRESNEL_MODELS.SELECON_RAMA_7_FRESNEL,
         defaultState: {
             intensity: 0.7,
-            beamSize: 45,
+            fieldAngle: 40,
             softness: 0.8
         }
     }),
@@ -1397,7 +1370,7 @@ export const FIXTURES = [
         fixtureModel: FRESNEL_MODELS.SELECON_RAMA_7_FRESNEL,
         defaultState: {
             intensity: 0.7,
-            beamSize: 45,
+            fieldAngle: 40,
             softness: 0.8
         }
     }),
@@ -1409,7 +1382,7 @@ export const FIXTURES = [
         fixtureModel: FRESNEL_MODELS.SELECON_RAMA_7_FRESNEL,
         defaultState: {
             intensity: 0.7,
-            beamSize: 45,
+            fieldAngle: 40,
             softness: 0.8
         }
     }),
@@ -1421,7 +1394,7 @@ export const FIXTURES = [
         fixtureModel: FRESNEL_MODELS.SELECON_RAMA_7_FRESNEL,
         defaultState: {
             intensity: 0.7,
-            beamSize: 45,
+            fieldAngle: 40,
             softness: 0.8
         }
     }),
@@ -1433,7 +1406,7 @@ export const FIXTURES = [
         fixtureModel: FRESNEL_MODELS.STRAND_CANTATA_F,
         defaultState: {
             intensity: 0.7,
-            beamSize: 45,
+            fieldAngle: 35,
             softness: 0.75
         }
     }),
@@ -1445,7 +1418,7 @@ export const FIXTURES = [
         fixtureModel: FRESNEL_MODELS.STRAND_CANTATA_F,
         defaultState: {
             intensity: 0.7,
-            beamSize: 45,
+            fieldAngle: 35,
             softness: 0.75
         }
     }),
@@ -1457,7 +1430,7 @@ export const FIXTURES = [
         fixtureModel: FRESNEL_MODELS.STRAND_CANTATA_F,
         defaultState: {
             intensity: 0.7,
-            beamSize: 45,
+            fieldAngle: 35,
             softness: 0.75
         }
     }),
@@ -1469,7 +1442,7 @@ export const FIXTURES = [
         fixtureModel: FRESNEL_MODELS.STRAND_CANTATA_F,
         defaultState: {
             intensity: 0.7,
-            beamSize: 45,
+            fieldAngle: 35,
             softness: 0.75
         }
     }),
@@ -1481,7 +1454,7 @@ export const FIXTURES = [
         fixtureModel: FRESNEL_MODELS.STRAND_CANTATA_F,
         defaultState: {
             intensity: 0.7,
-            beamSize: 45,
+            fieldAngle: 35,
             softness: 0.75
         }
     }),
@@ -1493,7 +1466,7 @@ export const FIXTURES = [
         fixtureModel: FRESNEL_MODELS.STRAND_CANTATA_F,
         defaultState: {
             intensity: 0.7,
-            beamSize: 45,
+            fieldAngle: 35,
             softness: 0.75
         }
     }),
@@ -1506,7 +1479,7 @@ export const FIXTURES = [
         fixtureModel: FRESNEL_MODELS.STARLETTE_FR,
         defaultState: {
             intensity: 0.7,
-            beamSize: 40,
+            fieldAngle: 45,
             softness: 0.75
         }
     }),
@@ -1518,7 +1491,7 @@ export const FIXTURES = [
         fixtureModel: FRESNEL_MODELS.STARLETTE_FR,
         defaultState: {
             intensity: 0.7,
-            beamSize: 40,
+            fieldAngle: 45,
             softness: 0.75
         }
     }),
