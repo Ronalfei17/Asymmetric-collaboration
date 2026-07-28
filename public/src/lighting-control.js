@@ -28,13 +28,57 @@ import {
     subscribeControlOpen
 } from './control-channel.js';
 
+import {
+    getCues,
+    getCueById,
+    getEditingCueId,
+    setEditingCueId,
+    createCue,
+    getFixtureSnapshot,
+    upsertFixtureSnapshot,
+    removeFixtureFromCue,
+    getCuesContainingFixture,
+    getLastSavedCueIdForFixture,
+    subscribeCueStore
+} from './cue-store.js';
+
+import {
+    setupCueEditorUI
+} from './cue-editor-ui.js';
+
+const NETWORK_SEND_DEBOUNCE_MS = 40;
+const CUE_SAVE_DEBOUNCE_MS = 200;
+
 let lightingController = null;
+
+function deepClone(value) {
+    if (value === undefined) return undefined;
+
+    if (typeof globalThis.structuredClone === 'function') {
+        return globalThis.structuredClone(value);
+    }
+
+    return JSON.parse(JSON.stringify(value));
+}
 
 export function setupLightingControl(sendControlMessage) {
     let selectedFixtureType = FIXTURE_TYPES.PROFILE;
     let selectedFixture = getFixturesByType(selectedFixtureType)[0] || null;
     let sendTimer = null;
     let hasReceivedUnityLightingSnapshot = false;
+    let cueSaveTimer = null;
+    let pendingCueSave = null;
+
+    const cueEditorUi = setupCueEditorUI({
+        onSelectCue: handleSelectEditingCue,
+        onCreateCue: handleCreateCue,
+        onRemoveFixtureFromCue: handleRemoveFixtureFromCue
+    });
+
+    function getFixtureLabel(fixture = selectedFixture) {
+        if (!fixture) return 'Selected fixture';
+        return fixture.displayId || `CH ${fixture.lightId}`;
+    }
 
     function renderActiveLightTags(){
         const tagContainer = document.getElementById('activeLightTags');
@@ -89,6 +133,138 @@ export function setupLightingControl(sendControlMessage) {
         });
     }
 
+    function renderCurrentCueEditor() {
+        const includedCues = selectedFixture
+            ? getCuesContainingFixture(selectedFixture.lightId)
+            : [];
+
+        cueEditorUi.render({
+            cues: getCues(),
+            editingCueId: getEditingCueId(),
+            includedCues,
+            selectedFixture
+        });
+    }
+
+    function normalizeColorTo255(
+        value,
+        fallback = 255
+        ) {
+        const number = Number(value);
+
+        if (!Number.isFinite(number)) {
+            return fallback;
+        }
+
+        // 网络 Payload 颜色范围。
+        if (number >= 0 && number <= 1) {
+            return Math.round(number * 255);
+        }
+
+        // 兼容旧数据中已经是 0–255 的情况。
+        return Math.round(
+            Math.max(
+                0,
+                Math.min(255, number)
+            )
+        );
+    }
+
+    function snapshotToFixtureState(snapshot) {
+        if (!snapshot || typeof snapshot !== 'object') {
+            return {};
+        }
+
+        const state = deepClone(snapshot);
+
+        if (state.r !== undefined) {
+            state.r = normalizeColorTo255(
+                state.r,
+                255
+            );
+        }
+
+        if (state.g !== undefined) {
+            state.g = normalizeColorTo255(
+                state.g,
+                255
+            );
+        }
+
+        if (state.b !== undefined) {
+            state.b = normalizeColorTo255(
+                state.b,
+                255
+            );
+        }
+
+        if (Array.isArray(state.segments)) {
+            state.segments = state.segments.map(color => ({
+                r: normalizeColorTo255(
+                    color?.r,
+                    255
+                ),
+
+                g: normalizeColorTo255(
+                    color?.g,
+                    255
+                ),
+
+                b: normalizeColorTo255(
+                    color?.b,
+                    255
+                )
+            }));
+        }
+
+        return state;
+    }
+
+    function restoreLastSavedCueForFixture(fixture) {
+        if (!fixture) return null;
+
+        const includedCues = getCuesContainingFixture(fixture.lightId);
+
+        if (includedCues.length === 0) {
+            setEditingCueId(null);
+            return null;
+        }
+
+        let preferredCueId = getLastSavedCueIdForFixture(fixture.lightId);
+
+        if (!preferredCueId) {
+            preferredCueId = [...includedCues]
+                .sort((a, b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0))[0]
+                ?.id || null;
+        }
+
+        const preferredCue = preferredCueId
+            ? getCueById(preferredCueId)
+            : null;
+
+        const savedSnapshot = preferredCue
+            ? getFixtureSnapshot(preferredCue.id, fixture.lightId)
+            : null;
+
+        if (!preferredCue || !savedSnapshot) {
+            setEditingCueId(null);
+            return null;
+        }
+
+        const nextState = updateFixtureState(
+            fixture,
+            snapshotToFixtureState(savedSnapshot)
+        );
+
+        setEditingCueId(preferredCue.id);
+
+        return {
+            cue: preferredCue,
+            nextState,
+            payload: buildPayloadFromFixtureState(fixture, nextState)
+        };
+    }
+
     function renderAll() {
         renderFixtureTypeCapsules({
             selectedFixtureType,
@@ -105,6 +281,7 @@ export function setupLightingControl(sendControlMessage) {
 
         if (!selectedFixture) {
             renderActiveLightTags();
+            renderCurrentCueEditor();
             return;
         }
         applyFixturePresetToUI(selectedFixture);
@@ -114,14 +291,132 @@ export function setupLightingControl(sendControlMessage) {
 
         updateSelectedInfoPanel(selectedFixture);
         renderActiveLightTags();
+        renderCurrentCueEditor();
+    }
+
+    function buildPayloadFromFixtureState(fixture, fixtureState) {
+        if (!fixture || !fixtureState) return null;
+
+        return deepClone(
+            buildLightingPayload(fixture, fixtureState)
+        );
+    }
+
+    function captureCurrentFixtureSnapshot() {
+        if (!selectedFixture) return null;
+
+        const uiState = readLightingValuesFromUI();
+        const nextState = updateFixtureState(
+            selectedFixture,
+            uiState
+        );
+
+        return buildPayloadFromFixtureState(
+            selectedFixture,
+            nextState
+        );
+    }
+
+    function sendLightingPayload(payload) {
+        if (!payload) return;
+
+        console.log('[WebLightingSend]', {
+            lightId: payload.lightId,
+            type: payload.fixtureType,
+            model: payload.fixtureModel,
+            isOn: payload.isOn,
+            intensity: payload.intensity,
+            fieldAngle: payload.fieldAngle,
+            beamSize: payload.beamSize,
+            pan: payload.pan,
+            tilt: payload.tilt
+        });
+
+        sendControlMessage('lighting-fixture', payload);
+        renderActiveLightTags();
+    }
+
+    function sendCurrentFixtureState() {
+        const payload = captureCurrentFixtureSnapshot();
+        sendLightingPayload(payload);
+    }
+
+    function scheduleSendFixtureState(nextState) {
+        if (!selectedFixture || !nextState) return;
+
+        const payload = buildPayloadFromFixtureState(
+            selectedFixture,
+            nextState
+        );
+
+        clearTimeout(sendTimer);
+        sendTimer = setTimeout(() => {
+            sendLightingPayload(payload);
+        }, NETWORK_SEND_DEBOUNCE_MS);
+    }
+
+    function scheduleCueSnapshotSave(nextState) {
+        const editingCueId = getEditingCueId();
+
+        if (!editingCueId || !selectedFixture || !nextState) {
+            return;
+        }
+
+        pendingCueSave = {
+            cueId: editingCueId,
+            lightId: selectedFixture.lightId,
+            fixtureLabel: getFixtureLabel(),
+            snapshot: buildPayloadFromFixtureState(
+                selectedFixture,
+                nextState
+            )
+        };
+
+        clearTimeout(cueSaveTimer);
+        cueSaveTimer = setTimeout(() => {
+            flushPendingCueSave({ showStatus: true });
+        }, CUE_SAVE_DEBOUNCE_MS);
+    }
+
+    function flushPendingCueSave({ showStatus = false } = {}) {
+        clearTimeout(cueSaveTimer);
+        cueSaveTimer = null;
+
+        if (!pendingCueSave) return false;
+
+        const save = pendingCueSave;
+        pendingCueSave = null;
+
+        const cue = getCueById(save.cueId);
+        if (!cue) {
+            console.warn('[LightingControl] Pending Cue save discarded; Cue not found:', save.cueId);
+            return false;
+        }
+
+        upsertFixtureSnapshot(
+            save.cueId,
+            save.lightId,
+            save.snapshot
+        );
+
+        if (showStatus) {
+            cueEditorUi.setStatus(
+                `${save.fixtureLabel} saved to Cue ${cue.cueNumber}.`,
+                { tone: 'success', duration: 900 }
+            );
+        }
+
+        return true;
     }
 
     function handleSelectType(nextType) {
         const firstFixtureOfType = getFixturesByType(nextType)[0] || null;
 
         if (!firstFixtureOfType) {
+            flushPendingCueSave();
             selectedFixtureType = nextType;
             selectedFixture = null;
+            setEditingCueId(null);
             renderAll();
             return;
         }
@@ -141,43 +436,142 @@ export function setupLightingControl(sendControlMessage) {
         });
     }
 
-    function sendCurrentFixtureState() {
+    function handleSelectEditingCue(cueId) {
         if (!selectedFixture) return;
+        
+        const normalizedCueId = cueId || null;
+        const currentEditingCueId = getEditingCueId();
 
-        const uiState = readLightingValuesFromUI(selectedFixture);
+        if (normalizedCueId === currentEditingCueId) {
+            renderCurrentCueEditor();
+            return;
+        }
+
+        flushPendingCueSave({ showStatus: false });
+
+        if (!normalizedCueId) {
+            setEditingCueId(null);
+            renderCurrentCueEditor();
+
+            cueEditorUi.setStatus(
+                'Live Control — changes are not saved to a Cue.',
+                { tone: 'neutral', duration: 2200 }
+            );
+            return;
+        }
+
+        const cue = getCueById(normalizedCueId);
+        if (!cue) {
+            cueEditorUi.setStatus('The selected Cue no longer exists.', {
+                tone: 'error',
+                duration: 3000
+            });
+            renderCurrentCueEditor();
+            return;
+        }
+
+        const savedSnapshot = getFixtureSnapshot(
+            cue.id,
+            selectedFixture.lightId
+        );
+
+        if (!savedSnapshot) {
+            const currentSnapshot = captureCurrentFixtureSnapshot();
+
+            upsertFixtureSnapshot(
+                cue.id,
+                selectedFixture.lightId,
+                currentSnapshot
+            );
+
+            setEditingCueId(cue.id);
+            renderAll();
+
+            cueEditorUi.setStatus(
+                `${getFixtureLabel()} added to Cue ${cue.cueNumber} using the current fixture settings.`,
+                { tone: 'success', duration: 2600 }
+            );
+            return;
+        }
 
         const nextState = updateFixtureState(
             selectedFixture,
-            uiState
+            snapshotToFixtureState(savedSnapshot)
         );
 
-        const payload = buildLightingPayload(
-            selectedFixture,
-            nextState
+        setEditingCueId(cue.id);
+        renderAll();
+
+        sendLightingPayload(
+            buildPayloadFromFixtureState(selectedFixture, nextState)
         );
 
-        console.log('[WebLightingSend]', {
-            lightId: payload.lightId,
-            type: payload.fixtureType,
-            model: payload.fixtureModel,
-            isOn: payload.isOn,
-            intensity: payload.intensity,
-            fieldAngle: payload.fieldAngle,
-            beamSize: payload.beamSize,
-            pan: payload.pan,
-            tilt: payload.tilt
-        });
-
-        sendControlMessage('lighting-fixture', payload);
-        renderActiveLightTags();
+        cueEditorUi.setStatus(
+            `Editing Cue ${cue.cueNumber} — ${cue.name}.`,
+            { tone: 'neutral', duration: 1800 }
+        );
     }
 
-    function scheduleSendCurrentFixtureState() {
-        clearTimeout(sendTimer);
+    function handleCreateCue({ name }) {
+        if (!selectedFixture) {
+            throw new Error('Select a fixture before creating a Cue.');
+        }
 
-        sendTimer = setTimeout(() => {
-            sendCurrentFixtureState();
-        }, 40);
+        flushPendingCueSave({ showStatus: false });
+
+        const fixtureSnapshot = captureCurrentFixtureSnapshot();
+        const cue = createCue({
+            name,
+            lightId: selectedFixture.lightId,
+            fixtureSnapshot
+        });
+
+        setEditingCueId(cue.id);
+        renderAll();
+
+        cueEditorUi.setStatus(
+            `Cue ${cue.cueNumber} created. ${getFixtureLabel()} is now included.`,
+            { tone: 'success', duration: 2600 }
+        );
+
+        return cue;
+    }
+
+    function handleRemoveFixtureFromCue(cueId) {
+        if (!selectedFixture) return false;
+
+        flushPendingCueSave({ showStatus: false });
+
+        const cue = getCueById(cueId);
+        if (!cue) {
+            throw new Error('The selected Cue no longer exists.');
+        }
+
+        const wasEditingCue = String(getEditingCueId()) === String(cue.id);
+        const removed = removeFixtureFromCue(
+            cue.id,
+            selectedFixture.lightId
+        );
+
+        if (!removed) {
+            throw new Error(
+                `${getFixtureLabel()} is not included in Cue ${cue.cueNumber}.`
+            );
+        }
+
+        if (wasEditingCue) {
+            setEditingCueId(null);
+        }
+
+        renderCurrentCueEditor();
+
+        cueEditorUi.setStatus(
+            `${getFixtureLabel()} removed from Cue ${cue.cueNumber}.` +
+            (wasEditingCue ? ' Switched to Live Control.' : ''),
+            { tone: 'success', duration: 2600 }
+        );
+
+        return true;
     }
 
     function requestUnityLightingState(reason = 'manual') {
@@ -194,6 +588,20 @@ export function setupLightingControl(sendControlMessage) {
 
         if (!Array.isArray(fixtures)) {
             console.warn('[LightingControl] Invalid lighting-state-snapshot:', message);
+            return;
+        }
+
+        const editingCueId = getEditingCueId();
+
+        if (editingCueId) {
+            hasReceivedUnityLightingSnapshot = true;
+            console.log(
+                '[LightingControl] Snapshot received while editing Cue; ' + 'kept the current Cue editing context.',
+                {
+                    editingCueId,
+                    fixtureCount: fixtures.length
+                }
+            );
             return;
         }
 
@@ -252,11 +660,33 @@ export function setupLightingControl(sendControlMessage) {
         send = true
     } = {}) {
         if (!fixture) return;
-        selectedFixture = fixture;
-        selectedFixtureType = fixture.fixtureType;
+
+        const isDifferentFixture = !selectedFixture ||
+            Number(selectedFixture.lightId) !== Number(fixture.lightId);
+
+        let restoredCueContext = null;
+
+        if (isDifferentFixture) {
+            flushPendingCueSave({ showStatus: false });
+            selectedFixture = fixture;
+            selectedFixtureType = fixture.fixtureType;
+            restoredCueContext = restoreLastSavedCueForFixture(fixture);
+        } else {
+            selectedFixture = fixture;
+            selectedFixtureType = fixture.fixtureType;
+        }
         renderAll();
 
         if(emit) dispatchSelectedFixture(fixture, source);
+        if (restoredCueContext) {
+            sendLightingPayload(restoredCueContext.payload);
+            cueEditorUi.setStatus(
+                `Restored Cue ${restoredCueContext.cue.cueNumber} — ${restoredCueContext.cue.name} for ${getFixtureLabel(fixture)}.`,
+                { tone: 'neutral', duration: 1800 }
+            );
+            return;
+        }
+
         if(send) sendCurrentFixtureState();
     }
 
@@ -277,18 +707,20 @@ export function setupLightingControl(sendControlMessage) {
     setupLightingInputListeners((options = {}) => {
         if (!selectedFixture) return;
 
-        const uiState = readLightingValuesFromUI(selectedFixture);
-
-        updateFixtureState(
+        const uiState = readLightingValuesFromUI();
+        const nextState = updateFixtureState(
             selectedFixture,
             uiState
         );
 
+        scheduleCueSnapshotSave(nextState);
+        scheduleSendFixtureState(nextState);
+
         if (options.render) {
             renderAll();
-        } else {renderActiveLightTags();}
-
-        scheduleSendCurrentFixtureState();
+        } else {
+            renderActiveLightTags();
+        }
     });
 
     subscribeControlOpen(() => {
@@ -303,16 +735,26 @@ export function setupLightingControl(sendControlMessage) {
         handleUnityLightingStateSnapshot(message);
     });
 
+    subscribeCueStore(() => {
+        renderCurrentCueEditor();
+    });
+
     setTimeout(() => {
         if (!hasReceivedUnityLightingSnapshot) {
             requestUnityLightingState('setup-delayed');
         }
     }, 800);
 
+    window.addEventListener('beforeunload', () => {
+        flushPendingCueSave({ showStatus: false });
+    });
+
     lightingController = {
         selectFixtureById,
         getSelectedFixture: () => selectedFixture,
-        getSelectedFixtureType: () => selectedFixtureType
+        getSelectedFixtureType: () => selectedFixtureType,
+        getEditingCueId,
+        flushPendingCueSave
     };
 
     renderAll();
@@ -337,4 +779,12 @@ export function getSelectedLightingFixture() {
 
 export function getSelectedLightingFixtureType() {
     return lightingController?.getSelectedFixtureType() || null;
+}
+
+export function getCurrentEditingCueId() {
+    return lightingController?.getEditingCueId() || null;
+}
+
+export function flushLightingCueEdits() {
+    lightingController?.flushPendingCueSave({ showStatus: false });
 }
