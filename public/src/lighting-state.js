@@ -63,6 +63,53 @@ export function updateFixtureState(fixture, partialState = {}) {
     const currentState = getFixtureState(fixture);
 
     const nextState = cloneState({
+        ...currentState,
+        ...partialState
+    });
+
+    fixtureStateMap.set(
+        fixture.lightId,
+        nextState
+    );
+
+    return cloneState(nextState);
+}
+
+export function applyLightingStateSnapshot(snapshotItems = [], fixtures = []) {
+    if (!Array.isArray(snapshotItems)) {
+        console.warn(
+            '[LightingState] Invalid lighting state snapshot:',
+            snapshotItems
+        );
+        return 0;
+    }
+
+    const fixtureById = new Map(
+        fixtures.map(fixture => [
+            Number(fixture.lightId),
+            fixture
+        ])
+    );
+
+    let appliedCount = 0;
+
+    snapshotItems.forEach(item => {
+        const lightId = Number(item.lightId);
+
+        if (!Number.isFinite(lightId)) {
+            return;
+        }
+
+        const fixture = fixtureById.get(lightId);
+        const defaultState = fixture
+            ? cloneState(fixture.defaultState)
+            : {};
+
+        const currentState =
+            fixtureStateMap.get(lightId) ||
+            defaultState;
+
+        const nextState = cloneState({
         ...defaultState,
         ...currentState,
 
@@ -142,12 +189,11 @@ export function updateFixtureState(fixture, partialState = {}) {
                 g: normalizeColor255(color?.g, 255),
                 b: normalizeColor255(color?.b, 255)
             }))
-            : cloneState({
-                segments:
-                    currentState.segments ??
-                    defaultState.segments ??
-                    []
-            }).segments ?? [],
+            : (
+                currentState.segments ??
+                defaultState.segments ??
+                []
+            ),
 
         chaseSpeed: safeNumber(
             item.chaseSpeed,
@@ -174,11 +220,11 @@ export function updateFixtureState(fixture, partialState = {}) {
                 g: normalizeColor255(item.colorA.g, 128),
                 b: normalizeColor255(item.colorA.b, 64)
             }
-            : cloneState({
-                colorA:
-                    currentState.colorA ??
-                    defaultState.colorA
-            }).colorA,
+            : (
+                currentState.colorA ??
+                defaultState.colorA ??
+                null
+            ),
 
         colorB: item.colorB
             ? {
@@ -186,111 +232,14 @@ export function updateFixtureState(fixture, partialState = {}) {
                 g: normalizeColor255(item.colorB.g, 128),
                 b: normalizeColor255(item.colorB.b, 255)
             }
-            : cloneState({
-                colorB:
-                    currentState.colorB ??
-                    defaultState.colorB
-            }).colorB
+            : (
+                currentState.colorB ??
+                defaultState.colorB ??
+                null
+            )
     });
 
-    fixtureStateMap.set(
-        fixture.lightId,
-        nextState
-    );
-
-    return cloneState(nextState);
-}
-
-export function applyLightingStateSnapshot(snapshotItems = [], fixtures = []) {
-    if (!Array.isArray(snapshotItems)) {
-        console.warn(
-            '[LightingState] Invalid lighting state snapshot:',
-            snapshotItems
-        );
-        return 0;
-    }
-
-    const fixtureById = new Map(
-        fixtures.map(fixture => [
-            Number(fixture.lightId),
-            fixture
-        ])
-    );
-
-    let appliedCount = 0;
-
-    snapshotItems.forEach(item => {
-        const lightId = Number(item.lightId);
-
-        if (!Number.isFinite(lightId)) {
-            return;
-        }
-
-        const fixture = fixtureById.get(lightId);
-        const defaultState = fixture
-            ? cloneState(fixture.defaultState)
-            : {};
-
-        const currentState =
-            fixtureStateMap.get(lightId) ||
-            defaultState;
-
-        const nextState = {
-            ...defaultState,
-            ...currentState,
-
-            isOn: safeBoolean(
-                item.isOn,
-                currentState.isOn ?? defaultState.isOn ?? false
-            ),
-
-            intensity: safeNumber(
-                item.intensity,
-                currentState.intensity ?? defaultState.intensity ?? 0
-            ),
-
-            r: normalizeColor255(
-                item.r,
-                currentState.r ?? defaultState.r ?? 255
-            ),
-
-            g: normalizeColor255(
-                item.g,
-                currentState.g ?? defaultState.g ?? 255
-            ),
-
-            b: normalizeColor255(
-                item.b,
-                currentState.b ?? defaultState.b ?? 255
-            ),
-
-            fieldAngle: safeNumber(
-                item.fieldAngle,
-                currentState.fieldAngle ?? defaultState.fieldAngle ?? 30
-            ),
-
-            softness: safeNumber(
-                item.softness,
-                currentState.softness ?? defaultState.softness ?? 0.75
-            ),
-
-            pan: safeNumber(
-                item.pan,
-                currentState.pan ?? defaultState.pan ?? 0
-            ),
-
-            tilt: safeNumber(
-                item.tilt,
-                currentState.tilt ?? defaultState.tilt ?? 0
-            ),
-
-            strobeHz: safeNumber(
-                item.strobeHz,
-                currentState.strobeHz ?? defaultState.strobeHz ?? 0
-            )
-        };
-
-        fixtureStateMap.set(lightId, nextState);
+    fixtureStateMap.set(lightId, nextState);
         appliedCount += 1;
     });
 
