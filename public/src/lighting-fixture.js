@@ -291,6 +291,18 @@ export const MOVING_MODEL_PRESETS = {
     }
 };
 
+function createDefaultSegments(count = 8, color = {
+    r: 255,
+    g: 128,
+    b: 64
+}) {
+    return Array.from({ length: count }, () => ({
+        r: color.r,
+        g: color.g,
+        b: color.b
+    }));
+}
+
 function createDefaultState({
     isOn = true,
     intensity = 0.75,
@@ -374,6 +386,9 @@ function createFixture({
         ?? preset.fieldAngleMin
         ?? 30;
 
+    const defaultSegmentMode =
+        preset.defaultSegmentMode ?? 8;
+
     const presetDefaultState = {
         fieldAngle: defaultFieldAngle,
 
@@ -382,13 +397,53 @@ function createFixture({
         pan: preset.defaultPan ?? 0,
         tilt: preset.defaultTilt ?? 0,
 
-        strobeHz: preset.defaultStrobeHz ?? 0,
+        strobeEnabled:
+            preset.defaultStrobeEnabled ?? false,
 
-        ledMode: preset.defaultMode ?? 'solid',
-        segmentMode: preset.defaultSegmentMode ?? 8,
-        direction: preset.defaultDirection ?? 'forward',
-        repeatMode: preset.defaultRepeatMode ?? 'single',
-        chaseSpeed: preset.defaultChaseSpeed ?? 1.5
+        strobeHz:
+            preset.defaultStrobeHz ?? 0,
+
+        ledMode:
+            preset.defaultMode ?? 'solid',
+
+        segmentMode:
+            defaultSegmentMode,
+
+        selectedSegment: 0,
+
+        segments:
+            preset.supportsAdvancedModes
+                ? createDefaultSegments(defaultSegmentMode)
+                : undefined,
+
+        colorA:
+            preset.supportsAdvancedModes
+                ? {
+                    r: 255,
+                    g: 128,
+                    b: 64,
+                    hex: '#FF8040'
+                }
+                : undefined,
+
+        colorB:
+            preset.supportsAdvancedModes
+                ? {
+                    r: 0,
+                    g: 216,
+                    b: 255,
+                    hex: '#00D8FF'
+                }
+                : undefined,
+
+        direction:
+            preset.defaultDirection ?? 'forward',
+
+        repeatMode:
+            preset.defaultRepeatMode ?? 'single',
+
+        chaseSpeed:
+            preset.defaultChaseSpeed ?? 1.5
     };
 
     return {
@@ -944,33 +999,6 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-
-            ledMode: 'solid',
-
-            colorA: {
-                r: 255,
-                g: 128,
-                b: 64,
-                hex: '#FF8040'
-            },
-
-            colorB: {
-                r: 0,
-                g: 216,
-                b: 255,
-                hex: '#00D8FF'
-            },
-
-            segmentMode: 8,
-            selectedSegment: 0,
-
-            direction: 'forward',
-            repeatMode: 'single',
-
-            chaseSpeed: 1.5,
-
-            strobeEnabled: false,
-            strobeHz: 8
         }
     }),
 
@@ -988,33 +1016,6 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-
-            ledMode: 'solid',
-
-            colorA: {
-                r: 255,
-                g: 128,
-                b: 64,
-                hex: '#FF8040'
-            },
-
-            colorB: {
-                r: 0,
-                g: 216,
-                b: 255,
-                hex: '#00D8FF'
-            },
-
-            segmentMode: 8,
-            selectedSegment: 0,
-
-            direction: 'forward',
-            repeatMode: 'single',
-
-            chaseSpeed: 1.5,
-
-            strobeEnabled: false,
-            strobeHz: 8
         }
     }),
 
@@ -1032,33 +1033,6 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-
-            ledMode: 'solid',
-
-            colorA: {
-                r: 255,
-                g: 128,
-                b: 64,
-                hex: '#FF8040'
-            },
-
-            colorB: {
-                r: 0,
-                g: 216,
-                b: 255,
-                hex: '#00D8FF'
-            },
-
-            segmentMode: 8,
-            selectedSegment: 0,
-
-            direction: 'forward',
-            repeatMode: 'single',
-
-            chaseSpeed: 1.5,
-
-            strobeEnabled: false,
-            strobeHz: 8
         }
     }),
 
@@ -1076,33 +1050,6 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-
-            ledMode: 'solid',
-
-            colorA: {
-                r: 255,
-                g: 128,
-                b: 64,
-                hex: '#FF8040'
-            },
-
-            colorB: {
-                r: 0,
-                g: 216,
-                b: 255,
-                hex: '#00D8FF'
-            },
-
-            segmentMode: 8,
-            selectedSegment: 0,
-
-            direction: 'forward',
-            repeatMode: 'single',
-
-            chaseSpeed: 1.5,
-
-            strobeEnabled: false,
-            strobeHz: 8
         }
     }),
 
@@ -1120,33 +1067,6 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-
-            ledMode: 'solid',
-
-            colorA: {
-                r: 255,
-                g: 128,
-                b: 64,
-                hex: '#FF8040'
-            },
-
-            colorB: {
-                r: 0,
-                g: 216,
-                b: 255,
-                hex: '#00D8FF'
-            },
-
-            segmentMode: 8,
-            selectedSegment: 0,
-
-            direction: 'forward',
-            repeatMode: 'single',
-
-            chaseSpeed: 1.5,
-
-            strobeEnabled: false,
-            strobeHz: 8
         }
     }),
 
@@ -1164,33 +1084,6 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-
-            ledMode: 'solid',
-
-            colorA: {
-                r: 255,
-                g: 128,
-                b: 64,
-                hex: '#FF8040'
-            },
-
-            colorB: {
-                r: 0,
-                g: 216,
-                b: 255,
-                hex: '#00D8FF'
-            },
-
-            segmentMode: 8,
-            selectedSegment: 0,
-
-            direction: 'forward',
-            repeatMode: 'single',
-
-            chaseSpeed: 1.5,
-
-            strobeEnabled: false,
-            strobeHz: 8
         }
     }),
 
@@ -1208,33 +1101,6 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-
-            ledMode: 'solid',
-
-            colorA: {
-                r: 255,
-                g: 128,
-                b: 64,
-                hex: '#FF8040'
-            },
-
-            colorB: {
-                r: 0,
-                g: 216,
-                b: 255,
-                hex: '#00D8FF'
-            },
-
-            segmentMode: 8,
-            selectedSegment: 0,
-
-            direction: 'forward',
-            repeatMode: 'single',
-
-            chaseSpeed: 1.5,
-
-            strobeEnabled: false,
-            strobeHz: 8
         }
     }),
 
@@ -1252,33 +1118,6 @@ export const FIXTURES = [
             r: 255,
             g: 128,
             b: 64,
-
-            ledMode: 'solid',
-
-            colorA: {
-                r: 255,
-                g: 128,
-                b: 64,
-                hex: '#FF8040'
-            },
-
-            colorB: {
-                r: 0,
-                g: 216,
-                b: 255,
-                hex: '#00D8FF'
-            },
-
-            segmentMode: 8,
-            selectedSegment: 0,
-
-            direction: 'forward',
-            repeatMode: 'single',
-
-            chaseSpeed: 1.5,
-
-            strobeEnabled: false,
-            strobeHz: 8
         }
     }),
     // LED - Florrie Tube - Light ID / Channel: 27, 28, 29

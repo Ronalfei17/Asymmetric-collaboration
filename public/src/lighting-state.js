@@ -46,25 +46,159 @@ export function getFixtureState(fixture) {
     if (!fixture) return null;
 
     if (!fixtureStateMap.has(fixture.lightId)) {
-        fixtureStateMap.set(fixture.lightId, cloneState(fixture.defaultState));
+        fixtureStateMap.set(
+            fixture.lightId,
+            cloneState(fixture.defaultState)
+        );
     }
 
-    return fixtureStateMap.get(fixture.lightId);
+    return cloneState(
+        fixtureStateMap.get(fixture.lightId)
+    );
 }
 
-export function updateFixtureState(fixture, partialState) {
+export function updateFixtureState(fixture, partialState = {}) {
     if (!fixture) return null;
 
     const currentState = getFixtureState(fixture);
 
-    const nextState = {
+    const nextState = cloneState({
+        ...defaultState,
         ...currentState,
-        ...partialState
-    };
 
-    fixtureStateMap.set(fixture.lightId, nextState);
+        isOn: safeBoolean(
+            item.isOn,
+            currentState.isOn ?? defaultState.isOn ?? false
+        ),
 
-    return nextState;
+        intensity: safeNumber(
+            item.intensity,
+            currentState.intensity ?? defaultState.intensity ?? 0
+        ),
+
+        r: normalizeColor255(
+            item.r,
+            currentState.r ?? defaultState.r ?? 255
+        ),
+
+        g: normalizeColor255(
+            item.g,
+            currentState.g ?? defaultState.g ?? 255
+        ),
+
+        b: normalizeColor255(
+            item.b,
+            currentState.b ?? defaultState.b ?? 255
+        ),
+
+        fieldAngle: safeNumber(
+            item.fieldAngle,
+            currentState.fieldAngle ?? defaultState.fieldAngle ?? 30
+        ),
+
+        softness: safeNumber(
+            item.softness,
+            currentState.softness ?? defaultState.softness ?? 0.75
+        ),
+
+        pan: safeNumber(
+            item.pan,
+            currentState.pan ?? defaultState.pan ?? 0
+        ),
+
+        tilt: safeNumber(
+            item.tilt,
+            currentState.tilt ?? defaultState.tilt ?? 0
+        ),
+
+        strobeHz: safeNumber(
+            item.strobeHz,
+            currentState.strobeHz ?? defaultState.strobeHz ?? 0
+        ),
+
+        ledMode:
+            item.ledMode ??
+            currentState.ledMode ??
+            defaultState.ledMode ??
+            'solid',
+
+        segmentMode: safeNumber(
+            item.segmentMode,
+            currentState.segmentMode ??
+            defaultState.segmentMode ??
+            8
+        ),
+
+        selectedSegment: safeNumber(
+            item.selectedSegment,
+            currentState.selectedSegment ??
+            defaultState.selectedSegment ??
+            0
+        ),
+
+        segments: Array.isArray(item.segments)
+            ? item.segments.map(color => ({
+                r: normalizeColor255(color?.r, 255),
+                g: normalizeColor255(color?.g, 255),
+                b: normalizeColor255(color?.b, 255)
+            }))
+            : cloneState({
+                segments:
+                    currentState.segments ??
+                    defaultState.segments ??
+                    []
+            }).segments ?? [],
+
+        chaseSpeed: safeNumber(
+            item.chaseSpeed,
+            currentState.chaseSpeed ??
+            defaultState.chaseSpeed ??
+            1.5
+        ),
+
+        direction:
+            item.direction ??
+            currentState.direction ??
+            defaultState.direction ??
+            'forward',
+
+        repeatMode:
+            item.repeatMode ??
+            currentState.repeatMode ??
+            defaultState.repeatMode ??
+            'single',
+
+        colorA: item.colorA
+            ? {
+                r: normalizeColor255(item.colorA.r, 255),
+                g: normalizeColor255(item.colorA.g, 128),
+                b: normalizeColor255(item.colorA.b, 64)
+            }
+            : cloneState({
+                colorA:
+                    currentState.colorA ??
+                    defaultState.colorA
+            }).colorA,
+
+        colorB: item.colorB
+            ? {
+                r: normalizeColor255(item.colorB.r, 64),
+                g: normalizeColor255(item.colorB.g, 128),
+                b: normalizeColor255(item.colorB.b, 255)
+            }
+            : cloneState({
+                colorB:
+                    currentState.colorB ??
+                    defaultState.colorB
+            }).colorB
+    });
+
+    fixtureStateMap.set(
+        fixture.lightId,
+        nextState
+    );
+
+    return cloneState(nextState);
 }
 
 export function applyLightingStateSnapshot(snapshotItems = [], fixtures = []) {
@@ -187,7 +321,6 @@ export function buildLightingPayload(fixture, state) {
         b: safeNumber(state.b, 255) / 255,
 
         fieldAngle: safeNumber(state.fieldAngle, 30),
-
         softness: safeNumber(state.softness, 0.75),
 
         pan: safeNumber(state.pan, 0),
@@ -196,6 +329,7 @@ export function buildLightingPayload(fixture, state) {
         ledMode: state.ledMode || 'solid',
         segmentMode: safeNumber(state.segmentMode, 8),
         selectedSegment: safeNumber(state.selectedSegment, 0),
+
         segments: Array.isArray(state.segments)
             ? state.segments.map(color => ({
                 r: safeNumber(color.r, 255) / 255,
@@ -204,8 +338,25 @@ export function buildLightingPayload(fixture, state) {
             }))
             : [],
 
+        colorA: state.colorA
+            ? {
+                r: safeNumber(state.colorA.r, 255) / 255,
+                g: safeNumber(state.colorA.g, 128) / 255,
+                b: safeNumber(state.colorA.b, 64) / 255
+            }
+            : null,
+
+        colorB: state.colorB
+            ? {
+                r: safeNumber(state.colorB.r, 64) / 255,
+                g: safeNumber(state.colorB.g, 128) / 255,
+                b: safeNumber(state.colorB.b, 255) / 255
+            }
+            : null,
+
         chaseSpeed: safeNumber(state.chaseSpeed, 1.5),
         direction: state.direction || 'forward',
+        repeatMode: state.repeatMode || 'single',
         strobeHz: safeNumber(state.strobeHz, 0)
     };
 }
