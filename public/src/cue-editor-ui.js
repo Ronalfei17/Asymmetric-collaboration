@@ -65,18 +65,20 @@ function getTagClass(isEditing) {
         'included-cue-tag',
         'inline-flex',
         'items-center',
-        'gap-1.5',
-        'rounded-full',
+        'justify-center',
+        'h-7',
+        'min-w-[64px]',
+        'rounded-md',
         'border',
-        'px-3',
-        'py-1.5',
-        'text-[11px]',
-        'font-semibold',
+        'px-2.5',
+        'text-[10px]',
+        'font-medium',
         'transition',
         'touch-manipulation',
+        'select-none',
         isEditing
-            ? 'border-blue-400/80 bg-blue-500/25 text-blue-100 shadow-[0_0_12px_rgba(59,130,246,0.22)]'
-            : 'border-gray-700 bg-white/5 text-gray-300 hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-200'
+            ? 'border-blue-500/70 bg-blue-500/15 text-blue-200 shadow-[0_0_0_1px_rgba(59,130,246,0.15)]'
+            : 'border-gray-700 bg-[#06080c] text-gray-300 hover:border-blue-500/40 hover:text-blue-200'
     ].join(' ');
 }
 
@@ -229,9 +231,6 @@ export function setupCueEditorUI({
         if (!editingCueSelect) return;
 
         const sortedCues = sortCues(viewState.cues);
-        const includedIds = new Set(
-            viewState.includedCues.map(cue => String(cue.id))
-        );
 
         editingCueSelect.innerHTML = '';
         editingCueSelect.disabled = !viewState.selectedFixture;
@@ -247,10 +246,9 @@ export function setupCueEditorUI({
 
         sortedCues.forEach(cue => {
             const option = document.createElement('option');
-            const isIncluded = includedIds.has(String(cue.id));
 
-            option.value = cue.id;
-            option.textContent = `${isIncluded ? '✓ ' : ''}${formatCueSelectLabel(cue)}`;
+            option.value = String(cue.id);
+            option.textContent = formatCueSelectLabel(cue);
             editingCueSelect.appendChild(option);
         });
 
@@ -301,35 +299,11 @@ export function setupCueEditorUI({
                 `${formatCueSelectLabel(cue)}. ${isEditing ? 'Currently editing.' : ''} Tap to edit; long press to remove.`
             );
 
-            const cueLabel = document.createElement(
-                'span'
-            );
+            const cueLabel = document.createElement('span');
 
-            cueLabel.textContent =
-                formatCueTagLabel(cue);
+            cueLabel.textContent = formatCueTagLabel(cue);
 
             button.appendChild(cueLabel);
-
-            if (isEditing) {
-                const editingBadge =
-                    document.createElement('span');
-
-                editingBadge.className = [
-                    'rounded-full',
-                    'bg-blue-300/20',
-                    'px-1.5',
-                    'py-0.5',
-                    'text-[9px]',
-                    'text-blue-200'
-                ].join(' ');
-
-                editingBadge.textContent =
-                    'Editing';
-
-                button.appendChild(
-                    editingBadge
-                );
-            }
 
             bindLongPress(button, {
                 onTap: () => {
