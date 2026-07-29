@@ -1,5 +1,5 @@
 export function setupSidebar() {
-    const navButtons = document.querySelectorAll('.nav-btn');
+    const navButtons = document.querySelectorAll('.nav-btn:not([data-sidebar-hidden="true"]');
     const pageViews = document.querySelectorAll('.page-view');
 
     function renderSidebarUI(activeTargetId) {

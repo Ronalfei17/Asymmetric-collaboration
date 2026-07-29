@@ -8,6 +8,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
+        #sidebar-nav [data-sidebar-hidden="true"] {
+            display: none !important;
+        }
+
         @media (orientation: portrait) {
             #portraitWarning {
                 display: flex;
@@ -59,24 +63,24 @@
                 <button data-target="page-status" class="nav-btn w-full py-2.5 flex flex-col items-center justify-center relative transition-all duration-200">
                     <div class="indicator absolute left-0 top-0 bottom-0 w-[3px] bg-transparent"></div>
                     <i data-lucide="sliders" class="pointer-events-none transition-colors"></i>
-                    <span class="pointer-events-none block px-1">Status Bar</span>
+                    <span class="pointer-events-none block px-1">Home</span>
                 </button>
-                <button data-target="page-map" class="nav-btn w-full py-2.5 flex flex-col items-center justify-center relative transition-all duration-200">
+                <button data-sidebar-hidden="true" data-target="page-map" class="nav-btn w-full py-2.5 flex flex-col items-center justify-center relative transition-all duration-200">
                     <div class="indicator absolute left-0 top-0 bottom-0 w-[3px] bg-transparent"></div>
                     <i data-lucide="map" class="pointer-events-none transition-colors"></i>
                     <span class="pointer-events-none block px-1">Theatre Map</span>
                 </button>
-                <button data-target="page-cue" class="nav-btn w-full py-2.5 flex flex-col items-center justify-center relative transition-all duration-200">
+                <button data-sidebar-hidden="true" data-target="page-cue" class="nav-btn w-full py-2.5 flex flex-col items-center justify-center relative transition-all duration-200">
                     <div class="indicator absolute left-0 top-0 bottom-0 w-[3px] bg-transparent"></div>
                     <i data-lucide="list-ordered" class="pointer-events-none transition-colors"></i>
                     <span class="pointer-events-none block px-1">Cue list</span>
                 </button>
-                <button data-target="page-vrlive" class="nav-btn w-full py-2.5 flex flex-col items-center justify-center relative transition-all duration-200">
+                <button data-sidebar-hidden="true" data-target="page-vrlive" class="nav-btn w-full py-2.5 flex flex-col items-center justify-center relative transition-all duration-200">
                     <div class="indicator absolute left-0 top-0 bottom-0 w-[3px] bg-transparent"></div>
                     <i data-lucide="video" class="pointer-events-none transition-colors"></i>
                     <span class="pointer-events-none block px-1">VR Live Stream</span>
                 </button>
-                <button data-target="page-targetinfo" class="nav-btn w-full py-2.5 flex flex-col items-center justify-center relative transition-all duration-200">
+                <button data-sidebar-hidden="true" data-target="page-targetinfo" class="nav-btn w-full py-2.5 flex flex-col items-center justify-center relative transition-all duration-200">
                     <div class="indicator absolute left-0 top-0 bottom-0 w-[3px] bg-transparent"></div>
                     <i data-lucide="target" class="pointer-events-none transition-colors"></i>
                     <span class="pointer-events-none block px-1">Selected Target Info</span>
@@ -593,7 +597,7 @@
                                     <!-- Right: Cue controls, without visible headings -->
                                     <div class="min-w-0 w-[320px] shrink-0">
                                         <!-- Included Cue tags -->
-                                        <div id="includedCuesSection" class="hidden mt-3 min-w-0 mb-1.5" aria-label="Included in Cues">
+                                        <div id="includedCuesSection" class="hidden min-w-0 mb-1.5" aria-label="Included in Cues">
                                             <div
                                                 id="includedCueTags"
                                                 class="flex min-w-0 flex-wrap gap-2"
@@ -601,18 +605,33 @@
                                         </div>
 
                                         <!-- Editing Cue select -->
-                                        <select
-                                            id="editingCueSelect"
-                                            class="h-9 w-[260px] min-w-[220px] shrink-0 rounded-md border border-gray-700 bg-[#06080c] px-3 pr-8 text-[11px] text-gray-200 outline-none transition focus:border-blue-500/70 focus:ring-1 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:opacity-50"
-                                            aria-label="Editing Cue"
-                                            title="Editing Cue"
-                                        >
-                                            <option value="">
-                                                No Cue — Live Control
-                                            </option>
-                                        </select>
+                                        <div class="relative w-[260px] min-w-[220px]">
+                                            <select
+                                                id="editingCueSelect"
+                                                class="peer h-9 w-full appearance-none rounded-md border border-gray-700 bg-[#06080c] px-3 pr-10 text-[11px] text-gray-200 outline-none transition focus:border-blue-500/70 focus:ring-1 focus:ring-blue-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+                                                style="-webkit-appearance: none; appearance: none;"
+                                                aria-label="Editing Cue"
+                                                title="Editing Cue"
+                                            >
+                                                <option value="">
+                                                    No Cue — Live Control
+                                                </option>
+                                            </select>
+
+                                            <svg
+                                                class="pointer-events-none absolute right-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-white opacity-90 transition peer-disabled:opacity-30"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                stroke-width="2.5"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                aria-hidden="true"
+                                            >
+                                                <path d="m7 10 5 5 5-5"></path>
+                                            </svg>
+                                        </div>
                                     </div>
-                                </div>
 
                                 <!-- Save / create / remove status -->
                                 <div id="cueEditorStatus" class="mt-2 hidden text-right text-[10px] text-gray-500" aria-live="polite"></div>

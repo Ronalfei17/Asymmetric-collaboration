@@ -1,5 +1,6 @@
 import { connectControlServer, closeControlServer, sendControlMessage, sendRawControlMessage, subscribeControlMessages, subscribeControlOpen } from './control-channel.js';
 import { connectVideoRelay, closeVideoRelay, startVideoStream, stopVideoStream } from './video-stream.js';
+import { initializeCueStore } from './cue-store.js';
 import { setupLightingControl } from './lighting-control.js';
 import { setupTeleportMap } from './teleport-map.js';
 import { setupCueList } from './cue-list.js';
@@ -20,6 +21,7 @@ function createIcons() {
     }
 }
 
+initializeCueStore();
 setupStatus();
 setupSidebar();
 setupLightingControl(sendControlMessage);

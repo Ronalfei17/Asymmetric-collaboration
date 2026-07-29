@@ -1,72 +1,210 @@
+import { getCues, subscribeCueStore } from './cue-store.js';
+
+function getCueButtonClass(isSelected) {
+    return [
+        'cue-btn',
+        'w-full',
+        'px-4',
+        'py-3',
+        'rounded-lg',
+        'border',
+        'text-left',
+        'transition',
+        isSelected
+            ? [
+                'border-blue-500/70',
+                'bg-blue-500/10',
+                'text-blue-400',
+                'shadow-[0_0_12px_rgba(59,130,246,0.15)]'
+            ].join(' ')
+            : [
+                'border-gray-700',
+                'bg-white/5',
+                'text-gray-200',
+                'hover:bg-white/10'
+            ].join(' ')
+    ].join(' ');
+}
+
+function getFixtureCount(cue) {
+    return Object.keys(
+        cue?.fixtures || {}
+    ).length;
+}
+
 export function setupCueList(sendControlMessage) {
     const cueButtons = document.querySelectorAll('.cue-btn');
-    const image = document.getElementById('theatrePlanImage');
-    const mapViewport = document.getElementById('mapViewport');
-    const mapEmptyState = document.getElementById('mapEmptyState');
-    const selectedMapPin = document.getElementById('selectedMapPin');
+    const cueListContainer = initialCueButtons[0]?.parentElement || document.getElementById('homeCueList');
 
-    function setCueButtonState(activeButton) {
-        cueButtons.forEach(button => {
-            const cueLabel = button.querySelector('.cue-label');
-            const cueName = button.querySelector('.cue-name');
-
-            button.className =
-                "cue-btn w-full px-4 py-3 rounded-lg border border-gray-700 bg-white/5 text-left text-gray-200 hover:bg-white/10 transition";
-
-            if (cueLabel) cueLabel.className = "cue-label text-gray-400";
-            if (cueName) cueName.className = "cue-name ml-2 text-gray-100";
-        });
-
-        const activeLabel = activeButton.querySelector('.cue-label');
-        const activeName = activeButton.querySelector('.cue-name');
-
-        activeButton.className =
-            "cue-btn w-full px-4 py-3 rounded-lg border border-blue-500/70 bg-blue-500/10 text-left text-blue-400 transition shadow-[0_0_12px_rgba(59,130,246,0.15)]";
-
-        if (activeLabel) activeLabel.className = "cue-label text-blue-400";
-        if (activeName) activeName.className = "cue-name ml-2 text-white font-semibold";
+    let selectedCueId = null;
+    if (!cueListContainer) {
+        console.warn(
+            '[CueList] Cue List container not found.'
+        );
+        return;
     }
 
-    function showMapForCue(button) {
-        const mapSrc = button.dataset.map;
-
-        if (mapSrc) {
-            if (image) image.src = mapSrc;
-            if (mapViewport) mapViewport.classList.remove('hidden');
-
-            if (mapEmptyState) {
-                mapEmptyState.classList.add('hidden');
-                mapEmptyState.classList.remove('flex');
-            }
-        } else {
-            if (mapViewport) mapViewport.classList.add('hidden');
-
-            if (mapEmptyState) {
-                mapEmptyState.classList.remove('hidden');
-                mapEmptyState.classList.add('flex');
-            }
-
-            if (selectedMapPin) {
-                selectedMapPin.classList.add('hidden');
-            }
+    function applyCueToQuest(cue) {
+        if (
+            !cue ||
+            typeof sendControlMessage !== 'function'
+        ) {
+            return;
         }
-    }
 
-    cueButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            setCueButtonState(button);
-            showMapForCue(button);
+        const fixtureEntries =
+            Object.entries(cue.fixtures || {});
 
-            sendControlMessage('cue', {
-                cue: button.dataset.cue,
-                map: button.dataset.map || null
-            });
+        sendControlMessage('cue', {
+            cue: cue.id,
+            cueId: cue.id,
+            cueNumber: cue.cueNumber,
+            cueName: cue.name
         });
-    });
 
-    const defaultCue = document.querySelector('.cue-btn[data-cue="default"]');
-    if (defaultCue) {
-        setCueButtonState(defaultCue);
-        showMapForCue(defaultCue);
+        fixtureEntries.forEach(
+            ([lightId, snapshot]) => {
+                if (
+                    !snapshot ||
+                    typeof snapshot !== 'object'
+                ) {
+                    return;
+                }
+
+                sendControlMessage(
+                    'lighting-fixture',
+                    {
+                        ...snapshot,
+                        lightId:
+                            snapshot.lightId ??
+                            Number(lightId)
+                    }
+                );
+            }
+        );
+
+        window.setTimeout(() => {
+            sendControlMessage(
+                'request-lighting-state',
+                {
+                    reason:
+                        `cue-${cue.cueNumber}-applied`,
+                    requestedAt: Date.now()
+                }
+            );
+        }, 150);
     }
+
+    function createCueButton(cue) {
+        const isSelected =
+            String(cue.id) ===
+            String(selectedCueId);
+
+        const fixtureCount =
+            getFixtureCount(cue);
+
+        const button =
+            document.createElement('button');
+
+        button.type = 'button';
+        button.dataset.cueId =
+            String(cue.id);
+        button.className =
+            getCueButtonClass(isSelected);
+
+        const cueLabel =
+            document.createElement('span');
+
+        cueLabel.className = isSelected
+            ? 'cue-label text-blue-400'
+            : 'cue-label text-gray-400';
+
+        cueLabel.textContent =
+            `Cue ${cue.cueNumber}:`;
+
+        const cueName =
+            document.createElement('span');
+
+        cueName.className = isSelected
+            ? 'cue-name ml-2 text-white font-semibold'
+            : 'cue-name ml-2 text-gray-100';
+
+        cueName.textContent =
+            String(cue.name || '');
+
+        const fixtureCountLabel =
+            document.createElement('div');
+
+        fixtureCountLabel.className =
+            'mt-1 text-[10px] text-gray-500';
+
+        fixtureCountLabel.textContent =
+            `${fixtureCount} fixture` +
+            `${fixtureCount === 1 ? '' : 's'}`;
+
+        button.append(
+            cueLabel,
+            cueName,
+            fixtureCountLabel
+        );
+
+        button.addEventListener(
+            'click',
+            () => {
+                selectedCueId = cue.id;
+
+                renderCueList();
+                applyCueToQuest(cue);
+            }
+        );
+
+        return button;
+    }
+
+    function renderCueList() {
+        const cues = getCues();
+
+        if (
+            selectedCueId &&
+            !cues.some(
+                cue =>
+                    String(cue.id) ===
+                    String(selectedCueId)
+            )
+        ) {
+            selectedCueId = null;
+        }
+
+        cueListContainer.innerHTML = '';
+
+        if (cues.length === 0) {
+            const emptyState =
+                document.createElement('div');
+
+            emptyState.className =
+                'rounded-lg border border-dashed border-gray-700 p-4 text-center text-[11px] text-gray-500';
+
+            emptyState.textContent =
+                'No Cues created yet.';
+
+            cueListContainer.appendChild(
+                emptyState
+            );
+
+            return;
+        }
+
+        cues.forEach(cue => {
+            cueListContainer.appendChild(
+                createCueButton(cue)
+            );
+        });
+    }
+
+    subscribeCueStore(
+        renderCueList,
+        {
+            emitImmediately: true
+        }
+    );
 }
