@@ -55,6 +55,21 @@ export function setupCueList(sendControlMessage) {
         const fixtureEntries =
             Object.entries(cue.fixtures || {});
 
+        // Mark the whole playback window before sending any fixture payload.
+        // Unity may emit one or more snapshots while the Cue is being applied.
+        window.dispatchEvent(
+            new CustomEvent(
+                'cue-playback-state-requested',
+                {
+                    detail: {
+                        cueId: cue.id,
+                        cueNumber: cue.cueNumber,
+                        requestedAt: Date.now()
+                    }
+                }
+            )
+        );
+
         sendControlMessage('cue', {
             cue: cue.id,
             cueId: cue.id,
@@ -84,18 +99,6 @@ export function setupCueList(sendControlMessage) {
         );
 
         window.setTimeout(() => {
-            window.dispatchEvent(
-                new CustomEvent(
-                    'cue-playback-state-requested',
-                    {
-                        detail: {
-                            cueId: cue.id,
-                            cueNumber: cue.cueNumber
-                        }
-                    }
-                )
-            );
-
             sendControlMessage(
                 'request-lighting-state',
                 {
@@ -222,13 +225,17 @@ export function setupCueList(sendControlMessage) {
     window.addEventListener(
         'cue-zero-refreshed',
         event => {
-            selectedCueId =
-                event.detail?.cueId ||
-                getCues().find(
-                    cue =>
-                        Number(cue.cueNumber) === 0
-                )?.id ||
-                null;
+            // Rebuilding Cue 0 should not override a Cue the user just selected.
+            // Only an explicit initial/reconnect baseline may reset the selection.
+            if (event.detail?.resetSelection === true) {
+                selectedCueId =
+                    event.detail?.cueId ||
+                    getCues().find(
+                        cue =>
+                            Number(cue.cueNumber) === 0
+                    )?.id ||
+                    null;
+            }
 
             renderCueList();
         }

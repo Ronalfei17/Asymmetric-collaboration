@@ -67,6 +67,7 @@ export function setupLightingControl(sendControlMessage) {
     let selectedFixture = getFixturesByType(selectedFixtureType)[0] || null;
     let sendTimer = null;
     let hasReceivedUnityLightingSnapshot = false;
+    let awaitingUnityBaselineSnapshot = true;
     let cuePlaybackConfirmationDeadline = 0;
     let cueSaveTimer = null;
     let pendingCueSave = null;
@@ -576,13 +577,28 @@ export function setupLightingControl(sendControlMessage) {
         return true;
     }
 
-    function requestUnityLightingState(reason = 'manual') {
+    function requestUnityLightingState(
+        reason = 'manual',
+        {
+            baseline = false
+        } = {}
+    ) {
+        if (baseline) {
+            awaitingUnityBaselineSnapshot = true;
+        }
+
         sendControlMessage('request-lighting-state', {
             reason,
             requestedAt: Date.now()
         });
 
-        console.log('[LightingControl] Requested Unity lighting state:', reason);
+        console.log(
+            '[LightingControl] Requested Unity lighting state:',
+            {
+                reason,
+                baseline
+            }
+        );
     }
 
     function hasOwn(object, key) {
@@ -613,21 +629,60 @@ export function setupLightingControl(sendControlMessage) {
                 hasOwn(item || {}, 'isOK')
             ));
 
-        const candidates = hasExplicitIsOk
-            ? fixtures.filter(isUnityFixtureOk)
-            : fixtures;
-
         if (!hasExplicitIsOk) {
-            console.warn(
-                '[LightingControl] Unity snapshot has no isOk field; ' +
-                'using all known fixtures for Cue 0 compatibility.'
+            console.error(
+                '[LightingControl] Cue 0 was not refreshed because the Unity ' +
+                'lighting-state-snapshot contains no isOk/isOK field.'
             );
+
+            return {
+                canRefresh: false,
+                fixtures: [],
+                rawIsOkCount: 0,
+                unknownIsOkIds: []
+            };
         }
 
-        return candidates.filter(item => (
-            item &&
-            getFixtureById(item.lightId)
-        ));
+        const uniqueFixturesById = new Map();
+        const unknownIsOkIds = [];
+        let rawIsOkCount = 0;
+
+        fixtures.forEach(item => {
+            if (!item || !isUnityFixtureOk(item)) {
+                return;
+            }
+
+            rawIsOkCount += 1;
+
+            const lightId = Number(item.lightId);
+
+            if (!Number.isFinite(lightId)) {
+                return;
+            }
+
+            if (!getFixtureById(lightId)) {
+                unknownIsOkIds.push(lightId);
+                return;
+            }
+
+            // Deduplicate repeated lightIds so the stored Cue count matches
+            // the number of fixture snapshots in Cue 0.
+            uniqueFixturesById.set(
+                lightId,
+                item
+            );
+        });
+
+        return {
+            canRefresh: true,
+            fixtures: [
+                ...uniqueFixturesById.values()
+            ],
+            rawIsOkCount,
+            unknownIsOkIds: [
+                ...new Set(unknownIsOkIds)
+            ]
+        };
     }
 
     function buildCueZeroSnapshots(fixtures) {
@@ -658,7 +713,12 @@ export function setupLightingControl(sendControlMessage) {
         return snapshots;
     }
 
-    function refreshCueZeroFromUnity(fixtures) {
+    function refreshCueZeroFromUnity(
+        fixtures,
+        {
+            resetSelection = false
+        } = {}
+    ) {
         const cueZero = getCues().find(
             cue =>
                 Number(cue.cueNumber) === 0
@@ -671,26 +731,35 @@ export function setupLightingControl(sendControlMessage) {
             );
 
             return {
-                appliedCount: 0,
+                refreshed: false,
                 cueId: null,
-                fixtureCount: 0
+                fixtureCount: 0,
+                rawIsOkCount: 0,
+                unknownIsOkIds: []
             };
         }
 
-        const initializationFixtures =
+        const initialization =
             getCueZeroInitializationFixtures(
                 fixtures
             );
 
-        const appliedCount =
-            applyLightingStateSnapshot(
-                initializationFixtures,
-                FIXTURES
-            );
+        if (!initialization.canRefresh) {
+            return {
+                refreshed: false,
+                cueId: cueZero.id,
+                fixtureCount:
+                    Object.keys(
+                        cueZero.fixtures || {}
+                    ).length,
+                rawIsOkCount: 0,
+                unknownIsOkIds: []
+            };
+        }
 
         const cueZeroSnapshots =
             buildCueZeroSnapshots(
-                initializationFixtures
+                initialization.fixtures
             );
 
         replaceCueFixtures(
@@ -701,6 +770,11 @@ export function setupLightingControl(sendControlMessage) {
             }
         );
 
+        const storedFixtureCount =
+            Object.keys(
+                cueZeroSnapshots
+            ).length;
+
         window.dispatchEvent(
             new CustomEvent(
                 'cue-zero-refreshed',
@@ -708,35 +782,56 @@ export function setupLightingControl(sendControlMessage) {
                     detail: {
                         cueId: cueZero.id,
                         fixtureCount:
-                            initializationFixtures.length
+                            storedFixtureCount,
+                        rawIsOkCount:
+                            initialization.rawIsOkCount,
+                        unknownIsOkIds:
+                            initialization.unknownIsOkIds,
+                        resetSelection
                     }
                 }
             )
         );
 
+        if (
+            initialization.unknownIsOkIds.length > 0
+        ) {
+            console.warn(
+                '[LightingControl] Some Unity isOk fixtures are missing from Web FIXTURES:',
+                initialization.unknownIsOkIds
+            );
+        }
+
         return {
-            appliedCount,
+            refreshed: true,
             cueId: cueZero.id,
             fixtureCount:
-                initializationFixtures.length
+                storedFixtureCount,
+            rawIsOkCount:
+                initialization.rawIsOkCount,
+            unknownIsOkIds:
+                initialization.unknownIsOkIds
         };
     }
 
     function handleUnityLightingStateSnapshot(message) {
-        const fixtures = message?.payload?.fixtures;
+        const fixtures =
+            message?.payload?.fixtures;
 
         if (!Array.isArray(fixtures)) {
-            console.warn('[LightingControl] Invalid lighting-state-snapshot:', message);
+            console.warn(
+                '[LightingControl] Invalid lighting-state-snapshot:',
+                message
+            );
             return;
         }
 
-        const isCuePlaybackConfirmation =
-            Date.now() <=
+        const now = Date.now();
+        const isCuePlaybackSnapshot =
+            now <=
             cuePlaybackConfirmationDeadline;
 
-        cuePlaybackConfirmationDeadline = 0;
-
-        if (isCuePlaybackConfirmation) {
+        if (isCuePlaybackSnapshot) {
             const appliedCount =
                 applyLightingStateSnapshot(
                     fixtures,
@@ -747,31 +842,71 @@ export function setupLightingControl(sendControlMessage) {
                 true;
 
             console.log(
-                '[LightingControl] Cue playback confirmation applied:',
+                '[LightingControl] Cue playback snapshot applied:',
                 appliedCount
+            );
+
+            // Keep both the homepage Cue selection and the detail-page
+            // Editing Cue while the Cue playback window is active.
+            renderAll();
+            return;
+        }
+
+        if (awaitingUnityBaselineSnapshot) {
+            flushPendingCueSave({
+                showStatus: false
+            });
+
+            setEditingCueId(null);
+
+            // The live Web state follows the complete Unity snapshot.
+            const appliedCount =
+                applyLightingStateSnapshot(
+                    fixtures,
+                    FIXTURES
+                );
+
+            // Cue 0 stores only the unique, Web-known isOk fixtures.
+            const cueZeroResult =
+                refreshCueZeroFromUnity(
+                    fixtures,
+                    {
+                        resetSelection: true
+                    }
+                );
+
+            awaitingUnityBaselineSnapshot =
+                false;
+
+            hasReceivedUnityLightingSnapshot =
+                true;
+
+            console.log(
+                '[LightingControl] Unity baseline applied:',
+                {
+                    appliedCount,
+                    cueZero: cueZeroResult
+                }
             );
 
             renderAll();
             return;
-    }
+        }
 
-    flushPendingCueSave({
-            showStatus: false
-        });
-
-        setEditingCueId(null);
-
-        const result =
-            refreshCueZeroFromUnity(
-                fixtures
+        // A normal live snapshot updates the controls only.
+        // It must not clear Editing Cue or force the homepage back to Cue 0.
+        const appliedCount =
+            applyLightingStateSnapshot(
+                fixtures,
+                FIXTURES
             );
 
         hasReceivedUnityLightingSnapshot =
             true;
 
         console.log(
-            '[LightingControl] Unity baseline applied and Cue 0 refreshed:',
-            result
+            '[LightingControl] Unity live snapshot applied:',
+            appliedCount
         );
 
         renderAll();
@@ -883,13 +1018,20 @@ export function setupLightingControl(sendControlMessage) {
     window.addEventListener(
         'cue-playback-state-requested',
         () => {
+            // Keep the full window active. Multiple Unity snapshots can arrive
+            // while a multi-fixture Cue is being applied.
             cuePlaybackConfirmationDeadline =
                 Date.now() + 5000;
         }
     );
 
     subscribeControlOpen(() => {
-        requestUnityLightingState('control-channel-open');
+        requestUnityLightingState(
+            'control-channel-open',
+            {
+                baseline: true
+            }
+        );
     });
 
     subscribeControlMessages(message => {
@@ -906,7 +1048,12 @@ export function setupLightingControl(sendControlMessage) {
 
     setTimeout(() => {
         if (!hasReceivedUnityLightingSnapshot) {
-            requestUnityLightingState('setup-delayed');
+            requestUnityLightingState(
+                'setup-delayed',
+                {
+                    baseline: true
+                }
+            );
         }
     }, 800);
 
