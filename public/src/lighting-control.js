@@ -623,50 +623,31 @@ export function setupLightingControl(sendControlMessage) {
     }
 
     function getCueZeroInitializationFixtures(fixtures) {
-        const hasExplicitIsOk =
-            fixtures.some(item => (
-                hasOwn(item || {}, 'isOk') ||
-                hasOwn(item || {}, 'isOK')
-            ));
-
-        if (!hasExplicitIsOk) {
-            console.error(
-                '[LightingControl] Cue 0 was not refreshed because the Unity ' +
-                'lighting-state-snapshot contains no isOk/isOK field.'
-            );
-
-            return {
-                canRefresh: false,
-                fixtures: [],
-                rawIsOkCount: 0,
-                unknownIsOkIds: []
-            };
-        }
-
+        // Cue 0 must be a complete Unity baseline snapshot.
+        // Keep ON and OFF fixtures so returning from another Cue can
+        // restore both states.
         const uniqueFixturesById = new Map();
-        const unknownIsOkIds = [];
-        let rawIsOkCount = 0;
+        const unknownUnityIds = [];
+        const invalidUnityIds = [];
 
         fixtures.forEach(item => {
-            if (!item || !isUnityFixtureOk(item)) {
-                return;
-            }
-
-            rawIsOkCount += 1;
-
-            const lightId = Number(item.lightId);
+            const lightId =
+                Number(item?.lightId);
 
             if (!Number.isFinite(lightId)) {
+                invalidUnityIds.push(
+                    item?.lightId
+                );
                 return;
             }
 
             if (!getFixtureById(lightId)) {
-                unknownIsOkIds.push(lightId);
+                unknownUnityIds.push(
+                    lightId
+                );
                 return;
             }
 
-            // Deduplicate repeated lightIds so the stored Cue count matches
-            // the number of fixture snapshots in Cue 0.
             uniqueFixturesById.set(
                 lightId,
                 item
@@ -674,14 +655,19 @@ export function setupLightingControl(sendControlMessage) {
         });
 
         return {
-            canRefresh: true,
+            canRefresh:
+                fixtures.length > 0,
             fixtures: [
                 ...uniqueFixturesById.values()
             ],
-            rawIsOkCount,
-            unknownIsOkIds: [
-                ...new Set(unknownIsOkIds)
-            ]
+            rawUnityCount:
+                fixtures.length,
+            alignedFixtureCount:
+                uniqueFixturesById.size,
+            unknownUnityIds: [
+                ...new Set(unknownUnityIds)
+            ],
+            invalidUnityIds
         };
     }
 
@@ -734,8 +720,11 @@ export function setupLightingControl(sendControlMessage) {
                 refreshed: false,
                 cueId: null,
                 fixtureCount: 0,
-                rawIsOkCount: 0,
-                unknownIsOkIds: []
+                activeFixtureCount: 0,
+                rawUnityCount: 0,
+                alignedFixtureCount: 0,
+                unknownUnityIds: [],
+                invalidUnityIds: []
             };
         }
 
@@ -745,15 +734,37 @@ export function setupLightingControl(sendControlMessage) {
             );
 
         if (!initialization.canRefresh) {
+            console.warn(
+                '[LightingControl] Unity returned an empty lighting snapshot; ' +
+                'Cue 0 was kept unchanged.'
+            );
+
+            const existingSnapshots =
+                Object.values(
+                    cueZero.fixtures || {}
+                );
+
+            const existingActiveCount =
+                existingSnapshots.filter(
+                    snapshot => (
+                        snapshot?.isOn === true ||
+                        snapshot?.isOn === 'true' ||
+                        snapshot?.isOn === 1 ||
+                        snapshot?.isOn === '1'
+                    )
+                ).length;
+
             return {
                 refreshed: false,
                 cueId: cueZero.id,
                 fixtureCount:
-                    Object.keys(
-                        cueZero.fixtures || {}
-                    ).length,
-                rawIsOkCount: 0,
-                unknownIsOkIds: []
+                    existingSnapshots.length,
+                activeFixtureCount:
+                    existingActiveCount,
+                rawUnityCount: 0,
+                alignedFixtureCount: 0,
+                unknownUnityIds: [],
+                invalidUnityIds: []
             };
         }
 
@@ -770,9 +781,22 @@ export function setupLightingControl(sendControlMessage) {
             }
         );
 
-        const storedFixtureCount =
-            Object.keys(
+        const storedSnapshots =
+            Object.values(
                 cueZeroSnapshots
+            );
+
+        const storedFixtureCount =
+            storedSnapshots.length;
+
+        const activeFixtureCount =
+            storedSnapshots.filter(
+                snapshot => (
+                    snapshot?.isOn === true ||
+                    snapshot?.isOn === 'true' ||
+                    snapshot?.isOn === 1 ||
+                    snapshot?.isOn === '1'
+                )
             ).length;
 
         window.dispatchEvent(
@@ -783,10 +807,15 @@ export function setupLightingControl(sendControlMessage) {
                         cueId: cueZero.id,
                         fixtureCount:
                             storedFixtureCount,
-                        rawIsOkCount:
-                            initialization.rawIsOkCount,
-                        unknownIsOkIds:
-                            initialization.unknownIsOkIds,
+                        activeFixtureCount,
+                        rawUnityCount:
+                            initialization.rawUnityCount,
+                        alignedFixtureCount:
+                            initialization.alignedFixtureCount,
+                        unknownUnityIds:
+                            initialization.unknownUnityIds,
+                        invalidUnityIds:
+                            initialization.invalidUnityIds,
                         resetSelection
                     }
                 }
@@ -794,11 +823,20 @@ export function setupLightingControl(sendControlMessage) {
         );
 
         if (
-            initialization.unknownIsOkIds.length > 0
+            initialization.unknownUnityIds.length > 0
         ) {
             console.warn(
-                '[LightingControl] Some Unity isOk fixtures are missing from Web FIXTURES:',
-                initialization.unknownIsOkIds
+                '[LightingControl] Unity fixtures missing from Web FIXTURES:',
+                initialization.unknownUnityIds
+            );
+        }
+
+        if (
+            initialization.invalidUnityIds.length > 0
+        ) {
+            console.warn(
+                '[LightingControl] Invalid lightIds in Unity snapshot:',
+                initialization.invalidUnityIds
             );
         }
 
@@ -807,10 +845,15 @@ export function setupLightingControl(sendControlMessage) {
             cueId: cueZero.id,
             fixtureCount:
                 storedFixtureCount,
-            rawIsOkCount:
-                initialization.rawIsOkCount,
-            unknownIsOkIds:
-                initialization.unknownIsOkIds
+            activeFixtureCount,
+            rawUnityCount:
+                initialization.rawUnityCount,
+            alignedFixtureCount:
+                initialization.alignedFixtureCount,
+            unknownUnityIds:
+                initialization.unknownUnityIds,
+            invalidUnityIds:
+                initialization.invalidUnityIds
         };
     }
 
@@ -866,7 +909,7 @@ export function setupLightingControl(sendControlMessage) {
                     FIXTURES
                 );
 
-            // Cue 0 stores only the unique, Web-known isOk fixtures.
+            // Cue 0 stores the complete unique, Web-known Unity baseline.
             const cueZeroResult =
                 refreshCueZeroFromUnity(
                     fixtures,
@@ -1017,11 +1060,27 @@ export function setupLightingControl(sendControlMessage) {
 
     window.addEventListener(
         'cue-playback-state-requested',
-        () => {
-            // Keep the full window active. Multiple Unity snapshots can arrive
-            // while a multi-fixture Cue is being applied.
+        event => {
+            // Cue 0 can contain many snapshots, so keep the playback
+            // confirmation window open until queued sends settle.
+            const expectedDurationMs =
+                Number(
+                    event.detail?.expectedDurationMs
+                );
+
+            const playbackWindowMs =
+                Number.isFinite(
+                    expectedDurationMs
+                )
+                    ? Math.max(
+                        5000,
+                        expectedDurationMs + 2000
+                    )
+                    : 5000;
+
             cuePlaybackConfirmationDeadline =
-                Date.now() + 5000;
+                Date.now() +
+                playbackWindowMs;
         }
     );
 

@@ -1,5 +1,8 @@
 import { getCues, subscribeCueStore } from './cue-store.js';
 
+const CUE_FIXTURE_SEND_INTERVAL_MS = 20;
+const CUE_PLAYBACK_SETTLE_MS = 250;
+
 function getCueButtonClass(isSelected) {
     return [
         'cue-btn',
@@ -26,10 +29,44 @@ function getCueButtonClass(isSelected) {
     ].join(' ');
 }
 
+function isSnapshotOn(snapshot) {
+    const value = snapshot?.isOn;
+
+    return (
+        value === true ||
+        value === 'true' ||
+        value === 1 ||
+        value === '1'
+    );
+}
+
 function getFixtureCount(cue) {
-    return Object.keys(
-        cue?.fixtures || {}
-    ).length;
+    const snapshots =
+        Object.values(cue?.fixtures || {});
+
+    // Cue 0 stores the complete Unity baseline, including OFF fixtures.
+    // Only the homepage count is based on isOn=true.
+    if (Number(cue?.cueNumber) === 0) {
+        return snapshots.filter(
+            isSnapshotOn
+        ).length;
+    }
+
+    return snapshots.length;
+}
+
+function getFixtureCountLabel(cue, fixtureCount) {
+    if (Number(cue?.cueNumber) === 0) {
+        return (
+            `${fixtureCount} active fixture` +
+            `${fixtureCount === 1 ? '' : 's'}`
+        );
+    }
+
+    return (
+        `${fixtureCount} fixture` +
+        `${fixtureCount === 1 ? '' : 's'}`
+    );
 }
 
 export function setupCueList(sendControlMessage) {
@@ -64,7 +101,14 @@ export function setupCueList(sendControlMessage) {
                     detail: {
                         cueId: cue.id,
                         cueNumber: cue.cueNumber,
-                        requestedAt: Date.now()
+                        requestedAt: Date.now(),
+                        expectedDurationMs:
+                            Math.max(
+                                500,
+                                fixtureEntries.length *
+                                CUE_FIXTURE_SEND_INTERVAL_MS +
+                                CUE_PLAYBACK_SETTLE_MS
+                            )
                     }
                 }
             )
@@ -77,24 +121,34 @@ export function setupCueList(sendControlMessage) {
             cueName: cue.name
         });
 
-        fixtureEntries.forEach(
-            ([lightId, snapshot]) => {
-                if (
-                    !snapshot ||
-                    typeof snapshot !== 'object'
-                ) {
-                    return;
-                }
+        const validFixtureEntries =
+            fixtureEntries.filter(
+                ([, snapshot]) => (
+                    snapshot &&
+                    typeof snapshot === 'object'
+                )
+            );
 
-                sendControlMessage(
-                    'lighting-fixture',
-                    {
-                        ...snapshot,
-                        lightId:
-                            snapshot.lightId ??
-                            Number(lightId)
-                    }
-                );
+        const playbackDurationMs =
+            Math.max(
+                0,
+                validFixtureEntries.length - 1
+            ) *
+            CUE_FIXTURE_SEND_INTERVAL_MS;
+
+        validFixtureEntries.forEach(
+            ([lightId, snapshot], index) => {
+                window.setTimeout(() => {
+                    sendControlMessage(
+                        'lighting-fixture',
+                        {
+                            ...snapshot,
+                            lightId:
+                                snapshot.lightId ??
+                                Number(lightId)
+                        }
+                    );
+                }, index * CUE_FIXTURE_SEND_INTERVAL_MS);
             }
         );
 
@@ -107,7 +161,7 @@ export function setupCueList(sendControlMessage) {
                     requestedAt: Date.now()
                 }
             );
-        }, 150);
+        }, playbackDurationMs + CUE_PLAYBACK_SETTLE_MS);
     }
 
     function createCueButton(cue) {
@@ -154,8 +208,10 @@ export function setupCueList(sendControlMessage) {
             'mt-0.5 text-[10px] text-gray-500';
 
         fixtureCountLabel.textContent =
-            `${fixtureCount} fixture` +
-            `${fixtureCount === 1 ? '' : 's'}`;
+            getFixtureCountLabel(
+                cue,
+                fixtureCount
+            );
 
         button.append(
             cueLabel,
