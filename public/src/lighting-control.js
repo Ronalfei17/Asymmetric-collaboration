@@ -39,6 +39,7 @@ import {
     removeFixtureFromCue,
     getCuesContainingFixture,
     getLastSavedCueIdForFixture,
+    replaceCueFixtures,
     subscribeCueStore
 } from './cue-store.js';
 
@@ -66,6 +67,7 @@ export function setupLightingControl(sendControlMessage) {
     let selectedFixture = getFixturesByType(selectedFixtureType)[0] || null;
     let sendTimer = null;
     let hasReceivedUnityLightingSnapshot = false;
+    let cuePlaybackConfirmationDeadline = 0;
     let cueSaveTimer = null;
     let pendingCueSave = null;
 
@@ -583,6 +585,143 @@ export function setupLightingControl(sendControlMessage) {
         console.log('[LightingControl] Requested Unity lighting state:', reason);
     }
 
+    function hasOwn(object, key) {
+        return Object.prototype.hasOwnProperty.call(
+            object,
+            key
+        );
+    }
+
+    function isUnityFixtureOk(item) {
+        const value =
+            hasOwn(item || {}, 'isOk')
+                ? item.isOk
+                : item?.isOK;
+
+        return (
+            value === true ||
+            value === 'true' ||
+            value === 1 ||
+            value === '1'
+        );
+    }
+
+    function getCueZeroInitializationFixtures(fixtures) {
+        const hasExplicitIsOk =
+            fixtures.some(item => (
+                hasOwn(item || {}, 'isOk') ||
+                hasOwn(item || {}, 'isOK')
+            ));
+
+        const candidates = hasExplicitIsOk
+            ? fixtures.filter(isUnityFixtureOk)
+            : fixtures;
+
+        if (!hasExplicitIsOk) {
+            console.warn(
+                '[LightingControl] Unity snapshot has no isOk field; ' +
+                'using all known fixtures for Cue 0 compatibility.'
+            );
+        }
+
+        return candidates.filter(item => (
+            item &&
+            getFixtureById(item.lightId)
+        ));
+    }
+
+    function buildCueZeroSnapshots(fixtures) {
+        const snapshots = {};
+
+        fixtures.forEach(item => {
+            const fixture =
+                getFixtureById(item.lightId);
+
+            if (!fixture) return;
+
+            const state =
+                getFixtureState(fixture);
+
+            const payload =
+                buildPayloadFromFixtureState(
+                    fixture,
+                    state
+                );
+
+            if (payload) {
+                snapshots[
+                    String(fixture.lightId)
+                ] = payload;
+            }
+        });
+
+        return snapshots;
+    }
+
+    function refreshCueZeroFromUnity(fixtures) {
+        const cueZero = getCues().find(
+            cue =>
+                Number(cue.cueNumber) === 0
+        );
+
+        if (!cueZero) {
+            console.error(
+                '[LightingControl] Cue 0 not found; ' +
+                'Unity initialization could not be persisted.'
+            );
+
+            return {
+                appliedCount: 0,
+                cueId: null,
+                fixtureCount: 0
+            };
+        }
+
+        const initializationFixtures =
+            getCueZeroInitializationFixtures(
+                fixtures
+            );
+
+        const appliedCount =
+            applyLightingStateSnapshot(
+                initializationFixtures,
+                FIXTURES
+            );
+
+        const cueZeroSnapshots =
+            buildCueZeroSnapshots(
+                initializationFixtures
+            );
+
+        replaceCueFixtures(
+            cueZero.id,
+            cueZeroSnapshots,
+            {
+                preserveSavedPriority: true
+            }
+        );
+
+        window.dispatchEvent(
+            new CustomEvent(
+                'cue-zero-refreshed',
+                {
+                    detail: {
+                        cueId: cueZero.id,
+                        fixtureCount:
+                            initializationFixtures.length
+                    }
+                }
+            )
+        );
+
+        return {
+            appliedCount,
+            cueId: cueZero.id,
+            fixtureCount:
+                initializationFixtures.length
+        };
+    }
+
     function handleUnityLightingStateSnapshot(message) {
         const fixtures = message?.payload?.fixtures;
 
@@ -591,30 +730,48 @@ export function setupLightingControl(sendControlMessage) {
             return;
         }
 
-        const editingCueId = getEditingCueId();
+        const isCuePlaybackConfirmation =
+            Date.now() <=
+            cuePlaybackConfirmationDeadline;
 
-        if (editingCueId) {
-            hasReceivedUnityLightingSnapshot = true;
+        cuePlaybackConfirmationDeadline = 0;
+
+        if (isCuePlaybackConfirmation) {
+            const appliedCount =
+                applyLightingStateSnapshot(
+                    fixtures,
+                    FIXTURES
+                );
+
+            hasReceivedUnityLightingSnapshot =
+                true;
+
             console.log(
-                '[LightingControl] Snapshot received while editing Cue; ' + 'kept the current Cue editing context.',
-                {
-                    editingCueId,
-                    fixtureCount: fixtures.length
-                }
+                '[LightingControl] Cue playback confirmation applied:',
+                appliedCount
             );
+
+            renderAll();
             return;
-        }
+    }
 
-        const appliedCount = applyLightingStateSnapshot(
-            fixtures,
-            FIXTURES
-        );
+    flushPendingCueSave({
+            showStatus: false
+        });
 
-        hasReceivedUnityLightingSnapshot = true;
+        setEditingCueId(null);
+
+        const result =
+            refreshCueZeroFromUnity(
+                fixtures
+            );
+
+        hasReceivedUnityLightingSnapshot =
+            true;
 
         console.log(
-            '[LightingControl] Unity lighting snapshot applied:',
-            appliedCount
+            '[LightingControl] Unity baseline applied and Cue 0 refreshed:',
+            result
         );
 
         renderAll();
@@ -722,6 +879,14 @@ export function setupLightingControl(sendControlMessage) {
             renderActiveLightTags();
         }
     });
+
+    window.addEventListener(
+        'cue-playback-state-requested',
+        () => {
+            cuePlaybackConfirmationDeadline =
+                Date.now() + 5000;
+        }
+    );
 
     subscribeControlOpen(() => {
         requestUnityLightingState('control-channel-open');

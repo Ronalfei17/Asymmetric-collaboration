@@ -475,6 +475,75 @@ export function upsertFixtureSnapshot(cueId, lightId, fixtureSnapshot) {
     return deepClone(cue.fixtures[String(lightId)]);
 }
 
+export function replaceCueFixtures(
+    cueId,
+    fixturesByLightId,
+    {
+        preserveSavedPriority = true
+    } = {}
+) {
+    ensureInitialized();
+
+    const cue = getMutableCue(cueId);
+
+    if (!cue) {
+        throw new Error(`Cue not found: ${cueId}`);
+    }
+
+    const nextFixtures =
+        normalizeFixtures(fixturesByLightId);
+
+    const previousFixtureKeys =
+        Object.keys(cue.fixtures || {});
+
+    const nextFixtureKeys =
+        Object.keys(nextFixtures);
+
+    const nextFixtureKeySet =
+        new Set(nextFixtureKeys);
+
+    const savedAt = Date.now();
+
+    previousFixtureKeys.forEach(lightId => {
+        if (!nextFixtureKeySet.has(lightId)) {
+            forgetFixtureCueSaved(
+                cue.id,
+                lightId
+            );
+        }
+    });
+
+    cue.fixtures = nextFixtures;
+    cue.updatedAt = savedAt;
+
+    nextFixtureKeys.forEach(lightId => {
+        const existingSavedAt =
+            state.fixtureCueSavedAt[
+                String(lightId)
+            ]?.[String(cue.id)];
+
+        if (
+            !preserveSavedPriority ||
+            existingSavedAt === undefined
+        ) {
+            markFixtureCueSaved(
+                cue.id,
+                lightId,
+                savedAt
+            );
+        }
+    });
+
+    persist();
+
+    emit('cue-fixtures-replaced', {
+        cueId: cue.id,
+        fixtureCount: nextFixtureKeys.length
+    });
+
+    return deepClone(cue);
+}
+
 export function removeFixtureFromCue(cueId, lightId) {
     ensureInitialized();
 

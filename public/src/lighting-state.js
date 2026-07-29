@@ -20,13 +20,14 @@ function cloneState(state = {}) {
 }
 
 function safeNumber(value, fallback = 0) {
+    if (value === null || value === undefined || value === '') return fallback;
     const number = Number(value);
     return Number.isFinite(number) ? number : fallback;
 }
 
 function safeBoolean(value, fallback = false) {
-    if (value === true || value === 'true') return true;
-    if (value === false || value === 'false') return false;
+    if (value === true || value === 'true' || value === 1 || value === '1') return true;
+    if (value === false || value === 'false' || value === 0 || value === '0') return false;
     return fallback;
 }
 
@@ -60,11 +61,14 @@ export function getFixtureState(fixture) {
 export function updateFixtureState(fixture, partialState = {}) {
     if (!fixture) return null;
 
-    const currentState = getFixtureState(fixture);
+    const defaultState = cloneState(fixture.defaultState || {});
+    const currentState = getFixtureState(fixture) || defaultState;
+    const nextPartialState = partialState && typeof partialState === 'object'? partialState: {};
 
     const nextState = cloneState({
+        ...defaultState,
         ...currentState,
-        ...partialState
+        ...nextPartialState
     });
 
     fixtureStateMap.set(
@@ -101,9 +105,17 @@ export function applyLightingStateSnapshot(snapshotItems = [], fixtures = []) {
         }
 
         const fixture = fixtureById.get(lightId);
-        const defaultState = fixture
-            ? cloneState(fixture.defaultState)
-            : {};
+
+        if (!fixture) {
+            console.warn(
+                '[LightingState] Unknown fixture in Unity snapshot:',
+                lightId
+            );
+
+            return;
+        }
+
+        const defaultState = cloneState(fixture.defaultState || {});
 
         const currentState =
             fixtureStateMap.get(lightId) ||

@@ -5,7 +5,7 @@ function getCueButtonClass(isSelected) {
         'cue-btn',
         'w-full',
         'px-4',
-        'py-3',
+        'py-2',
         'rounded-lg',
         'border',
         'text-left',
@@ -33,10 +33,10 @@ function getFixtureCount(cue) {
 }
 
 export function setupCueList(sendControlMessage) {
-    const cueButtons = document.querySelectorAll('.cue-btn');
+    const initialCueButtons = document.querySelectorAll('.cue-btn');
     const cueListContainer = initialCueButtons[0]?.parentElement || document.getElementById('homeCueList');
 
-    let selectedCueId = null;
+    let selectedCueId = 'cue-0';
     if (!cueListContainer) {
         console.warn(
             '[CueList] Cue List container not found.'
@@ -84,6 +84,18 @@ export function setupCueList(sendControlMessage) {
         );
 
         window.setTimeout(() => {
+            window.dispatchEvent(
+                new CustomEvent(
+                    'cue-playback-state-requested',
+                    {
+                        detail: {
+                            cueId: cue.id,
+                            cueNumber: cue.cueNumber
+                        }
+                    }
+                )
+            );
+
             sendControlMessage(
                 'request-lighting-state',
                 {
@@ -136,7 +148,7 @@ export function setupCueList(sendControlMessage) {
             document.createElement('div');
 
         fixtureCountLabel.className =
-            'mt-1 text-[10px] text-gray-500';
+            'mt-0.5 text-[10px] text-gray-500';
 
         fixtureCountLabel.textContent =
             `${fixtureCount} fixture` +
@@ -165,14 +177,20 @@ export function setupCueList(sendControlMessage) {
         const cues = getCues();
 
         if (
-            selectedCueId &&
+            !selectedCueId ||
             !cues.some(
                 cue =>
                     String(cue.id) ===
                     String(selectedCueId)
             )
         ) {
-            selectedCueId = null;
+            selectedCueId =
+                cues.find(
+                    cue =>
+                        Number(cue.cueNumber) === 0
+                )?.id ??
+                cues[0]?.id ??
+                null;
         }
 
         cueListContainer.innerHTML = '';
@@ -200,6 +218,21 @@ export function setupCueList(sendControlMessage) {
             );
         });
     }
+
+    window.addEventListener(
+        'cue-zero-refreshed',
+        event => {
+            selectedCueId =
+                event.detail?.cueId ||
+                getCues().find(
+                    cue =>
+                        Number(cue.cueNumber) === 0
+                )?.id ||
+                null;
+
+            renderCueList();
+        }
+    );
 
     subscribeCueStore(
         renderCueList,
