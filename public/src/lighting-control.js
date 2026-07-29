@@ -305,7 +305,7 @@ export function setupLightingControl(sendControlMessage) {
     function captureCurrentFixtureSnapshot() {
         if (!selectedFixture) return null;
 
-        const uiState = readLightingValuesFromUI();
+        const uiState = readLightingValuesFromUI(selectedFixture);
         const nextState = updateFixtureState(
             selectedFixture,
             uiState
@@ -707,7 +707,7 @@ export function setupLightingControl(sendControlMessage) {
     setupLightingInputListeners((options = {}) => {
         if (!selectedFixture) return;
 
-        const uiState = readLightingValuesFromUI();
+        const uiState = readLightingValuesFromUI(selectedFixture);
         const nextState = updateFixtureState(
             selectedFixture,
             uiState
