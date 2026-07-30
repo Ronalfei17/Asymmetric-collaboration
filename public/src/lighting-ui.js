@@ -68,6 +68,21 @@ let currentLedState = {
     segmentMode: 8,
     selectedSegment: 0,
     segments: createDefaultSegments(8),
+
+    colorA: {
+        r: 255,
+        g: 128,
+        b: 64
+    },
+
+    colorB: {
+        r: 64,
+        g: 200,
+        b: 255
+    },
+
+    editingColorTarget: 'colorA',
+
     chaseSpeed: 1.5,
     direction: 'forward',
     repeatMode: 'single',
@@ -733,6 +748,14 @@ function readDetailLightingValuesFromUI(fixture) {
                 color => ({ ...color })
             );
 
+        state.colorA = {
+            ...currentLedState.colorA
+        };
+
+        state.colorB = {
+            ...currentLedState.colorB
+        };
+
         state.chaseSpeed = Number(
             getElement('detailLedChaseSpeedSlider')
                 ?.value ??
@@ -764,12 +787,15 @@ function readDetailLightingValuesFromUI(fixture) {
         if (
             detailR &&
             detailG &&
-            detailB
+            detailB &&
+            state.ledMode === 'solid'
         ) {
             state.r = Number(detailR.value);
             state.g = Number(detailG.value);
             state.b = Number(detailB.value);
-        } else {
+        }
+
+        if (state.ledMode === 'manual') {
             const selectedColor =
                 currentLedState.segments[
                     state.selectedSegment
@@ -1299,6 +1325,18 @@ function renderDetailColorBlazeBlock(state = {}) {
         segmentMode
     );
 
+    const colorA = {
+        r: Number(state.colorA?.r ?? state.r ?? 255),
+        g: Number(state.colorA?.g ?? state.g ?? 128),
+        b: Number(state.colorA?.b ?? state.b ?? 64)
+    };
+
+    const colorB = {
+        r: Number(state.colorB?.r ?? 64),
+        g: Number(state.colorB?.g ?? 200),
+        b: Number(state.colorB?.b ?? 255)
+    };
+
     const selectedSegment = Math.max(
         0,
         Math.min(
@@ -1307,56 +1345,63 @@ function renderDetailColorBlazeBlock(state = {}) {
         )
     );
 
-    const selectedColor =
-        mode === 'solid'
-            ? {
-                r: Number(
-                    state.r ??
-                    segments[0]?.r ??
-                    255
-                ),
-
-                g: Number(
-                    state.g ??
-                    segments[0]?.g ??
-                    128
-                ),
-
-                b: Number(
-                    state.b ??
-                    segments[0]?.b ??
-                    64
-                )
-            }
-            : (
-                segments[selectedSegment] ?? {
-                    r: 255,
-                    g: 128,
-                    b: 64
-                }
-            );
-
-    const selectedHex = rgbToHex(
-        selectedColor.r,
-        selectedColor.g,
-        selectedColor.b
-    );
-
     currentLedState = {
         ...currentLedState,
         ledMode: mode,
         segmentMode,
         selectedSegment,
         segments,
+        colorA,
+        colorB,
         chaseSpeed,
         direction,
         repeatMode,
         strobeHz
     };
 
-    const showRgbEditor =
-        mode === 'solid' ||
-        mode === 'manual';
+    let editorHtml = '';
+
+    if (mode === 'solid') {
+        editorHtml = renderColorBlazeSolidEditor({
+            color: {
+                r: Number(state.r ?? colorA.r),
+                g: Number(state.g ?? colorA.g),
+                b: Number(state.b ?? colorA.b)
+            },
+            strobeHz
+        });
+    }
+
+    if (mode === 'gradient') {
+        editorHtml = renderColorBlazeGradientEditor({
+            segmentMode,
+            colorA,
+            colorB,
+            direction,
+            repeatMode,
+            strobeHz
+        });
+    }
+
+    if (mode === 'chase') {
+        editorHtml = renderColorBlazeChaseEditor({
+            segmentMode,
+            colorA,
+            colorB,
+            chaseSpeed,
+            direction,
+            strobeHz
+        });
+    }
+
+    if (mode === 'manual') {
+        editorHtml = renderColorBlazeManualEditor({
+            segmentMode,
+            selectedSegment,
+            segments,
+            strobeHz
+        });
+    }
 
     return `
         <section
@@ -1377,19 +1422,11 @@ function renderDetailColorBlazeBlock(state = {}) {
                         <button
                             type="button"
                             data-detail-led-mode="${item}"
-                            class="
-                                detail-led-mode-btn
-                                h-8
-                                rounded-md
-                                border
-                                text-xs
-                                transition
-                                ${
-                                    mode === item
-                                        ? 'bg-blue-500/30 text-blue-200 border-blue-500'
-                                        : 'bg-transparent text-gray-300 border-transparent hover:bg-white/5'
-                                }
-                            "
+                            class="h-9 rounded-md border text-xs transition ${
+                                mode === item
+                                    ? 'bg-blue-500/30 text-blue-200 border-blue-500'
+                                    : 'bg-transparent text-gray-300 border-transparent hover:bg-white/5'
+                            }"
                         >
                             ${item.toUpperCase()}
                         </button>
@@ -1397,56 +1434,506 @@ function renderDetailColorBlazeBlock(state = {}) {
                     .join('')}
             </div>
 
-            <div class="grid grid-cols-2 gap-3 mb-3">
-                <div>
+            ${editorHtml}
+        </section>
+    `;
+}
+
+function renderColorBlazeSolidEditor({
+    color,
+    strobeHz
+}) {
+    const solidColor = {
+        r: Number(color?.r ?? 255),
+        g: Number(color?.g ?? 128),
+        b: Number(color?.b ?? 64)
+    };
+
+    const hex = rgbToHex(
+        solidColor.r,
+        solidColor.g,
+        solidColor.b
+    );
+
+    return `
+        <div class="grid grid-cols-[minmax(0,1fr)_300px] gap-3">
+            <div class="space-y-3">
+                <div class="rounded-lg border border-blue-500/30 bg-blue-500/5 p-3">
+                    <div class="text-xs text-blue-300">
+                        Solid mode applies one color to the entire fixture.
+                    </div>
+                </div>
+
+                <div class="rounded-lg border border-gray-800 bg-black/20 p-3">
+                    <div class="text-xs text-gray-400 mb-2">
+                        Segment Mode
+                    </div>
+
+                    <div class="inline-flex min-w-[180px] rounded-md border border-blue-500/60 bg-blue-500/10 px-4 py-2 text-xs text-blue-200">
+                        Whole Fixture
+                    </div>
+                </div>
+
+                ${renderDetailRgbBlock(
+                    solidColor.r,
+                    solidColor.g,
+                    solidColor.b,
+                    hex
+                )}
+            </div>
+
+            <div class="space-y-3">
+                <section class="rounded-lg border border-gray-800 bg-black/20 p-3">
+                    <div class="text-green-400 text-xs font-bold mb-3">
+                        LED EFFECTS
+                    </div>
+
+                    <div class="text-xs text-gray-300 mb-2">
+                        Strobe
+                    </div>
+
+                    <input
+                        id="detailLedStrobeHzSlider"
+                        type="range"
+                        min="0"
+                        max="20"
+                        step="0.5"
+                        value="${strobeHz}"
+                        class="w-full accent-blue-500"
+                    >
+
+                    <div class="flex justify-between text-[11px] text-gray-500 mt-1">
+                        <span>0 Hz</span>
+                        <span>20 Hz</span>
+                    </div>
+
+                    <div
+                        id="detailLedStrobeHzValue"
+                        class="mx-auto mt-3 w-20 rounded border border-gray-700 bg-white/5 py-1.5 text-center text-xs text-green-300"
+                    >
+                        ${strobeHz} Hz
+                    </div>
+                </section>
+
+                <button
+                    type="button"
+                    data-detail-reset-effects
+                    class="w-full rounded-lg border border-gray-700 bg-white/5 px-4 py-4 text-sm text-gray-200 transition hover:border-green-500/50 hover:bg-green-500/10 hover:text-green-300"
+                >
+                    ↻ Reset Effects
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function renderColorBlazeGradientEditor({
+    segmentMode,
+    colorA,
+    colorB,
+    direction,
+    repeatMode,
+    strobeHz
+}) {
+    const safeColorA = {
+        r: Number(colorA?.r ?? 255),
+        g: Number(colorA?.g ?? 128),
+        b: Number(colorA?.b ?? 64)
+    };
+
+    const safeColorB = {
+        r: Number(colorB?.r ?? 64),
+        g: Number(colorB?.g ?? 128),
+        b: Number(colorB?.b ?? 255)
+    };
+
+    const hexA = rgbToHex(
+        safeColorA.r,
+        safeColorA.g,
+        safeColorA.b
+    );
+
+    const hexB = rgbToHex(
+        safeColorB.r,
+        safeColorB.g,
+        safeColorB.b
+    );
+
+    const editingTarget =
+        currentLedState.editingColorTarget === 'colorB'
+            ? 'colorB'
+            : 'colorA';
+
+    const editingColor =
+        editingTarget === 'colorB'
+            ? safeColorB
+            : safeColorA;
+
+    const editingHex = rgbToHex(
+        editingColor.r,
+        editingColor.g,
+        editingColor.b
+    );
+
+    return `
+        <div class="grid grid-cols-[minmax(0,1fr)_300px] gap-3">
+            <div class="space-y-3">
+                <div class="rounded-lg border border-blue-500/30 bg-blue-500/5 p-3">
+                    <div class="text-xs text-blue-300">
+                        Gradient mode creates a transition from Color A to Color B across the selected segments.
+                    </div>
+                </div>
+
+                <section class="rounded-lg border border-gray-800 bg-black/20 p-3">
                     <div class="text-xs text-gray-300 mb-2">
                         Segment Mode
                     </div>
 
                     <div class="grid grid-cols-2 gap-1 rounded-lg border border-gray-700 p-1">
+                        ${[4, 8].map(count => `
+                            <button
+                                type="button"
+                                data-detail-led-segments="${count}"
+                                class="h-9 rounded-md border text-xs transition ${
+                                    segmentMode === count
+                                        ? 'border-blue-500 bg-blue-500/30 text-blue-200'
+                                        : 'border-transparent text-gray-300 hover:bg-white/5'
+                                }"
+                            >
+                                ${count} Segments
+                            </button>
+                        `).join('')}
+                    </div>
+                </section>
+
+                <section class="rounded-lg border border-gray-800 bg-black/20 p-3">
+                    <div class="text-xs font-bold text-gray-200 mb-3">
+                        GRADIENT EDITOR
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 mb-3">
                         <button
                             type="button"
-                            data-detail-led-segments="4"
-                            class="
-                                detail-led-segment-mode
-                                h-8
-                                rounded-md
-                                border
-                                text-xs
-                                transition
-                                ${
-                                    segmentMode === 4
-                                        ? 'bg-blue-500/30 text-blue-200 border-blue-500'
-                                        : 'text-gray-300 border-transparent hover:bg-white/5'
-                                }
-                            "
+                            data-detail-color-target="colorA"
+                            class="rounded-lg border p-3 text-left transition ${
+                                editingTarget === 'colorA'
+                                    ? 'border-blue-500 bg-blue-500/10'
+                                    : 'border-gray-700 bg-white/5 hover:bg-white/10'
+                            }"
                         >
-                            4 Segments
+                            <div class="text-[11px] text-gray-400 mb-2">
+                                Color A · Start
+                            </div>
+
+                            <div class="flex items-center gap-3">
+                                <div
+                                    id="detailColorAPreview"
+                                    class="h-12 w-12 shrink-0 rounded-md border border-white/10"
+                                    style="background:${hexA}"
+                                ></div>
+
+                                <div class="text-xs text-gray-300">
+                                    ${hexA}
+                                </div>
+                            </div>
                         </button>
 
                         <button
                             type="button"
-                            data-detail-led-segments="8"
-                            class="
-                                detail-led-segment-mode
-                                h-8
-                                rounded-md
-                                border
-                                text-xs
-                                transition
-                                ${
-                                    segmentMode === 8
-                                        ? 'bg-blue-500/30 text-blue-200 border-blue-500'
-                                        : 'text-gray-300 border-transparent hover:bg-white/5'
-                                }
-                            "
+                            data-detail-color-target="colorB"
+                            class="rounded-lg border p-3 text-left transition ${
+                                editingTarget === 'colorB'
+                                    ? 'border-blue-500 bg-blue-500/10'
+                                    : 'border-gray-700 bg-white/5 hover:bg-white/10'
+                            }"
                         >
-                            8 Segments
+                            <div class="text-[11px] text-gray-400 mb-2">
+                                Color B · End
+                            </div>
+
+                            <div class="flex items-center gap-3">
+                                <div
+                                    id="detailColorBPreview"
+                                    class="h-12 w-12 shrink-0 rounded-md border border-white/10"
+                                    style="background:${hexB}"
+                                ></div>
+
+                                <div class="text-xs text-gray-300">
+                                    ${hexB}
+                                </div>
+                            </div>
                         </button>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="text-[11px] text-gray-400 mb-2">
+                            Gradient Preview
+                        </div>
+
+                        <div
+                            id="detailGradientPreview"
+                            class="h-14 rounded-lg border border-white/10"
+                            style="background:linear-gradient(90deg, ${hexA}, ${hexB})"
+                        ></div>
+                    </div>
+
+                    ${renderDetailRgbBlock(
+                        editingColor.r,
+                        editingColor.g,
+                        editingColor.b,
+                        editingHex
+                    )}
+                </section>
+            </div>
+
+            <div class="space-y-3">
+                <section class="rounded-lg border border-gray-800 bg-black/20 p-3">
+                    <div class="text-green-400 text-xs font-bold mb-3">
+                        GRADIENT CONTROLS
+                    </div>
+
+                    <div class="text-xs text-gray-300 mb-2">
+                        Direction
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-1 rounded-lg border border-gray-700 p-1 mb-4">
+                        ${[
+                            ['forward', '→'],
+                            ['reverse', '←'],
+                            ['mirror', '↔']
+                        ].map(([value, label]) => `
+                            <button
+                                type="button"
+                                data-detail-led-direction="${value}"
+                                class="h-9 rounded-md border text-sm transition ${
+                                    direction === value
+                                        ? 'border-green-500 bg-green-500/20 text-green-300'
+                                        : 'border-transparent text-gray-300 hover:bg-white/5'
+                                }"
+                            >
+                                ${label}
+                            </button>
+                        `).join('')}
+                    </div>
+
+                    <div class="text-xs text-gray-300 mb-2">
+                        Repeat Mode
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-1 rounded-lg border border-gray-700 p-1">
+                        ${[
+                            ['single', 'Single'],
+                            ['repeat', 'Repeat'],
+                            ['mirror', 'Mirror']
+                        ].map(([value, label]) => `
+                            <button
+                                type="button"
+                                data-detail-led-repeat-mode="${value}"
+                                class="h-9 rounded-md border text-[11px] transition ${
+                                    repeatMode === value
+                                        ? 'border-purple-500 bg-purple-500/20 text-purple-300'
+                                        : 'border-transparent text-gray-300 hover:bg-white/5'
+                                }"
+                            >
+                                ${label}
+                            </button>
+                        `).join('')}
+                    </div>
+                </section>
+
+                <section class="rounded-lg border border-gray-800 bg-black/20 p-3">
+                    <div class="text-xs text-gray-300 mb-2">
+                        Strobe
+                    </div>
+
+                    <input
+                        id="detailLedStrobeHzSlider"
+                        type="range"
+                        min="0"
+                        max="20"
+                        step="0.5"
+                        value="${strobeHz}"
+                        class="w-full accent-blue-500"
+                    >
+
+                    <div class="flex justify-between text-[11px] text-gray-500 mt-1">
+                        <span>0 Hz</span>
+                        <span>20 Hz</span>
+                    </div>
+
+                    <div
+                        id="detailLedStrobeHzValue"
+                        class="mx-auto mt-3 w-20 rounded border border-gray-700 bg-white/5 py-1.5 text-center text-xs text-green-300"
+                    >
+                        ${strobeHz} Hz
+                    </div>
+                </section>
+
+                <button
+                    type="button"
+                    data-detail-reset-effects
+                    class="w-full rounded-lg border border-gray-700 bg-white/5 px-4 py-4 text-sm text-gray-200 transition hover:border-green-500/50 hover:bg-green-500/10 hover:text-green-300"
+                >
+                    ↻ Reset Effects
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function renderColorBlazeChaseEditor({
+    segmentMode,
+    colorA,
+    colorB,
+    chaseSpeed,
+    direction,
+    strobeHz
+}) {
+    const safeColorA = {
+        r: Number(colorA?.r ?? 255),
+        g: Number(colorA?.g ?? 128),
+        b: Number(colorA?.b ?? 64)
+    };
+
+    const safeColorB = {
+        r: Number(colorB?.r ?? 64),
+        g: Number(colorB?.g ?? 200),
+        b: Number(colorB?.b ?? 255)
+    };
+
+    const hexA = rgbToHex(
+        safeColorA.r,
+        safeColorA.g,
+        safeColorA.b
+    );
+
+    const hexB = rgbToHex(
+        safeColorB.r,
+        safeColorB.g,
+        safeColorB.b
+    );
+
+    const editingTarget =
+        currentLedState.editingColorTarget === 'colorB'
+            ? 'colorB'
+            : 'colorA';
+
+    const editingColor =
+        editingTarget === 'colorB'
+            ? safeColorB
+            : safeColorA;
+
+    const editingHex = rgbToHex(
+        editingColor.r,
+        editingColor.g,
+        editingColor.b
+    );
+
+    return `
+        <div class="grid grid-cols-[minmax(0,1fr)_300px] gap-3">
+            <div class="space-y-3">
+                <div class="rounded-lg border border-blue-500/30 bg-blue-500/5 p-3">
+                    <div class="text-xs text-blue-300">
+                        Chase mode animates Color 1 and Color 2 across the selected segments.
                     </div>
                 </div>
 
-                <div>
+                <section class="rounded-lg border border-gray-800 bg-black/20 p-3">
+                    <div class="text-xs text-gray-300 mb-2">
+                        Segment Mode
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-1 rounded-lg border border-gray-700 p-1">
+                        ${[4, 8].map(count => `
+                            <button
+                                type="button"
+                                data-detail-led-segments="${count}"
+                                class="h-9 rounded-md border text-xs transition ${
+                                    segmentMode === count
+                                        ? 'border-blue-500 bg-blue-500/30 text-blue-200'
+                                        : 'border-transparent text-gray-300 hover:bg-white/5'
+                                }"
+                            >
+                                ${count} Segments
+                            </button>
+                        `).join('')}
+                    </div>
+                </section>
+
+                <section class="rounded-lg border border-gray-800 bg-black/20 p-3">
+                    <div class="text-xs font-bold text-gray-200 mb-3">
+                        COLOR CHASE
+                    </div>
+
+                    <div class="grid grid-cols-[1fr_40px_1fr] gap-3 items-center mb-3">
+                        <button
+                            type="button"
+                            data-detail-color-target="colorA"
+                            class="rounded-lg border p-3 text-left transition ${
+                                editingTarget === 'colorA'
+                                    ? 'border-blue-500 bg-blue-500/10'
+                                    : 'border-gray-700 bg-white/5 hover:bg-white/10'
+                            }"
+                        >
+                            <div class="text-[11px] text-gray-400 mb-2">
+                                Color 1
+                            </div>
+
+                            <div
+                                id="detailColorAPreview"
+                                class="h-16 rounded-md border border-white/10"
+                                style="background:${hexA}"
+                            ></div>
+
+                            <div class="mt-2 text-xs text-gray-300">
+                                ${hexA}
+                            </div>
+                        </button>
+
+                        <div class="text-center text-2xl text-gray-300">
+                            →
+                        </div>
+
+                        <button
+                            type="button"
+                            data-detail-color-target="colorB"
+                            class="rounded-lg border p-3 text-left transition ${
+                                editingTarget === 'colorB'
+                                    ? 'border-blue-500 bg-blue-500/10'
+                                    : 'border-gray-700 bg-white/5 hover:bg-white/10'
+                            }"
+                        >
+                            <div class="text-[11px] text-gray-400 mb-2">
+                                Color 2
+                            </div>
+
+                            <div
+                                id="detailColorBPreview"
+                                class="h-16 rounded-md border border-white/10"
+                                style="background:${hexB}"
+                            ></div>
+
+                            <div class="mt-2 text-xs text-gray-300">
+                                ${hexB}
+                            </div>
+                        </button>
+                    </div>
+
+                    ${renderDetailRgbBlock(
+                        editingColor.r,
+                        editingColor.g,
+                        editingColor.b,
+                        editingHex
+                    )}
+                </section>
+            </div>
+
+            <div class="space-y-3">
+                <section class="rounded-lg border border-gray-800 bg-black/20 p-3">
+                    <div class="text-green-400 text-xs font-bold mb-3">
+                        CHASE CONTROLS
+                    </div>
+
                     <div class="text-xs text-gray-300 mb-2">
                         Chase Speed
                     </div>
@@ -1461,150 +1948,210 @@ function renderDetailColorBlazeBlock(state = {}) {
                         class="w-full accent-green-500"
                     >
 
+                    <div class="flex justify-between text-[11px] text-gray-500 mt-1">
+                        <span>0.1x</span>
+                        <span>1x</span>
+                        <span>5x</span>
+                    </div>
+
                     <div
                         id="detailLedChaseSpeedValue"
-                        class="mx-auto mt-2 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs"
+                        class="mx-auto mt-3 w-20 rounded border border-gray-700 bg-white/5 py-1.5 text-center text-xs text-green-300"
                     >
                         ${chaseSpeed}x
                     </div>
-                </div>
-            </div>
 
-            <div class="grid grid-cols-2 gap-3 mb-3">
-                <div>
-                    <div class="text-xs text-gray-300 mb-2">
+                    <div class="mt-4 text-xs text-gray-300 mb-2">
                         Direction
                     </div>
 
-                    <div class="grid grid-cols-3 gap-1 rounded-lg border border-gray-700 p-1">
-                        ${['forward', 'reverse', 'mirror']
-                            .map(item => `
-                                <button
-                                    type="button"
-                                    data-detail-led-direction="${item}"
-                                    class="
-                                        h-8
-                                        rounded-md
-                                        border
-                                        text-[11px]
-                                        transition
-                                        ${
-                                            direction === item
-                                                ? 'bg-green-500/20 text-green-300 border-green-500'
-                                                : 'text-gray-300 border-transparent hover:bg-white/5'
-                                        }
-                                    "
-                                >
-                                    ${item.toUpperCase()}
-                                </button>
-                            `)
-                            .join('')}
+                    <div class="grid grid-cols-2 gap-2">
+                        ${[
+                            ['forward', 'Forward ▶'],
+                            ['reverse', 'Reverse ◀']
+                        ].map(([value, label]) => `
+                            <button
+                                type="button"
+                                data-detail-led-direction="${value}"
+                                class="h-10 rounded-md border text-xs transition ${
+                                    direction === value
+                                        ? 'border-green-500 bg-green-500/20 text-green-300'
+                                        : 'border-gray-700 bg-white/5 text-gray-300 hover:bg-white/10'
+                                }"
+                            >
+                                ${label}
+                            </button>
+                        `).join('')}
                     </div>
-                </div>
+                </section>
 
-                <div>
+                <section class="rounded-lg border border-gray-800 bg-black/20 p-3">
                     <div class="text-xs text-gray-300 mb-2">
-                        Repeat Mode
+                        Strobe
                     </div>
 
-                    <div class="grid grid-cols-3 gap-1 rounded-lg border border-gray-700 p-1">
-                        ${['single', 'repeat', 'mirror']
-                            .map(item => `
-                                <button
-                                    type="button"
-                                    data-detail-led-repeat-mode="${item}"
-                                    class="
-                                        h-8
-                                        rounded-md
-                                        border
-                                        text-[11px]
-                                        transition
-                                        ${
-                                            repeatMode === item
-                                                ? 'bg-purple-500/20 text-purple-300 border-purple-500'
-                                                : 'text-gray-300 border-transparent hover:bg-white/5'
-                                        }
-                                    "
-                                >
-                                    ${item.toUpperCase()}
-                                </button>
-                            `)
-                            .join('')}
+                    <input
+                        id="detailLedStrobeHzSlider"
+                        type="range"
+                        min="0"
+                        max="20"
+                        step="0.5"
+                        value="${strobeHz}"
+                        class="w-full accent-green-500"
+                    >
+
+                    <div class="flex justify-between text-[11px] text-gray-500 mt-1">
+                        <span>0 Hz</span>
+                        <span>20 Hz</span>
+                    </div>
+
+                    <div
+                        id="detailLedStrobeHzValue"
+                        class="mx-auto mt-3 w-20 rounded border border-gray-700 bg-white/5 py-1.5 text-center text-xs text-green-300"
+                    >
+                        ${strobeHz} Hz
+                    </div>
+                </section>
+
+                <button
+                    type="button"
+                    data-detail-reset-effects
+                    class="w-full rounded-lg border border-gray-700 bg-white/5 px-4 py-4 text-sm text-gray-200 transition hover:border-green-500/50 hover:bg-green-500/10 hover:text-green-300"
+                >
+                    ↻ Reset Effects
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function renderColorBlazeManualEditor({
+    segmentMode,
+    selectedSegment,
+    segments,
+    strobeHz
+}) {
+    const normalizedSegments = normalizeLedSegments(
+        segments,
+        segmentMode
+    );
+
+    const safeSelectedSegment = Math.max(
+        0,
+        Math.min(
+            Number(selectedSegment ?? 0),
+            normalizedSegments.length - 1
+        )
+    );
+
+    const selectedColor =
+        normalizedSegments[safeSelectedSegment] ?? {
+            r: 255,
+            g: 128,
+            b: 64
+        };
+
+    const selectedHex = rgbToHex(
+        selectedColor.r,
+        selectedColor.g,
+        selectedColor.b
+    );
+
+    return `
+        <div class="grid grid-cols-[minmax(0,1fr)_300px] gap-3">
+            <div class="space-y-3">
+                <div class="rounded-lg border border-blue-500/30 bg-blue-500/5 p-3">
+                    <div class="text-xs text-blue-300">
+                        Manual mode lets you assign a custom color to every segment.
                     </div>
                 </div>
+
+                <section class="rounded-lg border border-gray-800 bg-black/20 p-3">
+                    <div class="text-xs text-gray-300 mb-2">
+                        Segment Mode
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-1 rounded-lg border border-gray-700 p-1">
+                        ${[4, 8].map(count => `
+                            <button
+                                type="button"
+                                data-detail-led-segments="${count}"
+                                class="h-9 rounded-md border text-xs transition ${
+                                    segmentMode === count
+                                        ? 'border-blue-500 bg-blue-500/30 text-blue-200'
+                                        : 'border-transparent text-gray-300 hover:bg-white/5'
+                                }"
+                            >
+                                ${count} Segments
+                            </button>
+                        `).join('')}
+                    </div>
+                </section>
+
+                <section class="rounded-lg border border-gray-800 bg-black/20 p-3">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="text-xs font-bold text-gray-200">
+                            SELECTED SEGMENT
+                        </div>
+
+                        <div class="rounded-md border border-purple-500/40 bg-purple-500/10 px-3 py-1 text-xs text-purple-300">
+                            <span id="detailSelectedSegmentLabel">
+                                ${String(safeSelectedSegment + 1).padStart(2, '0')}
+                            </span>
+                        </div>
+                    </div>
+
+                    ${renderDetailRgbBlock(
+                        selectedColor.r,
+                        selectedColor.g,
+                        selectedColor.b,
+                        selectedHex
+                    )}
+                </section>
             </div>
 
-            <div class="rounded-lg border border-gray-800 bg-black/20 p-3 mb-3">
-                <div class="text-xs text-gray-300 mb-2">
-                    Strobe
-                </div>
+            <div class="space-y-3">
+                ${renderDetailManualSegmentGrid(
+                    normalizedSegments
+                )}
 
-                <input
-                    id="detailLedStrobeHzSlider"
-                    type="range"
-                    min="0"
-                    max="20"
-                    step="0.5"
-                    value="${strobeHz}"
-                    class="w-full accent-cyan-500"
+                <section class="rounded-lg border border-gray-800 bg-black/20 p-3">
+                    <div class="text-xs text-gray-300 mb-2">
+                        Strobe
+                    </div>
+
+                    <input
+                        id="detailLedStrobeHzSlider"
+                        type="range"
+                        min="0"
+                        max="20"
+                        step="0.5"
+                        value="${strobeHz}"
+                        class="w-full accent-blue-500"
+                    >
+
+                    <div class="flex justify-between text-[11px] text-gray-500 mt-1">
+                        <span>0 Hz</span>
+                        <span>20 Hz</span>
+                    </div>
+
+                    <div
+                        id="detailLedStrobeHzValue"
+                        class="mx-auto mt-3 w-20 rounded border border-gray-700 bg-white/5 py-1.5 text-center text-xs text-green-300"
+                    >
+                        ${strobeHz} Hz
+                    </div>
+                </section>
+
+                <button
+                    type="button"
+                    data-detail-reset-effects
+                    class="w-full rounded-lg border border-gray-700 bg-white/5 px-4 py-4 text-sm text-gray-200 transition hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-300"
                 >
-
-                <div class="flex justify-between text-[11px] text-gray-500 mt-1">
-                    <span>0 Hz</span>
-                    <span>20 Hz</span>
-                </div>
-
-                <div
-                    id="detailLedStrobeHzValue"
-                    class="mx-auto mt-2 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs"
-                >
-                    ${strobeHz} Hz
-                </div>
+                    ↻ Reset Effects
+                </button>
             </div>
-
-            ${
-                mode === 'manual'
-                    ? renderDetailManualSegmentGrid(segments)
-                    : ''
-            }
-
-            ${
-                showRgbEditor
-                    ? `
-                        <div class="mt-3">
-                            ${renderDetailRgbBlock(
-                                selectedColor.r,
-                                selectedColor.g,
-                                selectedColor.b,
-                                selectedHex
-                            )}
-                        </div>
-                    `
-                    : ''
-            }
-
-            ${
-                mode === 'gradient'
-                    ? `
-                        <div class="text-xs text-gray-400 rounded-lg border border-gray-800 bg-black/20 p-3">
-                            Gradient mode requires Color A and Color B controls.
-                            These controls have not yet been added.
-                        </div>
-                    `
-                    : ''
-            }
-
-            ${
-                mode === 'chase'
-                    ? `
-                        <div class="text-xs text-gray-400 rounded-lg border border-gray-800 bg-black/20 p-3">
-                            Chase mode requires two chase colors.
-                            The speed, direction and repeat controls are available above.
-                        </div>
-                    `
-                    : ''
-            }
-        </section>
+        </div>
     `;
 }
 
@@ -1645,7 +2192,7 @@ function renderDetailManualSegmentGrid(segments) {
                 <div class="text-xs text-gray-300 font-bold">Manual Segment Colors</div>
                 <div class="text-xs text-purple-300">
                     Selected Segment:
-                    <span id="detailSelectedSegmentLabel">${String(selectedSegment + 1).padStart(2, '0')}</span>
+                    <span id="detailGridSelectedSegmentLabel">${String(selectedSegment + 1).padStart(2, '0')}</span>
                 </div>
             </div>
 
@@ -1670,6 +2217,54 @@ function renderDetailManualSegmentGrid(segments) {
     `;
 }
 
+function updateColorBlazeDualColorPreviews() {
+    const colorA = currentLedState.colorA ?? {
+        r: 255,
+        g: 128,
+        b: 64
+    };
+
+    const colorB = currentLedState.colorB ?? {
+        r: 64,
+        g: 200,
+        b: 255
+    };
+
+    const hexA = rgbToHex(
+        colorA.r,
+        colorA.g,
+        colorA.b
+    );
+
+    const hexB = rgbToHex(
+        colorB.r,
+        colorB.g,
+        colorB.b
+    );
+
+    const colorAPreview =
+        getElement('detailColorAPreview');
+
+    const colorBPreview =
+        getElement('detailColorBPreview');
+
+    const gradientPreview =
+        getElement('detailGradientPreview');
+
+    if (colorAPreview) {
+        colorAPreview.style.background = hexA;
+    }
+
+    if (colorBPreview) {
+        colorBPreview.style.background = hexB;
+    }
+
+    if (gradientPreview) {
+        gradientPreview.style.background =
+            `linear-gradient(90deg, ${hexA}, ${hexB})`;
+    }
+}
+
 function updateDetailManualSegmentSwatches() {
     document.querySelectorAll('[data-detail-led-segment]').forEach(button => {
         const index = Number(button.dataset.detailLedSegment);
@@ -1683,9 +2278,22 @@ function updateDetailManualSegmentSwatches() {
         button.classList.toggle('ring-blue-400/60', index === Number(currentLedState.selectedSegment || 0));
     });
 
-    const label = getElement('detailSelectedSegmentLabel');
-    if (label) {
-        label.textContent = String(Number(currentLedState.selectedSegment || 0) + 1).padStart(2, '0');
+    const editorLabel =
+        getElement('detailSelectedSegmentLabel');
+
+    const gridLabel =
+        getElement('detailGridSelectedSegmentLabel');
+
+    const labelText = String(
+        Number(currentLedState.selectedSegment ?? 0) + 1
+    ).padStart(2, '0');
+
+    if (editorLabel) {
+        editorLabel.textContent = labelText;
+    }
+
+    if (gridLabel) {
+        gridLabel.textContent = labelText;
     }
 }
 
@@ -1830,6 +2438,25 @@ export function setupLightingInputListeners(onInput) {
                         () => ({ ...color })
                     );
             }
+
+            if (
+                mode === 'gradient' ||
+                mode === 'chase'
+            ) {
+                if (
+                    currentLedState.editingColorTarget === 'colorB'
+                ) {
+                    currentLedState.colorB = {
+                        ...color
+                    };
+                } else {
+                    currentLedState.colorA = {
+                        ...color
+                    };
+                }
+
+                updateColorBlazeDualColorPreviews();
+            }
         }
 
         if (target.id === 'detailStrobeHzSlider') {
@@ -1940,6 +2567,81 @@ export function setupLightingInputListeners(onInput) {
 
             if (panel) panel.dataset.ledMode = nextMode;
             currentLedState.ledMode = nextMode;
+
+            onInput({ render: true });
+            return;
+        }
+
+        const resetEffectsButton = event.target.closest(
+            '[data-detail-reset-effects]'
+        );
+
+        if (resetEffectsButton) {
+            currentLedState = {
+                ledMode: 'solid',
+                segmentMode: 8,
+                selectedSegment: 0,
+                segments: createDefaultSegments(8),
+
+                colorA: {
+                    r: 255,
+                    g: 128,
+                    b: 64
+                },
+
+                colorB: {
+                    r: 64,
+                    g: 200,
+                    b: 255
+                },
+
+                editingColorTarget: 'colorA',
+
+                chaseSpeed: 1.5,
+                direction: 'forward',
+                repeatMode: 'single',
+                strobeHz: 0
+            };
+
+            const panel = getElement('detailColorBlazePanel');
+
+            if (panel) {
+                panel.dataset.ledMode = 'solid';
+                panel.dataset.ledSegments = '8';
+                panel.dataset.ledDirection = 'forward';
+                panel.dataset.ledRepeatMode = 'single';
+            }
+
+            const redSlider = getElement('detailRedSlider');
+            const greenSlider = getElement('detailGreenSlider');
+            const blueSlider = getElement('detailBlueSlider');
+            const strobeSlider =
+                getElement('detailLedStrobeHzSlider');
+            const chaseSpeedSlider =
+                getElement('detailLedChaseSpeedSlider');
+
+            if (redSlider) redSlider.value = 255;
+            if (greenSlider) greenSlider.value = 128;
+            if (blueSlider) blueSlider.value = 64;
+            if (strobeSlider) strobeSlider.value = 0;
+            if (chaseSpeedSlider) chaseSpeedSlider.value = 1.5;
+
+            onInput({ render: true });
+            return;
+        }
+
+        const colorTargetButton = event.target.closest(
+            '[data-detail-color-target]'
+        );
+
+        if (colorTargetButton) {
+            const nextTarget =
+                colorTargetButton.dataset.detailColorTarget;
+
+            currentLedState.editingColorTarget =
+                nextTarget === 'colorB'
+                    ? 'colorB'
+                    : 'colorA';
 
             onInput({ render: true });
             return;
