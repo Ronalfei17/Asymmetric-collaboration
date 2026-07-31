@@ -579,25 +579,51 @@
                         </section>
 
                         <!-- Detail Lighting Control -->
-                        <section class="min-h-0 bg-[#11141c] border border-gray-800/40 rounded-xl p-4 flex flex-col overflow-hidden">
+                        <section class="h-full min-h-0 bg-[#11141c] border border-gray-800/40 rounded-xl p-4 flex flex-col overflow-hidden">
                             <div class="flex items-center justify-between mb-3 shrink-0">
                                 <div class="text-xs font-bold tracking-wider text-gray-300">LIGHTING CONTROL</div>
                                 <div id="detailFixtureModeLabel" class="text-[11px] text-gray-500">Select a fixture</div>
                             </div>
                             
-                            <div id="detailFixtureSummaryCard" class="mb-3 shrink-0 rounded-lg border border-gray-800 bg-[#0b0f16] p-3">
+                            <div
+                                id="detailFixtureSummaryCard"
+                                class="shrink-0 rounded-lg border border-gray-800 bg-[#0b0f16] p-3"
+                            >
                                 <div class="flex min-w-0 items-center gap-5">
                                     <!-- Left: fixture information -->
                                     <div class="min-w-0 flex-1">
-                                        <div id="detailHeaderFixtureType" class="text-xs font-bold text-blue-400">Fixture Type</div>
-                                        <div id="detailHeaderFixtureName" class="mt-1 truncate text-sm font-semibold text-gray-100" title="">Select a fixture</div>
-                                        <div id="detailHeaderFixtureModel" class="mt-1 truncate text-xs text-gray-500" title="">--</div>
+                                        <div
+                                            id="detailHeaderFixtureType"
+                                            class="text-xs font-bold text-blue-400"
+                                        >
+                                            Fixture Type
+                                        </div>
+
+                                        <div
+                                            id="detailHeaderFixtureName"
+                                            class="mt-1 truncate text-sm font-semibold text-gray-100"
+                                            title=""
+                                        >
+                                            Select a fixture
+                                        </div>
+
+                                        <div
+                                            id="detailHeaderFixtureModel"
+                                            class="mt-1 truncate text-xs text-gray-500"
+                                            title=""
+                                        >
+                                            --
+                                        </div>
                                     </div>
 
-                                    <!-- Right: Cue controls, without visible headings -->
+                                    <!-- Right: Cue controls -->
                                     <div class="min-w-0 w-[320px] shrink-0">
                                         <!-- Included Cue tags -->
-                                        <div id="includedCuesSection" class="hidden min-w-0 mb-1.5" aria-label="Included in Cues">
+                                        <div
+                                            id="includedCuesSection"
+                                            class="hidden min-w-0 mb-1.5"
+                                            aria-label="Included in Cues"
+                                        >
                                             <div
                                                 id="includedCueTags"
                                                 class="flex min-w-0 flex-wrap gap-2"
@@ -631,12 +657,26 @@
                                                 <path d="m7 10 5 5 5-5"></path>
                                             </svg>
                                         </div>
-                                    </div>
 
-                                <!-- Save / create / remove status -->
-                                <div id="cueEditorStatus" class="mt-2 hidden text-right text-[10px] text-gray-500" aria-live="polite"></div>
+                                        <!-- Save / create / remove status -->
+                                        <div
+                                            id="cueEditorStatus"
+                                            class="mt-2 hidden text-right text-[10px] text-gray-500"
+                                            aria-live="polite"
+                                        ></div>
+                                    </div>
+                                </div>
                             </div>
-                            <div id="detailLightingPanel" class="flex-1 min-h-0 overflow-y-auto rounded-lg border border-gray-800 bg-[#06080c]/40 p-3">
+
+                            <!-- Gap between Cue area and scrollable lighting controls -->
+                            <div
+                                id="detailLightingScrollArea"
+                                class="mt-4 flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain rounded-lg border border-gray-800 bg-[#06080c]/40 p-3 pr-2"
+                            >
+                                <div
+                                    id="detailLightingPanel"
+                                    class="pb-6"
+                                ></div>
                             </div>
                         </section>
 
