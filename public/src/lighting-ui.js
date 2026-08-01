@@ -55,6 +55,50 @@ function getFixturePreset(fixture) {
     return null;
 }
 
+function normalizeRgbChannel255(value, fallback = 0) {
+    const number = Number(value);
+
+    if (!Number.isFinite(number)) {
+        return fallback;
+    }
+
+    // Unity 返回的 0–1 转成网页使用的 0–255
+    if (number >= 0 && number <= 1) {
+        return Math.round(number * 255);
+    }
+
+    // 已经是 0–255
+    return Math.round(
+        clamp(number, 0, 255)
+    );
+}
+
+function normalizeRgbColor255(
+    color,
+    fallback = {
+        r: 255,
+        g: 128,
+        b: 64
+    }
+) {
+    return {
+        r: normalizeRgbChannel255(
+            color?.r,
+            fallback.r
+        ),
+
+        g: normalizeRgbChannel255(
+            color?.g,
+            fallback.g
+        ),
+
+        b: normalizeRgbChannel255(
+            color?.b,
+            fallback.b
+        )
+    };
+}
+
 function createDefaultSegments(count = 8) {
     return Array.from({ length: count }, () => ({
         r: 255,
@@ -274,6 +318,18 @@ function formatAngle(value) {
     return Number.isInteger(number)
         ? String(number)
         : number.toFixed(1);
+}
+
+function formatPanTilt(value) {
+    const number = Number(value);
+
+    if (!Number.isFinite(number)) {
+        return '--';
+    }
+
+    return String(
+        Math.round(number)
+    );
 }
 
 function sanitizeAngleForFixture(fixture, rawAngle) {
@@ -575,17 +631,30 @@ function updateIntensityUI() {
 }
 
 function updatePanTiltUI() {
-    const panSlider = getElement('panSlider');
-    const tiltSlider = getElement('tiltSlider');
-    const panValue = getElement('panValue');
-    const tiltValue = getElement('tiltValue');
+    const panSlider =
+        getElement('panSlider');
+
+    const tiltSlider =
+        getElement('tiltSlider');
+
+    const panValue =
+        getElement('panValue');
+
+    const tiltValue =
+        getElement('tiltValue');
 
     if (panSlider && panValue) {
-        panValue.innerHTML = `${panSlider.value}&deg;`;
+        panValue.innerHTML =
+            `${formatPanTilt(
+                panSlider.value
+            )}&deg;`;
     }
 
     if (tiltSlider && tiltValue) {
-        tiltValue.innerHTML = `${tiltSlider.value}&deg;`;
+        tiltValue.innerHTML =
+            `${formatPanTilt(
+                tiltSlider.value
+            )}&deg;`;
     }
 }
 
@@ -869,9 +938,11 @@ function renderDetailLightingPanel(fixture, state = {}) {
     const isFresnel = fixture.fixtureType === FIXTURE_TYPES.FRESNEL;
 
     const angleTitle = isMoving || isFresnel ? 'Beam Angle' : 'Field Angle';
+    
     const r = Number(state.r ?? 255);
     const g = Number(state.g ?? 128);
     const b = Number(state.b ?? 64);
+
     const hex = rgbToHex(r, g, b);
 
     const supportsRgb =
@@ -1237,38 +1308,127 @@ function renderDetailAngleBlock(fixture, preset, state, title) {
     `;
 }
 
-function renderDetailAimBlock(fixture, preset, state) {
-    const isMoving = fixture.fixtureType === FIXTURE_TYPES.MOVING;
-    const title = isMoving ? 'SPATIAL MOVEMENT' : 'AIM';
-    const panMin = isMoving ? preset?.panMin : preset?.aimPanMin ?? -180;
-    const panMax = isMoving ? preset?.panMax : preset?.aimPanMax ?? 180;
-    const tiltMin = isMoving ? preset?.tiltMin : preset?.aimTiltMin ?? -90;
-    const tiltMax = isMoving ? preset?.tiltMax : preset?.aimTiltMax ?? 90;
+function renderDetailAimBlock(
+    fixture,
+    preset,
+    state
+) {
+    const isMoving =
+        fixture.fixtureType ===
+        FIXTURE_TYPES.MOVING;
+
+    const title =
+        isMoving
+            ? 'SPATIAL MOVEMENT'
+            : 'AIM';
+
+    const panMin =
+        isMoving
+            ? preset?.panMin
+            : preset?.aimPanMin ?? -180;
+
+    const panMax =
+        isMoving
+            ? preset?.panMax
+            : preset?.aimPanMax ?? 180;
+
+    const tiltMin =
+        isMoving
+            ? preset?.tiltMin
+            : preset?.aimTiltMin ?? -90;
+
+    const tiltMax =
+        isMoving
+            ? preset?.tiltMax
+            : preset?.aimTiltMax ?? 90;
+
+    const pan = Number.isFinite(
+        Number(state.pan)
+    )
+        ? Number(state.pan)
+        : 0;
+
+    const tilt = Number.isFinite(
+        Number(state.tilt)
+    )
+        ? Number(state.tilt)
+        : 0;
 
     return `
         <section class="rounded-lg border border-gray-800 bg-[#0b0f16] p-3">
             <div class="flex items-center gap-2 mb-3">
-                <div class="text-green-400 text-xs font-bold">${title}</div>
-                ${isMoving ? '' : '<span class="px-1.5 py-0.5 rounded border border-yellow-500/40 bg-yellow-500/10 text-[9px] text-yellow-300">Preview Only</span>'}
+                <div class="text-green-400 text-xs font-bold">
+                    ${title}
+                </div>
+
+                ${
+                    isMoving
+                        ? ''
+                        : `
+                            <span class="px-1.5 py-0.5 rounded border border-yellow-500/40 bg-yellow-500/10 text-[9px] text-yellow-300">
+                                Preview Only
+                            </span>
+                        `
+                }
             </div>
 
             <div class="space-y-4">
                 <div>
-                    <div class="text-xs text-gray-300 mb-1">Pan</div>
-                    <input id="detailPanSlider" type="range" min="${panMin}" max="${panMax}" step="0.5" value="${state.pan ?? 0}" class="w-full accent-blue-500">
-                    <div class="flex justify-between text-[11px] text-gray-400 mt-1">
-                        <span>${panMin}&deg;</span><span>0&deg;</span><span>${panMax}&deg;</span>
+                    <div class="text-xs text-gray-300 mb-1">
+                        Pan
                     </div>
-                    <div id="detailPanValue" class="mx-auto mt-2 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">${state.pan ?? 0}&deg;</div>
+
+                    <input
+                        id="detailPanSlider"
+                        type="range"
+                        min="${panMin}"
+                        max="${panMax}"
+                        step="0.5"
+                        value="${pan}"
+                        class="w-full accent-blue-500"
+                    >
+
+                    <div class="flex justify-between text-[11px] text-gray-400 mt-1">
+                        <span>${formatPanTilt(panMin)}&deg;</span>
+                        <span>0&deg;</span>
+                        <span>${formatPanTilt(panMax)}&deg;</span>
+                    </div>
+
+                    <div
+                        id="detailPanValue"
+                        class="mx-auto mt-2 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs"
+                    >
+                        ${formatPanTilt(pan)}&deg;
+                    </div>
                 </div>
 
                 <div>
-                    <div class="text-xs text-gray-300 mb-1">Tilt</div>
-                    <input id="detailTiltSlider" type="range" min="${tiltMin}" max="${tiltMax}" step="0.5" value="${state.tilt ?? 0}" class="w-full accent-blue-500">
-                    <div class="flex justify-between text-[11px] text-gray-400 mt-1">
-                        <span>${tiltMin}&deg;</span><span>0&deg;</span><span>${tiltMax}&deg;</span>
+                    <div class="text-xs text-gray-300 mb-1">
+                        Tilt
                     </div>
-                    <div id="detailTiltValue" class="mx-auto mt-2 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">${state.tilt ?? 0}&deg;</div>
+
+                    <input
+                        id="detailTiltSlider"
+                        type="range"
+                        min="${tiltMin}"
+                        max="${tiltMax}"
+                        step="0.5"
+                        value="${tilt}"
+                        class="w-full accent-blue-500"
+                    >
+
+                    <div class="flex justify-between text-[11px] text-gray-400 mt-1">
+                        <span>${formatPanTilt(tiltMin)}&deg;</span>
+                        <span>0&deg;</span>
+                        <span>${formatPanTilt(tiltMax)}&deg;</span>
+                    </div>
+
+                    <div
+                        id="detailTiltValue"
+                        class="mx-auto mt-2 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs"
+                    >
+                        ${formatPanTilt(tilt)}&deg;
+                    </div>
                 </div>
             </div>
         </section>
@@ -1325,17 +1485,27 @@ function renderDetailColorBlazeBlock(state = {}) {
         segmentMode
     );
 
-    const colorA = {
-        r: Number(state.colorA?.r ?? state.r ?? 255),
-        g: Number(state.colorA?.g ?? state.g ?? 128),
-        b: Number(state.colorA?.b ?? state.b ?? 64)
-    };
+    const colorA = normalizeRgbColor255(
+        state.colorA ?? {
+            r: state.r,
+            g: state.g,
+            b: state.b
+        },
+        {
+            r: 255,
+            g: 128,
+            b: 64
+        }
+    );
 
-    const colorB = {
-        r: Number(state.colorB?.r ?? 64),
-        g: Number(state.colorB?.g ?? 200),
-        b: Number(state.colorB?.b ?? 255)
-    };
+    const colorB = normalizeRgbColor255(
+        state.colorB,
+        {
+            r: 64,
+            g: 200,
+            b: 255
+        }
+    );
 
     const selectedSegment = Math.max(
         0,
@@ -1363,11 +1533,14 @@ function renderDetailColorBlazeBlock(state = {}) {
 
     if (mode === 'solid') {
         editorHtml = renderColorBlazeSolidEditor({
-            color: {
-                r: Number(state.r ?? colorA.r),
-                g: Number(state.g ?? colorA.g),
-                b: Number(state.b ?? colorA.b)
-            },
+            color: normalizeRgbColor255(
+                {
+                    r: state.r,
+                    g: state.g,
+                    b: state.b
+                },
+                colorA
+            ),
             strobeHz
         });
     }
@@ -2161,24 +2334,27 @@ function normalizeLedSegments(segments, count) {
             ? segments
             : [];
 
+    const defaultColor = {
+        r: 255,
+        g: 128,
+        b: 64
+    };
+
     const fallback =
-        source[source.length - 1] ?? {
-            r: 255,
-            g: 128,
-            b: 64
-        };
+        source[source.length - 1] ??
+        defaultColor;
 
     return Array.from(
         { length: count },
         (_, index) => {
             const color =
-                source[index] ?? fallback;
+                source[index] ??
+                fallback;
 
-            return {
-                r: Number(color.r ?? 255),
-                g: Number(color.g ?? 128),
-                b: Number(color.b ?? 64)
-            };
+            return normalizeRgbColor255(
+                color,
+                defaultColor
+            );
         }
     );
 }
@@ -2489,10 +2665,17 @@ export function setupLightingInputListeners(onInput) {
         }
 
         if (target.id === 'detailPanSlider') {
-            const value = getElement('detailPanValue');
-            const quick = getElement('panSlider');
+            const value =
+                getElement('detailPanValue');
 
-            if (value) value.innerHTML = `${target.value}&deg;`;
+            const quick =
+                getElement('panSlider');
+
+            if (value) {
+                value.innerHTML =
+                    `${formatPanTilt(target.value)}&deg;`;
+            }
+
             if (quick) {
                 quick.value = target.value;
                 updatePanTiltUI();
@@ -2500,28 +2683,20 @@ export function setupLightingInputListeners(onInput) {
         }
 
         if (target.id === 'detailTiltSlider') {
-            const value = getElement('detailTiltValue');
-            const quick = getElement('tiltSlider');
+            const value =
+                getElement('detailTiltValue');
 
-            if (value) value.innerHTML = `${target.value}&deg;`;
+            const quick =
+                getElement('tiltSlider');
+
+            if (value) {
+                value.innerHTML =
+                    `${formatPanTilt(target.value)}&deg;`;
+            }
+
             if (quick) {
                 quick.value = target.value;
                 updatePanTiltUI();
-            }
-        }
-
-        if (target.id === 'detailSoftnessSlider') {
-            const value = getElement('detailSoftnessValue');
-            if (value) value.textContent = `${Math.round(Number(target.value) * 100)}%`;
-        }
-
-        if (target.id === 'detailLedChaseSpeedSlider') {
-            currentLedState.chaseSpeed = Number(target.value);
-
-            const value = getElement('detailLedChaseSpeedValue');
-
-            if (value) {
-                value.textContent = `${target.value}x`;
             }
         }
 
