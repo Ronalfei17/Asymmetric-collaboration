@@ -39,6 +39,52 @@
                 font-size: 11px;
             }
         }
+
+        /* Detail Lighting Control responsive layout */
+
+        @container (max-width: 760px) {
+            .detail-rgb-layout {
+                grid-template-columns: minmax(0, 1fr) !important;
+            }
+
+            .detail-rgb-visual {
+                justify-content: flex-start !important;
+                padding-top: 8px;
+            }
+        }
+
+        @container (max-width: 620px) {
+            .detail-color-strobe-grid {
+                grid-template-columns: minmax(0, 1fr) !important;
+            }
+        }
+
+        /* ColorBlaze advanced modes responsive layout */
+
+        @container (max-width: 760px) {
+            .detail-colorblaze-editor {
+                grid-template-columns: minmax(0, 1fr) !important;
+            }
+        }
+
+        @container (max-width: 560px) {
+            .detail-gradient-colors {
+                grid-template-columns: minmax(0, 1fr) !important;
+            }
+
+            .detail-chase-colors {
+                grid-template-columns: minmax(0, 1fr) !important;
+            }
+
+            .detail-chase-arrow {
+                transform: rotate(90deg);
+                justify-self: center;
+            }
+
+            .detail-manual-segment-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-[#0c0f16] text-gray-200 h-[100dvh] w-screen overflow-hidden flex flex-col font-sans select-none text-[13px]">
@@ -672,6 +718,7 @@
                             <div
                                 id="detailLightingScrollArea"
                                 class="mt-4 flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain rounded-lg border border-gray-800 bg-[#06080c]/40 p-3 pr-2"
+                                style="container-type: inline-size;"
                             >
                                 <div
                                     id="detailLightingPanel"

@@ -969,7 +969,7 @@ function renderDetailLightingPanel(fixture, state = {}) {
         standardBlocks.length === 0
             ? ''
             : `
-                <div class="grid ${
+                <div class="detail-color-strobe-grid grid ${
                     standardBlocks.length === 2
                         ? 'grid-cols-2'
                         : 'grid-cols-1'
@@ -1079,7 +1079,7 @@ function renderDetailRgbBlock(r, g, b, hex) {
         <section class="rounded-lg border border-gray-800 bg-[#0b0f16] p-3">
             <div class="text-red-400 text-xs font-bold mb-3">RGB COLOR</div>
 
-            <div class="grid grid-cols-[1fr_170px] gap-4 items-center">
+            <div class="detail-rgb-layout grid grid-cols-[minmax(0,1fr)_170px] gap-4 items-center">
                 <div class="space-y-3">
                     <label class="grid grid-cols-[18px_1fr_48px] gap-2 items-center text-xs">
                         <span class="text-red-400">R</span>
@@ -1102,7 +1102,7 @@ function renderDetailRgbBlock(r, g, b, hex) {
                     <div id="detailHexValue" class="w-28 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">${hex}</div>
                 </div>
 
-                <div class="flex items-center justify-center gap-3">
+                <div class="detail-rgb-visual flex min-w-0 items-center justify-center gap-3">
                     <div
                         id="detailColorPreview"
                         class="w-16 h-16 rounded-lg border border-white/10 shadow-lg shrink-0"
@@ -1629,7 +1629,7 @@ function renderColorBlazeSolidEditor({
     );
 
     return `
-        <div class="grid grid-cols-[minmax(0,1fr)_300px] gap-3">
+        <div class="detail-colorblaze-editor grid grid-cols-[minmax(0,1fr)_300px] gap-3">
             <div class="space-y-3">
                 <div class="rounded-lg border border-blue-500/30 bg-blue-500/5 p-3">
                     <div class="text-xs text-blue-300">
@@ -1749,7 +1749,7 @@ function renderColorBlazeGradientEditor({
     );
 
     return `
-        <div class="grid grid-cols-[minmax(0,1fr)_300px] gap-3">
+        <div class="detail-colorblaze-editor grid grid-cols-[minmax(0,1fr)_300px] gap-3">
             <div class="space-y-3">
                 <div class="rounded-lg border border-blue-500/30 bg-blue-500/5 p-3">
                     <div class="text-xs text-blue-300">
@@ -1784,7 +1784,7 @@ function renderColorBlazeGradientEditor({
                         GRADIENT EDITOR
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="detail-gradient-colors grid grid-cols-2 gap-3 mb-3">
                         <button
                             type="button"
                             data-detail-color-target="colorA"
@@ -2003,7 +2003,7 @@ function renderColorBlazeChaseEditor({
     );
 
     return `
-        <div class="grid grid-cols-[minmax(0,1fr)_300px] gap-3">
+        <div class="detail-colorblaze-editor grid grid-cols-[minmax(0,1fr)_300px] gap-3">
             <div class="space-y-3">
                 <div class="rounded-lg border border-blue-500/30 bg-blue-500/5 p-3">
                     <div class="text-xs text-blue-300">
@@ -2038,7 +2038,7 @@ function renderColorBlazeChaseEditor({
                         COLOR CHASE
                     </div>
 
-                    <div class="grid grid-cols-[1fr_40px_1fr] gap-3 items-center mb-3">
+                    <div class="detail-chase-colors grid grid-cols-[minmax(0,1fr)_40px_minmax(0,1fr)] gap-3 items-center mb-3">
                         <button
                             type="button"
                             data-detail-color-target="colorA"
@@ -2063,7 +2063,7 @@ function renderColorBlazeChaseEditor({
                             </div>
                         </button>
 
-                        <div class="text-center text-2xl text-gray-300">
+                        <div class="detail-chase-arrow text-center text-2xl text-gray-300">
                             →
                         </div>
 
@@ -2231,7 +2231,7 @@ function renderColorBlazeManualEditor({
     );
 
     return `
-        <div class="grid grid-cols-[minmax(0,1fr)_300px] gap-3">
+        <div class="detail-colorblaze-editor grid grid-cols-[minmax(0,1fr)_300px] gap-3">
             <div class="space-y-3">
                 <div class="rounded-lg border border-blue-500/30 bg-blue-500/5 p-3">
                     <div class="text-xs text-blue-300">
@@ -2372,7 +2372,10 @@ function renderDetailManualSegmentGrid(segments) {
                 </div>
             </div>
 
-            <div id="detailLedSegmentGrid" class="grid grid-cols-4 gap-2">
+            <div
+                id="detailLedSegmentGrid"
+                class="detail-manual-segment-grid grid grid-cols-4 gap-2"
+            >
                 ${segments.map((color, index) => {
                     const hex = rgbToHex(color.r, color.g, color.b);
                     const isSelected = index === selectedSegment;
