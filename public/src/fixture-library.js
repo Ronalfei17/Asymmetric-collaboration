@@ -84,7 +84,6 @@ function renderFixtureButton(fixture) {
 
     button.addEventListener('click', () => {
         selectLightingFixtureById(fixture.lightId);
-        renderFixtureLibrary(getCurrentMode());
     });
 
     return button;
@@ -153,12 +152,63 @@ export function renderFixtureLibrary(mode = 'all') {
     }
 }
 
+function refreshFixtureLibrarySelection({
+    scrollIntoView = false
+} = {}) {
+    renderFixtureLibrary(getCurrentMode());
+
+    if (!scrollIntoView) {
+        return;
+    }
+
+    const selectedFixture =
+        getSelectedLightingFixture();
+
+    if (!selectedFixture) {
+        return;
+    }
+
+    requestAnimationFrame(() => {
+        const selectedButton =
+            document.querySelector(
+                `.fixture-library-item[data-light-id="${selectedFixture.lightId}"]`
+            );
+
+        selectedButton?.scrollIntoView({
+            block: 'nearest',
+            behavior: 'smooth'
+        });
+    });
+}
+
 export function setupFixtureLibrary() {
     renderFixtureLibrary('all');
 
-    document.querySelectorAll('[data-fixture-library-tab]').forEach(button => {
-        button.addEventListener('click', () => {
-            renderFixtureLibrary(button.dataset.fixtureLibraryTab);
+    document
+        .querySelectorAll(
+            '[data-fixture-library-tab]'
+        )
+        .forEach(button => {
+            button.addEventListener('click', () => {
+                renderFixtureLibrary(
+                    button.dataset.fixtureLibraryTab
+                );
+            });
         });
-    });
+
+    window.addEventListener(
+        'lighting-fixture-selected',
+        event => {
+            const lightId =
+                Number(event.detail?.lightId);
+
+            if (!Number.isFinite(lightId)) {
+                return;
+            }
+
+            refreshFixtureLibrarySelection({
+                scrollIntoView: true
+            });
+        }
+    );
 }
