@@ -114,6 +114,90 @@ function renderFixtureGroup(title, fixtures) {
     return group;
 }
 
+function renderFixtureTypeDropdownGroup(type) {
+    const fixtures = getFixturesByType(type);
+    const selectedFixture = getSelectedLightingFixture();
+
+    const group = document.createElement('div');
+
+    group.className = [
+        'fixture-library-type-group',
+        'border-b border-gray-800/70 pb-3',
+        'last:border-b-0'
+    ].join(' ');
+
+    const label = document.createElement('div');
+
+    label.className =
+        'px-1 py-2 text-[11px] text-gray-400 font-semibold';
+
+    label.textContent = getFixtureTypeLabel(type);
+
+    const select = document.createElement('select');
+
+    select.setAttribute(
+        'aria-label',
+        `Select ${getFixtureTypeLabel(type)} fixture`
+    );
+
+    select.className = [
+        'w-full h-10 rounded-md',
+        'border border-gray-700',
+        'bg-[#0b0f16]',
+        'px-3 text-[11px] text-gray-200',
+        'focus:outline-none',
+        'focus:border-blue-500'
+    ].join(' ');
+
+    const placeholder = document.createElement('option');
+
+    placeholder.value = '';
+    placeholder.textContent =
+        `Select ${getFixtureTypeLabel(type)} fixture`;
+
+    select.appendChild(placeholder);
+
+    fixtures.forEach(fixture => {
+        const option = document.createElement('option');
+
+        option.value = String(fixture.lightId);
+
+        option.textContent =
+            `${getFixtureChannelLabel(fixture)} — ${getFixtureDisplayName(fixture)}`;
+
+        if (
+            selectedFixture &&
+            Number(selectedFixture.lightId) ===
+            Number(fixture.lightId)
+        ) {
+            option.selected = true;
+        }
+
+        select.appendChild(option);
+    });
+
+    select.addEventListener('change', event => {
+        const rawValue = event.target.value;
+
+        if (rawValue === '') {
+            return;
+        }
+
+        const lightId = Number(rawValue);
+
+        if (!Number.isFinite(lightId)) {
+            return;
+        }
+
+        selectLightingFixtureById(lightId);
+    });
+
+    group.appendChild(label);
+    group.appendChild(select);
+
+    return group;
+}
+
 function getCurrentMode() {
     return currentMode;
 }
@@ -133,17 +217,23 @@ export function renderFixtureLibrary(mode = 'all') {
 
     if (mode === 'by-type') {
         TYPE_ORDER.forEach(type => {
-            const fixtures = getFixturesByType(type);
+            const fixtures =
+                getFixturesByType(type);
 
-            if (!fixtures.length) return;
+            if (!fixtures.length) {
+                return;
+            }
 
             container.appendChild(
-                renderFixtureGroup(getFixtureTypeLabel(type), fixtures)
+                renderFixtureTypeDropdownGroup(type)
             );
         });
     } else {
         container.appendChild(
-            renderFixtureGroup('All Fixtures', getAllFixtures())
+            renderFixtureGroup(
+                'All Fixtures',
+                getAllFixtures()
+            )
         );
     }
 
@@ -207,7 +297,8 @@ export function setupFixtureLibrary() {
             }
 
             refreshFixtureLibrarySelection({
-                scrollIntoView: true
+                scrollIntoView:
+                    currentMode === 'all'
             });
         }
     );
