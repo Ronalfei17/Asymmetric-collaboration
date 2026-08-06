@@ -28,6 +28,14 @@ function getFixtureDisplayName(fixture) {
         `Light ${fixture.lightId}`;
 }
 
+function getFixtureDropdownName(fixture) {
+    return fixture.modelLabel ||
+        fixture.fixtureModel ||
+        fixture.name ||
+        fixture.label ||
+        `Light ${fixture.lightId}`;
+}
+
 function getFixtureChannelLabel(fixture) {
     return fixture.displayId || `CH ${fixture.lightId}`;
 }
@@ -134,6 +142,7 @@ function renderFixtureTypeDropdownGroup(type) {
     label.textContent = getFixtureTypeLabel(type);
 
     const select = document.createElement('select');
+    select.dataset.fixtureType = type;
 
     select.setAttribute(
         'aria-label',
@@ -149,9 +158,16 @@ function renderFixtureTypeDropdownGroup(type) {
         'focus:border-blue-500'
     ].join(' ');
 
+    const hasSelectedFixtureInType =
+        selectedFixture &&
+        String(selectedFixture.fixtureType).toLowerCase() ===
+        String(type).toLowerCase();
+
     const placeholder = document.createElement('option');
 
     placeholder.value = '';
+    placeholder.disabled = true;
+    placeholder.selected = !hasSelectedFixtureInType;
     placeholder.textContent =
         `Select ${getFixtureTypeLabel(type)} fixture`;
 
@@ -163,7 +179,7 @@ function renderFixtureTypeDropdownGroup(type) {
         option.value = String(fixture.lightId);
 
         option.textContent =
-            `${getFixtureChannelLabel(fixture)} — ${getFixtureDisplayName(fixture)}`;
+            `${getFixtureChannelLabel(fixture)} — ${getFixtureDropdownName(fixture)}`;
 
         if (
             selectedFixture &&
