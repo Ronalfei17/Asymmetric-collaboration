@@ -28,8 +28,6 @@ function createMarkerElement(marker) {
     button.className = [
         'absolute',
         'pointer-events-auto',
-        'transition-transform',
-        'duration-150',
         'outline-none'
     ].join(' ');
 
@@ -37,11 +35,17 @@ function createMarkerElement(marker) {
     button.style.top = `${marker.y * 100}%`;
     button.style.width = `${marker.width * 100}%`;
     button.style.height = `${marker.height * 100}%`;
-    button.dataset.baseTransform = `translate(-50%, -50%) rotate(${marker.rotation}deg)`;
-    button.style.transform = button.dataset.baseTransform;
+    button.style.transform = 'translate(-50%, -50%)';
+    button.dataset.baseTransform = 'translate(-50%, -50%)';
+
+    const iconWrapper = document.createElement('span');
+    iconWrapper.className = 'absolute inset-0 pointer-events-none';
+
+    iconWrapper.style.transform = `rotate(${marker.rotation || 0}deg)`;
+    iconWrapper.style.transformOrigin = 'center center';
 
     const icon = document.createElement('span');
-
+    icon.dataset.markerIcon = 'true';
     icon.className = [
         'block',
         'w-full',
@@ -60,8 +64,47 @@ function createMarkerElement(marker) {
 
     icon.style.webkitMaskPosition = 'center';
     icon.style.maskPosition = 'center';
+    icon.style.backgroundColor = 'rgba(255,255,255,0.72)';
+    iconWrapper.appendChild(icon);
 
-    button.appendChild(icon);
+    const idLabel = document.createElement('span');
+    idLabel.dataset.lightIdLabel = 'true';
+    idLabel.textContent = String(marker.lightId);
+    idLabel.className = [
+        'absolute',
+        'pointer-events-none',
+        'select-none',
+        'font-mono',
+        'font-semibold',
+        'leading-none',
+        'whitespace-nowrap'
+    ].join(' ');
+
+    idLabel.style.left = '50%';
+    idLabel.style.top = '100%';
+    idLabel.style.transform = 'translate(-50%, 3px)';
+
+    idLabel.style.fontSize = '6px';
+    idLabel.style.lineHeight = '1';
+    idLabel.style.padding = '0';
+    idLabel.style.borderRadius = '0';
+    idLabel.style.backgroundColor = 'transparent';
+    idLabel.style.border = 'none';
+    idLabel.style.color = 'rgba(255,255,255,0.58)';
+    idLabel.style.textShadow = '0 0 3px rgba(0,0,0,0.85)';
+    idLabel.style.zIndex = '40';
+
+    button.appendChild(iconWrapper);
+    button.appendChild(idLabel);
+
+    button.addEventListener('click', event => {
+        event.stopPropagation();
+
+        selectMarker(marker.lightId, {
+            source: 'lighting-map'
+        });
+    });
+
     button.style.touchAction = 'none';
 
     let isPointerDownOnMarker = false;
@@ -102,7 +145,8 @@ function createMarkerElement(marker) {
 
 function updateMarkerVisual(button) {
     const lightId = Number(button.dataset.lightId);
-    const icon = button.firstElementChild;
+    const icon = button.querySelector('[data-marker-icon="true"]');
+    const idLabel = button.querySelector('[data-light-id-label="true"]');
 
     if(!icon) return;
     const isSelected = lightId === selectedLightId;
@@ -111,11 +155,25 @@ function updateMarkerVisual(button) {
         icon.style.backgroundColor = '#3B82F6';
         icon.style.filter = 'drop-shadow(0 0 8px rgba(59,130,246,0.65))';
 
+        if (idLabel) {
+            idLabel.style.backgroundColor = 'transparent';
+            idLabel.style.border = 'none';
+            idLabel.style.color = '#60A5FA';
+            idLabel.style.textShadow = '0 0 4px rgba(37,99,235,0.95)';
+        }
+
         button.style.zIndex = '30';
         button.style.transform = `${button.dataset.baseTransform} scale(1.08)`;
     } else {
         icon.style.backgroundColor ='#FFFFFF';
         icon.style.filter = 'none';
+
+        if (idLabel) {
+            idLabel.style.backgroundColor = 'transparent';
+            idLabel.style.border = 'none';
+            idLabel.style.color = 'rgba(255,255,255,0.50)';
+            idLabel.style.textShadow = '0 0 3px rgba(0,0,0,0.85)';
+        }
 
         button.style.zIndex = '10';
         button.style.transform = `${button.dataset.baseTransform} scale(1)`;
