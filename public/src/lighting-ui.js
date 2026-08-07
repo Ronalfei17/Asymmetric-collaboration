@@ -520,8 +520,6 @@ export function setupLightingInputListeners(onInput) {
             const currentState = toBoolean(powerToggle.dataset.on, true);
             const nextState = !currentState;
 
-            console.log('[Power Toggle]', { currentState, nextState });//调试
-
             setPowerState(nextState);
             onInput();
         });
