@@ -2,136 +2,38 @@ import {
     FIXTURE_TYPES,
     getFixtureTypes,
     getFixturesByType,
-    getFixtureTypeLabel,
-    getProfileModelPreset,
-    getLedModelPreset,
-    getFresnelModelPreset,
-    getMovingModelPreset
+    getFixtureTypeLabel
 } from './lighting-fixture.js';
 
 import {
     clamp,
-    rgbToHex,
-    rgbToHsv,
-    hsvToRgb
+    rgbToHex
 } from './lighting-color-utils.js';
 
-function getElement(id) {
-    return document.getElementById(id);
-}
+import {
+    getElement,
+    toBoolean,
+    isAdvancedLedFixture,
+    getFixturePreset,
+    getAngleConfig,
+    sanitizeAngleForFixture,
+    formatAngle,
+    formatPanTilt
+} from './lighting-ui-shared.js';
 
-function toBoolean(value, fallback = true) {
-    if (value === true || value === 'true') return true;
-    if (value === false || value === 'false') return false;
-    return fallback;
-}
+import {
+    renderDetailRgbBlock,
+    updateDetailRGBUI,
+    updateDetailRgbWheelHandle,
+    bindDetailRgbColorWheel
+} from './lighting-ui-rgb.js';
 
-function isAdvancedLedFixture(fixture) {
-    const preset = getLedModelPreset(fixture?.fixtureModel);
-
-    return fixture?.fixtureType === FIXTURE_TYPES.LED &&
-           Boolean(preset?.supportsAdvancedModes);
-}
-
-function getFixturePreset(fixture) {
-    if (!fixture) return null;
-
-    if (fixture.fixtureType === FIXTURE_TYPES.PROFILE) {
-        return getProfileModelPreset(fixture.fixtureModel);
-    }
-
-    if (fixture.fixtureType === FIXTURE_TYPES.LED) {
-        return getLedModelPreset(fixture.fixtureModel);
-    }
-
-    if (fixture.fixtureType === FIXTURE_TYPES.FRESNEL) {
-        return getFresnelModelPreset(fixture.fixtureModel);
-    }
-
-    if (fixture.fixtureType === FIXTURE_TYPES.MOVING) {
-        return getMovingModelPreset(fixture.fixtureModel);
-    }
-
-    return null;
-}
-
-function normalizeRgbChannel255(value, fallback = 0) {
-    const number = Number(value);
-
-    if (!Number.isFinite(number)) {
-        return fallback;
-    }
-
-    // Unity 返回的 0–1 转成网页使用的 0–255
-    if (number >= 0 && number <= 1) {
-        return Math.round(number * 255);
-    }
-
-    // 已经是 0–255
-    return Math.round(
-        clamp(number, 0, 255)
-    );
-}
-
-function normalizeRgbColor255(
-    color,
-    fallback = {
-        r: 255,
-        g: 128,
-        b: 64
-    }
-) {
-    return {
-        r: normalizeRgbChannel255(
-            color?.r,
-            fallback.r
-        ),
-
-        g: normalizeRgbChannel255(
-            color?.g,
-            fallback.g
-        ),
-
-        b: normalizeRgbChannel255(
-            color?.b,
-            fallback.b
-        )
-    };
-}
-
-function createDefaultSegments(count = 8) {
-    return Array.from({ length: count }, () => ({
-        r: 255,
-        g: 128,
-        b: 64
-    }));
-}
-
-let currentLedState = {
-    ledMode: 'solid',
-    segmentMode: 8,
-    selectedSegment: 0,
-    segments: createDefaultSegments(8),
-
-    colorA: {
-        r: 255,
-        g: 128,
-        b: 64
-    },
-
-    colorB: {
-        r: 64,
-        g: 200,
-        b: 255
-    },
-
-    editingColorTarget: 'colorA',
-
-    chaseSpeed: 1.5,
-    direction: 'forward',
-    repeatMode: 'single',
-    strobeHz: 0
-};
+import {
+    renderDetailColorBlazeBlock,
+    readColorBlazeValuesFromUI,
+    handleColorBlazeInput,
+    handleColorBlazeClick
+} from './lighting-ui-colorblaze.js';
 
 function capsuleClass(isActive) {
     return [
@@ -257,41 +159,6 @@ function updateQuickAngleOptionActive(angle) {
     });
 }
 
-function getAngleConfig(fixture) {
-    const preset = getFixturePreset(fixture) || {};
-
-    const angleOptions = preset.fieldAngleOptions ?? preset.beamAngleOptions;
-    const angleMin = preset.fieldAngleMin ?? preset.beamAngleMin;
-    const angleMax = preset.fieldAngleMax ?? preset.beamAngleMax;
-
-    const defaultAngle = Number(
-        preset.defaultFieldAngle ??
-        preset.defaultBeamAngle ??
-        angleOptions?.[0] ??
-        angleMin ??
-        fixture?.defaultState?.fieldAngle ??
-        30
-    );
-
-    const hasOptions = Array.isArray(angleOptions) && angleOptions.length > 0;
-    const isFixed =
-        Boolean(preset.fieldAngleFixed) ||
-        (!hasOptions &&
-            angleMin !== undefined &&
-            angleMax !== undefined &&
-            Number(angleMin) === Number(angleMax));
-
-    return {
-        preset,
-        angleOptions,
-        angleMin,
-        angleMax,
-        defaultAngle,
-        hasOptions,
-        isFixed
-    };
-}
-
 function getCurrentAngleFromUI(fixture) {
     const { angleOptions, defaultAngle, hasOptions, isFixed } = getAngleConfig(fixture);
     const slider = getElement('fieldAngleSlider');
@@ -309,68 +176,6 @@ function getCurrentAngleFromUI(fixture) {
     }
 
     return Number.isFinite(value) ? value : defaultAngle;
-}
-
-function formatAngle(value) {
-    const number = Number(value);
-    if (!Number.isFinite(number)) return '--';
-
-    return Number.isInteger(number)
-        ? String(number)
-        : number.toFixed(1);
-}
-
-function formatPanTilt(value) {
-    const number = Number(value);
-
-    if (!Number.isFinite(number)) {
-        return '--';
-    }
-
-    return String(
-        Math.round(number)
-    );
-}
-
-function sanitizeAngleForFixture(fixture, rawAngle) {
-    const {
-        angleOptions,
-        angleMin,
-        angleMax,
-        defaultAngle,
-        hasOptions,
-        isFixed
-    } = getAngleConfig(fixture);
-
-    if (isFixed) {
-        return defaultAngle;
-    }
-
-    const value = Number(rawAngle);
-
-    if (hasOptions) {
-        const matchedAngle = angleOptions.find(angle =>
-            Math.abs(Number(angle) - value) < 0.01
-        );
-
-        return matchedAngle !== undefined
-            ? Number(matchedAngle)
-            : defaultAngle;
-    }
-
-    if (!Number.isFinite(value)) {
-        return defaultAngle;
-    }
-
-    if (angleMin !== undefined && value < Number(angleMin)) {
-        return Number(angleMin);
-    }
-
-    if (angleMax !== undefined && value > Number(angleMax)) {
-        return Number(angleMax);
-    }
-
-    return value;
 }
 
 function applyQuickAnglePreset(fixture, preset) {
@@ -500,7 +305,6 @@ export function updateSelectedInfoPanel(fixture) {
     const detailSelectedId = getElement('detailSelectedId');
     const detailSelectedName = getElement('detailSelectedName');
     const detailSelectedType = getElement('detailSelectedType');
-    const detailFixtureModeLabel = getElement('detailFixtureModeLabel');
 
     if (detailSelectedFixtureId) {
         detailSelectedFixtureId.textContent = displayId;
@@ -586,39 +390,6 @@ export function setPowerState(isOn) {
             powerStatusLabel.className = 'text-[11px] text-gray-500';
         }
     }
-}
-
-function updateDetailRGBUI() {
-    const r = Number(
-        getElement('detailRedSlider')?.value ?? 255
-    );
-
-    const g = Number(
-        getElement('detailGreenSlider')?.value ?? 128
-    );
-
-    const b = Number(
-        getElement('detailBlueSlider')?.value ?? 64
-    );
-
-    const hex = rgbToHex(r, g, b);
-
-    const rValue = getElement('detailRedValue');
-    const gValue = getElement('detailGreenValue');
-    const bValue = getElement('detailBlueValue');
-    const hexValue = getElement('detailHexValue');
-    const preview = getElement('detailColorPreview');
-
-    if (rValue) rValue.textContent = String(r);
-    if (gValue) gValue.textContent = String(g);
-    if (bValue) bValue.textContent = String(b);
-    if (hexValue) hexValue.textContent = hex;
-
-    if (preview) {
-        preview.style.background = hex;
-    }
-
-    updateDetailRgbWheelHandle(r, g, b);
 }
 
 function updateIntensityUI() {
@@ -758,7 +529,6 @@ function readDetailLightingValuesFromUI(fixture) {
     const detailStrobeHzSlider = getElement('detailStrobeHzSlider');
 
     const detailSoftnessSlider = getElement('detailSoftnessSlider');
-    const detailColorBlazePanel = getElement('detailColorBlazePanel');
 
     const state = {};
     const isAdvancedLed = isAdvancedLedFixture(fixture);
@@ -798,84 +568,11 @@ function readDetailLightingValuesFromUI(fixture) {
     }
 
     // ColorBlaze 48：RGB / Strobe / Segment 都从高级模式面板读取
-    if (isAdvancedLed && detailColorBlazePanel) {
-        state.ledMode =
-            detailColorBlazePanel.dataset.ledMode ??
-            'solid';
-
-        state.segmentMode = Number(
-            detailColorBlazePanel.dataset.ledSegments ??
-            8
+    if (isAdvancedLed) {
+        Object.assign(
+            state,
+            readColorBlazeValuesFromUI()
         );
-
-        state.selectedSegment = Number(
-            currentLedState.selectedSegment ?? 0
-        );
-
-        state.segments =
-            currentLedState.segments.map(
-                color => ({ ...color })
-            );
-
-        state.colorA = {
-            ...currentLedState.colorA
-        };
-
-        state.colorB = {
-            ...currentLedState.colorB
-        };
-
-        state.chaseSpeed = Number(
-            getElement('detailLedChaseSpeedSlider')
-                ?.value ??
-            currentLedState.chaseSpeed ??
-            1.5
-        );
-
-        state.direction =
-            detailColorBlazePanel.dataset.ledDirection ??
-            currentLedState.direction ??
-            'forward';
-
-        state.repeatMode =
-            detailColorBlazePanel.dataset.ledRepeatMode ??
-            currentLedState.repeatMode ??
-            'single';
-
-        state.strobeHz = Number(
-            getElement('detailLedStrobeHzSlider')
-                ?.value ??
-            currentLedState.strobeHz ??
-            0
-        );
-
-        const detailR = getElement('detailRedSlider');
-        const detailG = getElement('detailGreenSlider');
-        const detailB = getElement('detailBlueSlider');
-
-        if (
-            detailR &&
-            detailG &&
-            detailB &&
-            state.ledMode === 'solid'
-        ) {
-            state.r = Number(detailR.value);
-            state.g = Number(detailG.value);
-            state.b = Number(detailB.value);
-        }
-
-        if (state.ledMode === 'manual') {
-            const selectedColor =
-                currentLedState.segments[
-                    state.selectedSegment
-                ];
-
-            if (selectedColor) {
-                state.r = Number(selectedColor.r);
-                state.g = Number(selectedColor.g);
-                state.b = Number(selectedColor.b);
-            }
-        }
     }
 
     return state;
@@ -1071,158 +768,6 @@ function updateDetailPowerState(isOn) {
     powerState.querySelectorAll('[data-detail-power]').forEach(button => {
         const isActive = toBoolean(button.dataset.detailPower, false) === isOn;
         button.className = detailPowerButtonClass(isActive);
-    });
-}
-
-function renderDetailRgbBlock(r, g, b, hex) {
-    return `
-        <section class="rounded-lg border border-gray-800 bg-[#0b0f16] p-3">
-            <div class="text-red-400 text-xs font-bold mb-3">RGB COLOR</div>
-
-            <div class="detail-rgb-layout grid grid-cols-[minmax(0,1fr)_170px] gap-4 items-center">
-                <div class="space-y-3">
-                    <label class="grid grid-cols-[18px_1fr_48px] gap-2 items-center text-xs">
-                        <span class="text-red-400">R</span>
-                        <input id="detailRedSlider" type="range" min="0" max="255" value="${r}" class="accent-red-500">
-                        <span id="detailRedValue" class="text-center rounded border border-gray-700 bg-white/5 py-1">${r}</span>
-                    </label>
-
-                    <label class="grid grid-cols-[18px_1fr_48px] gap-2 items-center text-xs">
-                        <span class="text-green-400">G</span>
-                        <input id="detailGreenSlider" type="range" min="0" max="255" value="${g}" class="accent-green-500">
-                        <span id="detailGreenValue" class="text-center rounded border border-gray-700 bg-white/5 py-1">${g}</span>
-                    </label>
-
-                    <label class="grid grid-cols-[18px_1fr_48px] gap-2 items-center text-xs">
-                        <span class="text-blue-400">B</span>
-                        <input id="detailBlueSlider" type="range" min="0" max="255" value="${b}" class="accent-blue-500">
-                        <span id="detailBlueValue" class="text-center rounded border border-gray-700 bg-white/5 py-1">${b}</span>
-                    </label>
-
-                    <div id="detailHexValue" class="w-28 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">${hex}</div>
-                </div>
-
-                <div class="detail-rgb-visual flex min-w-0 items-center justify-center gap-3">
-                    <div
-                        id="detailColorPreview"
-                        class="w-16 h-16 rounded-lg border border-white/10 shadow-lg shrink-0"
-                        style="background:${hex}"
-                    ></div>
-
-                    <div
-                        id="detailRgbColorWheel"
-                        class="relative h-24 w-24 shrink-0 rounded-full cursor-crosshair"
-                        style="background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);"
-                    >
-                        <div class="absolute inset-[28%] rounded-full bg-[#0b0f16]"></div>
-                        <div
-                            id="detailRgbColorWheelHandle"
-                            class="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow pointer-events-none"
-                        ></div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    `;
-}
-
-let isDraggingDetailRgbWheel = false;
-
-function setDetailRgbValues(r, g, b) {
-    r = Math.round(clamp(r, 0, 255));
-    g = Math.round(clamp(g, 0, 255));
-    b = Math.round(clamp(b, 0, 255));
-
-    const hex = rgbToHex(r, g, b);
-
-    const redSlider = getElement('detailRedSlider');
-    const greenSlider = getElement('detailGreenSlider');
-    const blueSlider = getElement('detailBlueSlider');
-
-    if (redSlider) redSlider.value = r;
-    if (greenSlider) greenSlider.value = g;
-    if (blueSlider) blueSlider.value = b;
-
-    getElement('detailRedValue') && (getElement('detailRedValue').textContent = r);
-    getElement('detailGreenValue') && (getElement('detailGreenValue').textContent = g);
-    getElement('detailBlueValue') && (getElement('detailBlueValue').textContent = b);
-
-    const hexElement = getElement('detailHexValue');
-    if (hexElement) {
-        if ('value' in hexElement) hexElement.value = hex;
-        else hexElement.textContent = hex;
-    }
-
-    const preview = getElement('detailColorPreview');
-    if (preview) preview.style.background = hex;
-
-    updateDetailRgbWheelHandle(r, g, b);
-
-    redSlider?.dispatchEvent(new Event('input', { bubbles: true }));
-}
-
-function updateDetailRgbWheelHandle(r, g, b) {
-    const wheel = getElement('detailRgbColorWheel');
-    const handle = getElement('detailRgbColorWheelHandle');
-    if (!wheel || !handle) return;
-
-    const { h, s } = rgbToHsv(r, g, b);
-    const size = wheel.clientWidth || 96;
-    const center = size / 2;
-    const radius = center * clamp(s, 0, 1);
-    const angle = (h - 90) * Math.PI / 180;
-
-    handle.style.left = `${center + Math.cos(angle) * radius}px`;
-    handle.style.top = `${center + Math.sin(angle) * radius}px`;
-}
-
-function updateDetailRgbFromWheel(event) {
-    const wheel = getElement('detailRgbColorWheel');
-    if (!wheel) return;
-
-    const rect = wheel.getBoundingClientRect();
-    const cx = rect.width / 2;
-    const cy = rect.height / 2;
-    const dx = event.clientX - rect.left - cx;
-    const dy = event.clientY - rect.top - cy;
-
-    const distance = Math.min(Math.hypot(dx, dy), Math.min(cx, cy));
-    const h = (Math.atan2(dy, dx) * 180 / Math.PI + 90 + 360) % 360;
-    const s = clamp(distance / Math.min(cx, cy), 0, 1);
-
-    const current = rgbToHsv(
-        Number(getElement('detailRedSlider')?.value ?? 255),
-        Number(getElement('detailGreenSlider')?.value ?? 128),
-        Number(getElement('detailBlueSlider')?.value ?? 64)
-    );
-
-    const next = hsvToRgb(h, s, current.v ?? 1);
-    setDetailRgbValues(next.r, next.g, next.b);
-}
-
-function bindDetailRgbColorWheel() {
-    const wheel = getElement('detailRgbColorWheel');
-    if (!wheel || wheel.dataset.bound === 'true') return;
-
-    wheel.dataset.bound = 'true';
-
-    wheel.addEventListener('pointerdown', event => {
-        isDraggingDetailRgbWheel = true;
-        wheel.setPointerCapture(event.pointerId);
-        updateDetailRgbFromWheel(event);
-    });
-
-    wheel.addEventListener('pointermove', event => {
-        if (!isDraggingDetailRgbWheel) return;
-        updateDetailRgbFromWheel(event);
-    });
-
-    wheel.addEventListener('pointerup', () => {
-        isDraggingDetailRgbWheel = false;
-    });
-
-    wheel.addEventListener('pointercancel', () => {
-        isDraggingDetailRgbWheel = false;
     });
 }
 
@@ -1472,1010 +1017,6 @@ function renderDetailMovingBlock(fixture, preset, state) {
     `;
 }
 
-function renderDetailColorBlazeBlock(state = {}) {
-    const mode = state.ledMode ?? 'solid';
-    const segmentMode = Number(state.segmentMode ?? 8);
-    const chaseSpeed = Number(state.chaseSpeed ?? 1.5);
-    const direction = state.direction ?? 'forward';
-    const repeatMode = state.repeatMode ?? 'single';
-    const strobeHz = Number(state.strobeHz ?? 0);
-
-    const segments = normalizeLedSegments(
-        state.segments,
-        segmentMode
-    );
-
-    const colorA = normalizeRgbColor255(
-        state.colorA ?? {
-            r: state.r,
-            g: state.g,
-            b: state.b
-        },
-        {
-            r: 255,
-            g: 128,
-            b: 64
-        }
-    );
-
-    const colorB = normalizeRgbColor255(
-        state.colorB,
-        {
-            r: 64,
-            g: 200,
-            b: 255
-        }
-    );
-
-    const selectedSegment = Math.max(
-        0,
-        Math.min(
-            Number(state.selectedSegment ?? 0),
-            segments.length - 1
-        )
-    );
-
-    currentLedState = {
-        ...currentLedState,
-        ledMode: mode,
-        segmentMode,
-        selectedSegment,
-        segments,
-        colorA,
-        colorB,
-        chaseSpeed,
-        direction,
-        repeatMode,
-        strobeHz
-    };
-
-    let editorHtml = '';
-
-    if (mode === 'solid') {
-        editorHtml = renderColorBlazeSolidEditor({
-            color: normalizeRgbColor255(
-                {
-                    r: state.r,
-                    g: state.g,
-                    b: state.b
-                },
-                colorA
-            ),
-            strobeHz
-        });
-    }
-
-    if (mode === 'gradient') {
-        editorHtml = renderColorBlazeGradientEditor({
-            segmentMode,
-            colorA,
-            colorB,
-            direction,
-            repeatMode,
-            strobeHz
-        });
-    }
-
-    if (mode === 'chase') {
-        editorHtml = renderColorBlazeChaseEditor({
-            segmentMode,
-            colorA,
-            colorB,
-            chaseSpeed,
-            direction,
-            strobeHz
-        });
-    }
-
-    if (mode === 'manual') {
-        editorHtml = renderColorBlazeManualEditor({
-            segmentMode,
-            selectedSegment,
-            segments,
-            strobeHz
-        });
-    }
-
-    return `
-        <section
-            id="detailColorBlazePanel"
-            class="rounded-lg border border-gray-800 bg-[#0b0f16] p-3"
-            data-led-mode="${mode}"
-            data-led-segments="${segmentMode}"
-            data-led-direction="${direction}"
-            data-led-repeat-mode="${repeatMode}"
-        >
-            <div class="text-red-400 text-xs font-bold mb-3">
-                COLORBLAZE 48 MODE
-            </div>
-
-            <div class="grid grid-cols-4 gap-1 rounded-lg border border-gray-700 p-1 mb-3">
-                ${['solid', 'gradient', 'chase', 'manual']
-                    .map(item => `
-                        <button
-                            type="button"
-                            data-detail-led-mode="${item}"
-                            class="h-9 rounded-md border text-xs transition ${
-                                mode === item
-                                    ? 'bg-blue-500/30 text-blue-200 border-blue-500'
-                                    : 'bg-transparent text-gray-300 border-transparent hover:bg-white/5'
-                            }"
-                        >
-                            ${item.toUpperCase()}
-                        </button>
-                    `)
-                    .join('')}
-            </div>
-
-            ${editorHtml}
-        </section>
-    `;
-}
-
-function renderColorBlazeSolidEditor({
-    color,
-    strobeHz
-}) {
-    const solidColor = {
-        r: Number(color?.r ?? 255),
-        g: Number(color?.g ?? 128),
-        b: Number(color?.b ?? 64)
-    };
-
-    const hex = rgbToHex(
-        solidColor.r,
-        solidColor.g,
-        solidColor.b
-    );
-
-    return `
-        <div class="detail-colorblaze-editor grid grid-cols-[minmax(0,1fr)_300px] gap-3">
-            <div class="space-y-3">
-                <div class="rounded-lg border border-blue-500/30 bg-blue-500/5 p-3">
-                    <div class="text-xs text-blue-300">
-                        Solid mode applies one color to the entire fixture.
-                    </div>
-                </div>
-
-                <div class="rounded-lg border border-gray-800 bg-black/20 p-3">
-                    <div class="text-xs text-gray-400 mb-2">
-                        Segment Mode
-                    </div>
-
-                    <div class="inline-flex min-w-[180px] rounded-md border border-blue-500/60 bg-blue-500/10 px-4 py-2 text-xs text-blue-200">
-                        Whole Fixture
-                    </div>
-                </div>
-
-                ${renderDetailRgbBlock(
-                    solidColor.r,
-                    solidColor.g,
-                    solidColor.b,
-                    hex
-                )}
-            </div>
-
-            <div class="space-y-3">
-                <section class="rounded-lg border border-gray-800 bg-black/20 p-3">
-                    <div class="text-green-400 text-xs font-bold mb-3">
-                        LED EFFECTS
-                    </div>
-
-                    <div class="text-xs text-gray-300 mb-2">
-                        Strobe
-                    </div>
-
-                    <input
-                        id="detailLedStrobeHzSlider"
-                        type="range"
-                        min="0"
-                        max="20"
-                        step="0.5"
-                        value="${strobeHz}"
-                        class="w-full accent-blue-500"
-                    >
-
-                    <div class="flex justify-between text-[11px] text-gray-500 mt-1">
-                        <span>0 Hz</span>
-                        <span>20 Hz</span>
-                    </div>
-
-                    <div
-                        id="detailLedStrobeHzValue"
-                        class="mx-auto mt-3 w-20 rounded border border-gray-700 bg-white/5 py-1.5 text-center text-xs text-green-300"
-                    >
-                        ${strobeHz} Hz
-                    </div>
-                </section>
-
-                <button
-                    type="button"
-                    data-detail-reset-effects
-                    class="w-full rounded-lg border border-gray-700 bg-white/5 px-4 py-4 text-sm text-gray-200 transition hover:border-green-500/50 hover:bg-green-500/10 hover:text-green-300"
-                >
-                    ↻ Reset Effects
-                </button>
-            </div>
-        </div>
-    `;
-}
-
-function renderColorBlazeGradientEditor({
-    segmentMode,
-    colorA,
-    colorB,
-    direction,
-    repeatMode,
-    strobeHz
-}) {
-    const safeColorA = {
-        r: Number(colorA?.r ?? 255),
-        g: Number(colorA?.g ?? 128),
-        b: Number(colorA?.b ?? 64)
-    };
-
-    const safeColorB = {
-        r: Number(colorB?.r ?? 64),
-        g: Number(colorB?.g ?? 128),
-        b: Number(colorB?.b ?? 255)
-    };
-
-    const hexA = rgbToHex(
-        safeColorA.r,
-        safeColorA.g,
-        safeColorA.b
-    );
-
-    const hexB = rgbToHex(
-        safeColorB.r,
-        safeColorB.g,
-        safeColorB.b
-    );
-
-    const editingTarget =
-        currentLedState.editingColorTarget === 'colorB'
-            ? 'colorB'
-            : 'colorA';
-
-    const editingColor =
-        editingTarget === 'colorB'
-            ? safeColorB
-            : safeColorA;
-
-    const editingHex = rgbToHex(
-        editingColor.r,
-        editingColor.g,
-        editingColor.b
-    );
-
-    return `
-        <div class="detail-colorblaze-editor grid grid-cols-[minmax(0,1fr)_300px] gap-3">
-            <div class="space-y-3">
-                <div class="rounded-lg border border-blue-500/30 bg-blue-500/5 p-3">
-                    <div class="text-xs text-blue-300">
-                        Gradient mode creates a transition from Color A to Color B across the selected segments.
-                    </div>
-                </div>
-
-                <section class="rounded-lg border border-gray-800 bg-black/20 p-3">
-                    <div class="text-xs text-gray-300 mb-2">
-                        Segment Mode
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-1 rounded-lg border border-gray-700 p-1">
-                        ${[4, 8].map(count => `
-                            <button
-                                type="button"
-                                data-detail-led-segments="${count}"
-                                class="h-9 rounded-md border text-xs transition ${
-                                    segmentMode === count
-                                        ? 'border-blue-500 bg-blue-500/30 text-blue-200'
-                                        : 'border-transparent text-gray-300 hover:bg-white/5'
-                                }"
-                            >
-                                ${count} Segments
-                            </button>
-                        `).join('')}
-                    </div>
-                </section>
-
-                <section class="rounded-lg border border-gray-800 bg-black/20 p-3">
-                    <div class="text-xs font-bold text-gray-200 mb-3">
-                        GRADIENT EDITOR
-                    </div>
-
-                    <div class="detail-gradient-colors grid grid-cols-2 gap-3 mb-3">
-                        <button
-                            type="button"
-                            data-detail-color-target="colorA"
-                            class="rounded-lg border p-3 text-left transition ${
-                                editingTarget === 'colorA'
-                                    ? 'border-blue-500 bg-blue-500/10'
-                                    : 'border-gray-700 bg-white/5 hover:bg-white/10'
-                            }"
-                        >
-                            <div class="text-[11px] text-gray-400 mb-2">
-                                Color A · Start
-                            </div>
-
-                            <div class="flex items-center gap-3">
-                                <div
-                                    id="detailColorAPreview"
-                                    class="h-12 w-12 shrink-0 rounded-md border border-white/10"
-                                    style="background:${hexA}"
-                                ></div>
-
-                                <div class="text-xs text-gray-300">
-                                    ${hexA}
-                                </div>
-                            </div>
-                        </button>
-
-                        <button
-                            type="button"
-                            data-detail-color-target="colorB"
-                            class="rounded-lg border p-3 text-left transition ${
-                                editingTarget === 'colorB'
-                                    ? 'border-blue-500 bg-blue-500/10'
-                                    : 'border-gray-700 bg-white/5 hover:bg-white/10'
-                            }"
-                        >
-                            <div class="text-[11px] text-gray-400 mb-2">
-                                Color B · End
-                            </div>
-
-                            <div class="flex items-center gap-3">
-                                <div
-                                    id="detailColorBPreview"
-                                    class="h-12 w-12 shrink-0 rounded-md border border-white/10"
-                                    style="background:${hexB}"
-                                ></div>
-
-                                <div class="text-xs text-gray-300">
-                                    ${hexB}
-                                </div>
-                            </div>
-                        </button>
-                    </div>
-
-                    <div class="mb-3">
-                        <div class="text-[11px] text-gray-400 mb-2">
-                            Gradient Preview
-                        </div>
-
-                        <div
-                            id="detailGradientPreview"
-                            class="h-14 rounded-lg border border-white/10"
-                            style="background:linear-gradient(90deg, ${hexA}, ${hexB})"
-                        ></div>
-                    </div>
-
-                    ${renderDetailRgbBlock(
-                        editingColor.r,
-                        editingColor.g,
-                        editingColor.b,
-                        editingHex
-                    )}
-                </section>
-            </div>
-
-            <div class="space-y-3">
-                <section class="rounded-lg border border-gray-800 bg-black/20 p-3">
-                    <div class="text-green-400 text-xs font-bold mb-3">
-                        GRADIENT CONTROLS
-                    </div>
-
-                    <div class="text-xs text-gray-300 mb-2">
-                        Direction
-                    </div>
-
-                    <div class="grid grid-cols-3 gap-1 rounded-lg border border-gray-700 p-1 mb-4">
-                        ${[
-                            ['forward', '→'],
-                            ['reverse', '←'],
-                            ['mirror', '↔']
-                        ].map(([value, label]) => `
-                            <button
-                                type="button"
-                                data-detail-led-direction="${value}"
-                                class="h-9 rounded-md border text-sm transition ${
-                                    direction === value
-                                        ? 'border-green-500 bg-green-500/20 text-green-300'
-                                        : 'border-transparent text-gray-300 hover:bg-white/5'
-                                }"
-                            >
-                                ${label}
-                            </button>
-                        `).join('')}
-                    </div>
-
-                    <div class="text-xs text-gray-300 mb-2">
-                        Repeat Mode
-                    </div>
-
-                    <div class="grid grid-cols-3 gap-1 rounded-lg border border-gray-700 p-1">
-                        ${[
-                            ['single', 'Single'],
-                            ['repeat', 'Repeat'],
-                            ['mirror', 'Mirror']
-                        ].map(([value, label]) => `
-                            <button
-                                type="button"
-                                data-detail-led-repeat-mode="${value}"
-                                class="h-9 rounded-md border text-[11px] transition ${
-                                    repeatMode === value
-                                        ? 'border-purple-500 bg-purple-500/20 text-purple-300'
-                                        : 'border-transparent text-gray-300 hover:bg-white/5'
-                                }"
-                            >
-                                ${label}
-                            </button>
-                        `).join('')}
-                    </div>
-                </section>
-
-                <section class="rounded-lg border border-gray-800 bg-black/20 p-3">
-                    <div class="text-xs text-gray-300 mb-2">
-                        Strobe
-                    </div>
-
-                    <input
-                        id="detailLedStrobeHzSlider"
-                        type="range"
-                        min="0"
-                        max="20"
-                        step="0.5"
-                        value="${strobeHz}"
-                        class="w-full accent-blue-500"
-                    >
-
-                    <div class="flex justify-between text-[11px] text-gray-500 mt-1">
-                        <span>0 Hz</span>
-                        <span>20 Hz</span>
-                    </div>
-
-                    <div
-                        id="detailLedStrobeHzValue"
-                        class="mx-auto mt-3 w-20 rounded border border-gray-700 bg-white/5 py-1.5 text-center text-xs text-green-300"
-                    >
-                        ${strobeHz} Hz
-                    </div>
-                </section>
-
-                <button
-                    type="button"
-                    data-detail-reset-effects
-                    class="w-full rounded-lg border border-gray-700 bg-white/5 px-4 py-4 text-sm text-gray-200 transition hover:border-green-500/50 hover:bg-green-500/10 hover:text-green-300"
-                >
-                    ↻ Reset Effects
-                </button>
-            </div>
-        </div>
-    `;
-}
-
-function renderColorBlazeChaseEditor({
-    segmentMode,
-    colorA,
-    colorB,
-    chaseSpeed,
-    direction,
-    strobeHz
-}) {
-    const safeColorA = {
-        r: Number(colorA?.r ?? 255),
-        g: Number(colorA?.g ?? 128),
-        b: Number(colorA?.b ?? 64)
-    };
-
-    const safeColorB = {
-        r: Number(colorB?.r ?? 64),
-        g: Number(colorB?.g ?? 200),
-        b: Number(colorB?.b ?? 255)
-    };
-
-    const hexA = rgbToHex(
-        safeColorA.r,
-        safeColorA.g,
-        safeColorA.b
-    );
-
-    const hexB = rgbToHex(
-        safeColorB.r,
-        safeColorB.g,
-        safeColorB.b
-    );
-
-    const editingTarget =
-        currentLedState.editingColorTarget === 'colorB'
-            ? 'colorB'
-            : 'colorA';
-
-    const editingColor =
-        editingTarget === 'colorB'
-            ? safeColorB
-            : safeColorA;
-
-    const editingHex = rgbToHex(
-        editingColor.r,
-        editingColor.g,
-        editingColor.b
-    );
-
-    return `
-        <div class="detail-colorblaze-editor grid grid-cols-[minmax(0,1fr)_300px] gap-3">
-            <div class="space-y-3">
-                <div class="rounded-lg border border-blue-500/30 bg-blue-500/5 p-3">
-                    <div class="text-xs text-blue-300">
-                        Chase mode animates Color 1 and Color 2 across the selected segments.
-                    </div>
-                </div>
-
-                <section class="rounded-lg border border-gray-800 bg-black/20 p-3">
-                    <div class="text-xs text-gray-300 mb-2">
-                        Segment Mode
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-1 rounded-lg border border-gray-700 p-1">
-                        ${[4, 8].map(count => `
-                            <button
-                                type="button"
-                                data-detail-led-segments="${count}"
-                                class="h-9 rounded-md border text-xs transition ${
-                                    segmentMode === count
-                                        ? 'border-blue-500 bg-blue-500/30 text-blue-200'
-                                        : 'border-transparent text-gray-300 hover:bg-white/5'
-                                }"
-                            >
-                                ${count} Segments
-                            </button>
-                        `).join('')}
-                    </div>
-                </section>
-
-                <section class="rounded-lg border border-gray-800 bg-black/20 p-3">
-                    <div class="text-xs font-bold text-gray-200 mb-3">
-                        COLOR CHASE
-                    </div>
-
-                    <div class="detail-chase-colors grid grid-cols-[minmax(0,1fr)_40px_minmax(0,1fr)] gap-3 items-center mb-3">
-                        <button
-                            type="button"
-                            data-detail-color-target="colorA"
-                            class="rounded-lg border p-3 text-left transition ${
-                                editingTarget === 'colorA'
-                                    ? 'border-blue-500 bg-blue-500/10'
-                                    : 'border-gray-700 bg-white/5 hover:bg-white/10'
-                            }"
-                        >
-                            <div class="text-[11px] text-gray-400 mb-2">
-                                Color 1
-                            </div>
-
-                            <div
-                                id="detailColorAPreview"
-                                class="h-16 rounded-md border border-white/10"
-                                style="background:${hexA}"
-                            ></div>
-
-                            <div class="mt-2 text-xs text-gray-300">
-                                ${hexA}
-                            </div>
-                        </button>
-
-                        <div class="detail-chase-arrow text-center text-2xl text-gray-300">
-                            →
-                        </div>
-
-                        <button
-                            type="button"
-                            data-detail-color-target="colorB"
-                            class="rounded-lg border p-3 text-left transition ${
-                                editingTarget === 'colorB'
-                                    ? 'border-blue-500 bg-blue-500/10'
-                                    : 'border-gray-700 bg-white/5 hover:bg-white/10'
-                            }"
-                        >
-                            <div class="text-[11px] text-gray-400 mb-2">
-                                Color 2
-                            </div>
-
-                            <div
-                                id="detailColorBPreview"
-                                class="h-16 rounded-md border border-white/10"
-                                style="background:${hexB}"
-                            ></div>
-
-                            <div class="mt-2 text-xs text-gray-300">
-                                ${hexB}
-                            </div>
-                        </button>
-                    </div>
-
-                    ${renderDetailRgbBlock(
-                        editingColor.r,
-                        editingColor.g,
-                        editingColor.b,
-                        editingHex
-                    )}
-                </section>
-            </div>
-
-            <div class="space-y-3">
-                <section class="rounded-lg border border-gray-800 bg-black/20 p-3">
-                    <div class="text-green-400 text-xs font-bold mb-3">
-                        CHASE CONTROLS
-                    </div>
-
-                    <div class="text-xs text-gray-300 mb-2">
-                        Chase Speed
-                    </div>
-
-                    <input
-                        id="detailLedChaseSpeedSlider"
-                        type="range"
-                        min="0.1"
-                        max="5"
-                        step="0.1"
-                        value="${chaseSpeed}"
-                        class="w-full accent-green-500"
-                    >
-
-                    <div class="flex justify-between text-[11px] text-gray-500 mt-1">
-                        <span>0.1x</span>
-                        <span>1x</span>
-                        <span>5x</span>
-                    </div>
-
-                    <div
-                        id="detailLedChaseSpeedValue"
-                        class="mx-auto mt-3 w-20 rounded border border-gray-700 bg-white/5 py-1.5 text-center text-xs text-green-300"
-                    >
-                        ${chaseSpeed}x
-                    </div>
-
-                    <div class="mt-4 text-xs text-gray-300 mb-2">
-                        Direction
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-2">
-                        ${[
-                            ['forward', 'Forward ▶'],
-                            ['reverse', 'Reverse ◀']
-                        ].map(([value, label]) => `
-                            <button
-                                type="button"
-                                data-detail-led-direction="${value}"
-                                class="h-10 rounded-md border text-xs transition ${
-                                    direction === value
-                                        ? 'border-green-500 bg-green-500/20 text-green-300'
-                                        : 'border-gray-700 bg-white/5 text-gray-300 hover:bg-white/10'
-                                }"
-                            >
-                                ${label}
-                            </button>
-                        `).join('')}
-                    </div>
-                </section>
-
-                <section class="rounded-lg border border-gray-800 bg-black/20 p-3">
-                    <div class="text-xs text-gray-300 mb-2">
-                        Strobe
-                    </div>
-
-                    <input
-                        id="detailLedStrobeHzSlider"
-                        type="range"
-                        min="0"
-                        max="20"
-                        step="0.5"
-                        value="${strobeHz}"
-                        class="w-full accent-green-500"
-                    >
-
-                    <div class="flex justify-between text-[11px] text-gray-500 mt-1">
-                        <span>0 Hz</span>
-                        <span>20 Hz</span>
-                    </div>
-
-                    <div
-                        id="detailLedStrobeHzValue"
-                        class="mx-auto mt-3 w-20 rounded border border-gray-700 bg-white/5 py-1.5 text-center text-xs text-green-300"
-                    >
-                        ${strobeHz} Hz
-                    </div>
-                </section>
-
-                <button
-                    type="button"
-                    data-detail-reset-effects
-                    class="w-full rounded-lg border border-gray-700 bg-white/5 px-4 py-4 text-sm text-gray-200 transition hover:border-green-500/50 hover:bg-green-500/10 hover:text-green-300"
-                >
-                    ↻ Reset Effects
-                </button>
-            </div>
-        </div>
-    `;
-}
-
-function renderColorBlazeManualEditor({
-    segmentMode,
-    selectedSegment,
-    segments,
-    strobeHz
-}) {
-    const normalizedSegments = normalizeLedSegments(
-        segments,
-        segmentMode
-    );
-
-    const safeSelectedSegment = Math.max(
-        0,
-        Math.min(
-            Number(selectedSegment ?? 0),
-            normalizedSegments.length - 1
-        )
-    );
-
-    const selectedColor =
-        normalizedSegments[safeSelectedSegment] ?? {
-            r: 255,
-            g: 128,
-            b: 64
-        };
-
-    const selectedHex = rgbToHex(
-        selectedColor.r,
-        selectedColor.g,
-        selectedColor.b
-    );
-
-    return `
-        <div class="detail-colorblaze-editor grid grid-cols-[minmax(0,1fr)_300px] gap-3">
-            <div class="space-y-3">
-                <div class="rounded-lg border border-blue-500/30 bg-blue-500/5 p-3">
-                    <div class="text-xs text-blue-300">
-                        Manual mode lets you assign a custom color to every segment.
-                    </div>
-                </div>
-
-                <section class="rounded-lg border border-gray-800 bg-black/20 p-3">
-                    <div class="text-xs text-gray-300 mb-2">
-                        Segment Mode
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-1 rounded-lg border border-gray-700 p-1">
-                        ${[4, 8].map(count => `
-                            <button
-                                type="button"
-                                data-detail-led-segments="${count}"
-                                class="h-9 rounded-md border text-xs transition ${
-                                    segmentMode === count
-                                        ? 'border-blue-500 bg-blue-500/30 text-blue-200'
-                                        : 'border-transparent text-gray-300 hover:bg-white/5'
-                                }"
-                            >
-                                ${count} Segments
-                            </button>
-                        `).join('')}
-                    </div>
-                </section>
-
-                <section class="rounded-lg border border-gray-800 bg-black/20 p-3">
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="text-xs font-bold text-gray-200">
-                            SELECTED SEGMENT
-                        </div>
-
-                        <div class="rounded-md border border-purple-500/40 bg-purple-500/10 px-3 py-1 text-xs text-purple-300">
-                            <span id="detailSelectedSegmentLabel">
-                                ${String(safeSelectedSegment + 1).padStart(2, '0')}
-                            </span>
-                        </div>
-                    </div>
-
-                    ${renderDetailRgbBlock(
-                        selectedColor.r,
-                        selectedColor.g,
-                        selectedColor.b,
-                        selectedHex
-                    )}
-                </section>
-            </div>
-
-            <div class="space-y-3">
-                ${renderDetailManualSegmentGrid(
-                    normalizedSegments
-                )}
-
-                <section class="rounded-lg border border-gray-800 bg-black/20 p-3">
-                    <div class="text-xs text-gray-300 mb-2">
-                        Strobe
-                    </div>
-
-                    <input
-                        id="detailLedStrobeHzSlider"
-                        type="range"
-                        min="0"
-                        max="20"
-                        step="0.5"
-                        value="${strobeHz}"
-                        class="w-full accent-blue-500"
-                    >
-
-                    <div class="flex justify-between text-[11px] text-gray-500 mt-1">
-                        <span>0 Hz</span>
-                        <span>20 Hz</span>
-                    </div>
-
-                    <div
-                        id="detailLedStrobeHzValue"
-                        class="mx-auto mt-3 w-20 rounded border border-gray-700 bg-white/5 py-1.5 text-center text-xs text-green-300"
-                    >
-                        ${strobeHz} Hz
-                    </div>
-                </section>
-
-                <button
-                    type="button"
-                    data-detail-reset-effects
-                    class="w-full rounded-lg border border-gray-700 bg-white/5 px-4 py-4 text-sm text-gray-200 transition hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-300"
-                >
-                    ↻ Reset Effects
-                </button>
-            </div>
-        </div>
-    `;
-}
-
-function normalizeLedSegments(segments, count) {
-    const source =
-        Array.isArray(segments)
-            ? segments
-            : [];
-
-    const defaultColor = {
-        r: 255,
-        g: 128,
-        b: 64
-    };
-
-    const fallback =
-        source[source.length - 1] ??
-        defaultColor;
-
-    return Array.from(
-        { length: count },
-        (_, index) => {
-            const color =
-                source[index] ??
-                fallback;
-
-            return normalizeRgbColor255(
-                color,
-                defaultColor
-            );
-        }
-    );
-}
-
-function renderDetailManualSegmentGrid(segments) {
-    const selectedSegment = Number(currentLedState.selectedSegment || 0);
-
-    return `
-        <div class="rounded-lg border border-gray-800 bg-black/20 p-3">
-            <div class="flex items-center justify-between mb-3">
-                <div class="text-xs text-gray-300 font-bold">Manual Segment Colors</div>
-                <div class="text-xs text-purple-300">
-                    Selected Segment:
-                    <span id="detailGridSelectedSegmentLabel">${String(selectedSegment + 1).padStart(2, '0')}</span>
-                </div>
-            </div>
-
-            <div
-                id="detailLedSegmentGrid"
-                class="detail-manual-segment-grid grid grid-cols-4 gap-2"
-            >
-                ${segments.map((color, index) => {
-                    const hex = rgbToHex(color.r, color.g, color.b);
-                    const isSelected = index === selectedSegment;
-
-                    return `
-                        <button
-                            type="button"
-                            class="detail-led-segment-swatch aspect-square rounded-lg border ${isSelected ? 'border-blue-400 ring-2 ring-blue-400/60' : 'border-white/10'}"
-                            data-detail-led-segment="${index}"
-                            style="background:${hex}"
-                        >
-                            <span class="sr-only">Segment ${index + 1}</span>
-                        </button>
-                    `;
-                }).join('')}
-            </div>
-        </div>
-    `;
-}
-
-function updateColorBlazeDualColorPreviews() {
-    const colorA = currentLedState.colorA ?? {
-        r: 255,
-        g: 128,
-        b: 64
-    };
-
-    const colorB = currentLedState.colorB ?? {
-        r: 64,
-        g: 200,
-        b: 255
-    };
-
-    const hexA = rgbToHex(
-        colorA.r,
-        colorA.g,
-        colorA.b
-    );
-
-    const hexB = rgbToHex(
-        colorB.r,
-        colorB.g,
-        colorB.b
-    );
-
-    const colorAPreview =
-        getElement('detailColorAPreview');
-
-    const colorBPreview =
-        getElement('detailColorBPreview');
-
-    const gradientPreview =
-        getElement('detailGradientPreview');
-
-    if (colorAPreview) {
-        colorAPreview.style.background = hexA;
-    }
-
-    if (colorBPreview) {
-        colorBPreview.style.background = hexB;
-    }
-
-    if (gradientPreview) {
-        gradientPreview.style.background =
-            `linear-gradient(90deg, ${hexA}, ${hexB})`;
-    }
-}
-
-function updateDetailManualSegmentSwatches() {
-    document.querySelectorAll('[data-detail-led-segment]').forEach(button => {
-        const index = Number(button.dataset.detailLedSegment);
-        const color = currentLedState.segments[index];
-
-        if (!color) return;
-
-        button.style.background = rgbToHex(color.r, color.g, color.b);
-        button.classList.toggle('border-blue-400', index === Number(currentLedState.selectedSegment || 0));
-        button.classList.toggle('ring-2', index === Number(currentLedState.selectedSegment || 0));
-        button.classList.toggle('ring-blue-400/60', index === Number(currentLedState.selectedSegment || 0));
-    });
-
-    const editorLabel =
-        getElement('detailSelectedSegmentLabel');
-
-    const gridLabel =
-        getElement('detailGridSelectedSegmentLabel');
-
-    const labelText = String(
-        Number(currentLedState.selectedSegment ?? 0) + 1
-    ).padStart(2, '0');
-
-    if (editorLabel) {
-        editorLabel.textContent = labelText;
-    }
-
-    if (gridLabel) {
-        gridLabel.textContent = labelText;
-    }
-}
-
 export function setupLightingInputListeners(onInput) {
     const powerToggle = getElement('powerToggle');
 
@@ -2566,342 +1107,251 @@ export function setupLightingInputListeners(onInput) {
 
     const detailPanel = getElement('detailLightingPanel');
 
-    detailPanel?.addEventListener('input', event => {
-        const target = event.target;
+    detailPanel?.addEventListener(
+        'input',
+        event => {
+            const target = event.target;
 
-        if (target.id === 'detailIntensitySlider') {
-            const value = getElement('detailIntensityValue');
-            if (value) value.textContent = `${target.value}%`;
-        }
-
-        if (
-            target.id === 'detailRedSlider' ||
-            target.id === 'detailGreenSlider' ||
-            target.id === 'detailBlueSlider'
-        ) {
-            updateDetailRGBUI();
-
-            const color = {
-                r: Number(
-                    getElement('detailRedSlider')?.value ?? 255
-                ),
-
-                g: Number(
-                    getElement('detailGreenSlider')?.value ?? 128
-                ),
-
-                b: Number(
-                    getElement('detailBlueSlider')?.value ?? 64
+            /*
+            * ColorBlaze 专属输入：
+            * - 高级 Strobe
+            * - Chase Speed
+            *
+            * 这两类输入已经在 ColorBlaze 模块中
+            * 调用了 onInput()，因此直接 return，
+            * 避免重复发送。
+            */
+            if (
+                handleColorBlazeInput(
+                    target,
+                    onInput
                 )
-            };
-
-            const mode =
-                getElement('detailColorBlazePanel')
-                    ?.dataset.ledMode;
-
-            if (mode === 'manual') {
-                const selectedSegment = Number(
-                    currentLedState.selectedSegment ?? 0
-                );
-
-                currentLedState.segments[selectedSegment] = {
-                    ...color
-                };
-
-                updateDetailManualSegmentSwatches();
-            }
-
-            if (mode === 'solid') {
-                currentLedState.segments =
-                    currentLedState.segments.map(
-                        () => ({ ...color })
-                    );
+            ) {
+                return;
             }
 
             if (
-                mode === 'gradient' ||
-                mode === 'chase'
+                target.id ===
+                'detailIntensitySlider'
             ) {
-                if (
-                    currentLedState.editingColorTarget === 'colorB'
-                ) {
-                    currentLedState.colorB = {
-                        ...color
-                    };
-                } else {
-                    currentLedState.colorA = {
-                        ...color
-                    };
+                const value =
+                    getElement(
+                        'detailIntensityValue'
+                    );
+
+                if (value) {
+                    value.textContent =
+                        `${target.value}%`;
+                }
+            }
+
+            /*
+            * RGB 输入：
+            * ColorBlaze 内部状态已经由
+            * handleColorBlazeInput() 更新。
+            * 这里仅更新公共 RGB 界面。
+            */
+            if (
+                target.id === 'detailRedSlider' ||
+                target.id === 'detailGreenSlider' ||
+                target.id === 'detailBlueSlider'
+            ) {
+                updateDetailRGBUI();
+            }
+
+            // 普通灯具 Strobe
+            if (
+                target.id ===
+                'detailStrobeHzSlider'
+            ) {
+                const value =
+                    getElement(
+                        'detailStrobeHzValue'
+                    );
+
+                if (value) {
+                    value.textContent =
+                        `${target.value} Hz`;
+                }
+            }
+
+            if (
+                target.id ===
+                'detailFieldAngleSlider'
+            ) {
+                const value =
+                    getElement(
+                        'detailFieldAngleValue'
+                    );
+
+                const quick =
+                    getElement(
+                        'fieldAngleSlider'
+                    );
+
+                if (value) {
+                    value.innerHTML =
+                        `${target.value}&deg;`;
                 }
 
-                updateColorBlazeDualColorPreviews();
-            }
-        }
+                if (quick) {
+                    quick.value =
+                        target.value;
 
-        if (target.id === 'detailStrobeHzSlider') {
-            const value = getElement('detailStrobeHzValue');
-
-            if (value) {
-                value.textContent = `${target.value} Hz`;
-            }
-        }
-
-        if (target.id === 'detailLedStrobeHzSlider') {
-            currentLedState.strobeHz = Number(target.value);
-
-            const value = getElement('detailLedStrobeHzValue');
-
-            if (value) {
-                value.textContent = `${target.value} Hz`;
-            }
-        }
-
-        if (target.id === 'detailFieldAngleSlider') {
-            const value = getElement('detailFieldAngleValue');
-            const quick = getElement('fieldAngleSlider');
-
-            if (value) value.innerHTML = `${target.value}&deg;`;
-            if (quick) {
-                quick.value = target.value;
-                updateFieldAngleUI();
-            }
-        }
-
-        if (target.id === 'detailPanSlider') {
-            const value =
-                getElement('detailPanValue');
-
-            const quick =
-                getElement('panSlider');
-
-            if (value) {
-                value.innerHTML =
-                    `${formatPanTilt(target.value)}&deg;`;
+                    updateFieldAngleUI();
+                }
             }
 
-            if (quick) {
-                quick.value = target.value;
-                updatePanTiltUI();
+            if (
+                target.id ===
+                'detailPanSlider'
+            ) {
+                const value =
+                    getElement(
+                        'detailPanValue'
+                    );
+
+                const quick =
+                    getElement(
+                        'panSlider'
+                    );
+
+                if (value) {
+                    value.innerHTML =
+                        `${formatPanTilt(
+                            target.value
+                        )}&deg;`;
+                }
+
+                if (quick) {
+                    quick.value =
+                        target.value;
+
+                    updatePanTiltUI();
+                }
             }
-        }
 
-        if (target.id === 'detailTiltSlider') {
-            const value =
-                getElement('detailTiltValue');
+            if (
+                target.id ===
+                'detailTiltSlider'
+            ) {
+                const value =
+                    getElement(
+                        'detailTiltValue'
+                    );
 
-            const quick =
-                getElement('tiltSlider');
+                const quick =
+                    getElement(
+                        'tiltSlider'
+                    );
 
-            if (value) {
-                value.innerHTML =
-                    `${formatPanTilt(target.value)}&deg;`;
+                if (value) {
+                    value.innerHTML =
+                        `${formatPanTilt(
+                            target.value
+                        )}&deg;`;
+                }
+
+                if (quick) {
+                    quick.value =
+                        target.value;
+
+                    updatePanTiltUI();
+                }
             }
-
-            if (quick) {
-                quick.value = target.value;
-                updatePanTiltUI();
-            }
-        }
-
-        onInput();
-    });
-
-    detailPanel?.addEventListener('click', event => {
-        const powerButton = event.target.closest('[data-detail-power]');
-        if (powerButton) {
-            const nextState = toBoolean(powerButton.dataset.detailPower, true);
-
-            updateDetailPowerState(nextState);
-            setPowerState(nextState);
-            onInput();
-            return;
-        }
-
-        const angleButton = event.target.closest('[data-detail-angle]');
-        if (angleButton) {
-            const angle = Number(angleButton.dataset.detailAngle);
-            const quick = getElement('fieldAngleSlider');
-
-            if (quick) {
-                quick.value = angle;
-                updateFieldAngleUI();
-            }
-            
-            updateQuickAngleOptionActive(angle);
-
-            document.querySelectorAll('.detail-angle-option').forEach(button => {
-                button.classList.toggle('border-blue-500', button === angleButton);
-                button.classList.toggle('bg-blue-500/20', button === angleButton);
-            });
 
             onInput();
-            return;
         }
+    );
 
-        const modeButton = event.target.closest('[data-detail-led-mode]');
-        if (modeButton) {
-            const panel = getElement('detailColorBlazePanel');
-            const nextMode = modeButton.dataset.detailLedMode;
+    detailPanel?.addEventListener(
+        'click',
+        event => {
+            const powerButton =
+                event.target.closest(
+                    '[data-detail-power]'
+                );
 
-            if (panel) panel.dataset.ledMode = nextMode;
-            currentLedState.ledMode = nextMode;
+            if (powerButton) {
+                const nextState =
+                    toBoolean(
+                        powerButton.dataset
+                            .detailPower,
+                        true
+                    );
 
-            onInput({ render: true });
-            return;
-        }
+                updateDetailPowerState(
+                    nextState
+                );
 
-        const resetEffectsButton = event.target.closest(
-            '[data-detail-reset-effects]'
-        );
+                setPowerState(
+                    nextState
+                );
 
-        if (resetEffectsButton) {
-            currentLedState = {
-                ledMode: 'solid',
-                segmentMode: 8,
-                selectedSegment: 0,
-                segments: createDefaultSegments(8),
-
-                colorA: {
-                    r: 255,
-                    g: 128,
-                    b: 64
-                },
-
-                colorB: {
-                    r: 64,
-                    g: 200,
-                    b: 255
-                },
-
-                editingColorTarget: 'colorA',
-
-                chaseSpeed: 1.5,
-                direction: 'forward',
-                repeatMode: 'single',
-                strobeHz: 0
-            };
-
-            const panel = getElement('detailColorBlazePanel');
-
-            if (panel) {
-                panel.dataset.ledMode = 'solid';
-                panel.dataset.ledSegments = '8';
-                panel.dataset.ledDirection = 'forward';
-                panel.dataset.ledRepeatMode = 'single';
+                onInput();
+                return;
             }
 
-            const redSlider = getElement('detailRedSlider');
-            const greenSlider = getElement('detailGreenSlider');
-            const blueSlider = getElement('detailBlueSlider');
-            const strobeSlider =
-                getElement('detailLedStrobeHzSlider');
-            const chaseSpeedSlider =
-                getElement('detailLedChaseSpeedSlider');
+            const angleButton =
+                event.target.closest(
+                    '[data-detail-angle]'
+                );
 
-            if (redSlider) redSlider.value = 255;
-            if (greenSlider) greenSlider.value = 128;
-            if (blueSlider) blueSlider.value = 64;
-            if (strobeSlider) strobeSlider.value = 0;
-            if (chaseSpeedSlider) chaseSpeedSlider.value = 1.5;
+            if (angleButton) {
+                const angle =
+                    Number(
+                        angleButton.dataset
+                            .detailAngle
+                    );
 
-            onInput({ render: true });
-            return;
-        }
+                const quick =
+                    getElement(
+                        'fieldAngleSlider'
+                    );
 
-        const colorTargetButton = event.target.closest(
-            '[data-detail-color-target]'
-        );
+                if (quick) {
+                    quick.value = angle;
+                    updateFieldAngleUI();
+                }
 
-        if (colorTargetButton) {
-            const nextTarget =
-                colorTargetButton.dataset.detailColorTarget;
+                updateQuickAngleOptionActive(
+                    angle
+                );
 
-            currentLedState.editingColorTarget =
-                nextTarget === 'colorB'
-                    ? 'colorB'
-                    : 'colorA';
+                document
+                    .querySelectorAll(
+                        '.detail-angle-option'
+                    )
+                    .forEach(button => {
+                        const isActive =
+                            button ===
+                            angleButton;
 
-            onInput({ render: true });
-            return;
-        }
+                        button.classList.toggle(
+                            'border-blue-500',
+                            isActive
+                        );
 
-        const segmentModeButton = event.target.closest('[data-detail-led-segments]');
-        if (segmentModeButton) {
-            const panel = getElement('detailColorBlazePanel');
-            const nextSegmentMode = Number(segmentModeButton.dataset.detailLedSegments);
+                        button.classList.toggle(
+                            'bg-blue-500/20',
+                            isActive
+                        );
+                    });
 
-            if (panel) {
-                panel.dataset.ledSegments = String(nextSegmentMode);
+                onInput();
+                return;
             }
 
-            currentLedState.segmentMode = nextSegmentMode;
-            currentLedState.segments = normalizeLedSegments(currentLedState.segments, nextSegmentMode);
-
-            if (currentLedState.selectedSegment >= nextSegmentMode) {
-                currentLedState.selectedSegment = 0;
+            if (
+                handleColorBlazeClick(
+                    event,
+                    onInput
+                )
+            ) {
+                return;
             }
-
-            onInput({ render: true });
-            return;
         }
-
-        const segmentButton = event.target.closest('[data-detail-led-segment]');
-        if (segmentButton) {
-            const index = Number(segmentButton.dataset.detailLedSegment);
-            currentLedState.selectedSegment = index;
-
-            const color = currentLedState.segments[index] || { r: 255, g: 128, b: 64 };
-
-            const rSlider = getElement('detailRedSlider');
-            const gSlider = getElement('detailGreenSlider');
-            const bSlider = getElement('detailBlueSlider');
-
-            if (rSlider) rSlider.value = color.r;
-            if (gSlider) gSlider.value = color.g;
-            if (bSlider) bSlider.value = color.b;
-
-            updateDetailRGBUI();
-            updateDetailManualSegmentSwatches();
-            onInput();
-            return;
-        }
-
-        const directionButton = event.target.closest(
-            '[data-detail-led-direction]'
-        );
-
-        if (directionButton) {
-            const panel = getElement('detailColorBlazePanel');
-            if (!panel) return;
-
-            const nextDirection =
-                directionButton.dataset.detailLedDirection;
-
-            panel.dataset.ledDirection = nextDirection;
-            currentLedState.direction = nextDirection;
-
-            onInput({ render: true });
-            return;
-        }
-
-        const repeatModeButton = event.target.closest(
-            '[data-detail-led-repeat-mode]'
-        );
-
-        if (repeatModeButton) {
-            const panel = getElement('detailColorBlazePanel');
-            if (!panel) return;
-
-            const nextRepeatMode =
-                repeatModeButton.dataset.detailLedRepeatMode;
-
-            panel.dataset.ledRepeatMode = nextRepeatMode;
-            currentLedState.repeatMode = nextRepeatMode;
-
-            onInput({ render: true });
-            return;
-        }
-    });
+    );
 
     updateIntensityUI();
     updatePanTiltUI();

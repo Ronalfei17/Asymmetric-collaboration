@@ -1,5 +1,10 @@
 function toHex(value) {
-    return Number(value).toString(16).padStart(2, '0').toUpperCase();
+    return Math.round(
+        clamp(Number(value), 0, 255)
+    )
+        .toString(16)
+        .padStart(2, '0')
+        .toUpperCase();
 }
 
 export function rgbToHex(r, g, b) {
@@ -55,5 +60,49 @@ export function hsvToRgb(h, s, v) {
         r: Math.round((r + m) * 255),
         g: Math.round((g + m) * 255),
         b: Math.round((b + m) * 255)
+    };
+}
+
+export function normalizeRgbChannel255(value, fallback = 0) {
+    const number = Number(value);
+
+    if (!Number.isFinite(number)) {
+        return fallback;
+    }
+
+    // Unity 返回的 0–1 转成网页使用的 0–255
+    if (number >= 0 && number <= 1) {
+        return Math.round(number * 255);
+    }
+
+    // 已经是 0–255
+    return Math.round(
+        clamp(number, 0, 255)
+    );
+}
+
+export function normalizeRgbColor255(
+    color,
+    fallback = {
+        r: 255,
+        g: 128,
+        b: 64
+    }
+) {
+    return {
+        r: normalizeRgbChannel255(
+            color?.r,
+            fallback.r
+        ),
+
+        g: normalizeRgbChannel255(
+            color?.g,
+            fallback.g
+        ),
+
+        b: normalizeRgbChannel255(
+            color?.b,
+            fallback.b
+        )
     };
 }
