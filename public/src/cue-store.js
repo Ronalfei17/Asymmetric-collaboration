@@ -737,18 +737,48 @@ export function removeFixtureFromCue(cueId, lightId) {
     return true;
 }
 
+function isSnapshotOn(snapshot) {
+    const value =
+        snapshot?.isOn;
+
+    return (
+        value === true ||
+        value === 'true' ||
+        value === 1 ||
+        value === '1'
+    );
+}
+
 export function getCuesContainingFixture(lightId) {
     ensureInitialized();
     const fixtureKey = String(lightId);
 
     return deepClone(
         state.cueList.cues
-            .filter(cue => (
-                Object.prototype.hasOwnProperty.call(
-                    cue.fixtures,
-                    fixtureKey
-                )
-            ))
+            .filter(cue => {
+                const hasSnapshot =
+                    Object.prototype
+                        .hasOwnProperty.call(
+                            cue.fixtures,
+                            fixtureKey
+                        );
+
+                if (!hasSnapshot) {
+                    return false;
+                }
+                if (
+                    Number(
+                        cue.cueNumber
+                    ) === 0
+                ) {
+                    return isSnapshotOn(
+                        cue.fixtures[
+                            fixtureKey
+                        ]
+                    );
+                }
+                return true;
+            })
             .sort((a, b) => a.cueNumber - b.cueNumber)
     );
 }
