@@ -19,19 +19,49 @@ export function renderDetailRgbBlock(r, g, b, hex) {
                     <label class="grid grid-cols-[18px_1fr_48px] gap-2 items-center text-xs">
                         <span class="text-red-400">R</span>
                         <input id="detailRedSlider" type="range" min="0" max="255" value="${r}" class="accent-red-500">
-                        <span id="detailRedValue" class="text-center rounded border border-gray-700 bg-white/5 py-1">${r}</span>
+                        <input
+                            id="detailRedValueInput"
+                            type="number"
+                            inputmode="numeric"
+                            min="0"
+                            max="255"
+                            step="1"
+                            value="${r}"
+                            aria-label="Red channel"
+                            class="lighting-value-input h-8 w-12 select-text rounded border border-gray-700 bg-white/5 px-1 text-center text-xs text-gray-200 outline-none focus:border-red-500"
+                        >
                     </label>
 
                     <label class="grid grid-cols-[18px_1fr_48px] gap-2 items-center text-xs">
                         <span class="text-green-400">G</span>
                         <input id="detailGreenSlider" type="range" min="0" max="255" value="${g}" class="accent-green-500">
-                        <span id="detailGreenValue" class="text-center rounded border border-gray-700 bg-white/5 py-1">${g}</span>
+                        <input
+                            id="detailGreenValueInput"
+                            type="number"
+                            inputmode="numeric"
+                            min="0"
+                            max="255"
+                            step="1"
+                            value="${g}"
+                            aria-label="Green channel"
+                            class="lighting-value-input h-8 w-12 select-text rounded border border-gray-700 bg-white/5 px-1 text-center text-xs text-gray-200 outline-none focus:border-green-500"
+                        >
                     </label>
 
                     <label class="grid grid-cols-[18px_1fr_48px] gap-2 items-center text-xs">
                         <span class="text-blue-400">B</span>
                         <input id="detailBlueSlider" type="range" min="0" max="255" value="${b}" class="accent-blue-500">
-                        <span id="detailBlueValue" class="text-center rounded border border-gray-700 bg-white/5 py-1">${b}</span>
+                        <input
+                            id="detailBlueValueInput"
+                            type="number"
+                            inputmode="numeric"
+                            min="0"
+                            max="255"
+                            step="1"
+                            value="${b}"
+                            aria-label="Blue channel"
+                            class="lighting-value-input h-8 w-12 select-text rounded border border-gray-700 bg-white/5 px-1 text-center text-xs text-gray-200 outline-none focus:border-blue-500"
+                        >
                     </label>
 
                     <div id="detailHexValue" class="w-28 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">${hex}</div>
@@ -78,15 +108,28 @@ export function updateDetailRGBUI() {
 
     const hex = rgbToHex(r, g, b);
 
-    const rValue = getElement('detailRedValue');
-    const gValue = getElement('detailGreenValue');
-    const bValue = getElement('detailBlueValue');
+    const rInput =
+        getElement('detailRedValueInput');
+
+    const gInput =
+        getElement('detailGreenValueInput');
+
+    const bInput =
+        getElement('detailBlueValueInput');
     const hexValue = getElement('detailHexValue');
     const preview = getElement('detailColorPreview');
 
-    if (rValue) rValue.textContent = String(r);
-    if (gValue) gValue.textContent = String(g);
-    if (bValue) bValue.textContent = String(b);
+    if (rInput) {
+        rInput.value = String(r);
+    }
+
+    if (gInput) {
+        gInput.value = String(g);
+    }
+
+    if (bInput) {
+        bInput.value = String(b);
+    }
     if (hexValue) hexValue.textContent = hex;
 
     if (preview) {
@@ -96,37 +139,113 @@ export function updateDetailRGBUI() {
     updateDetailRgbWheelHandle(r, g, b);
 }
 
-export function setDetailRgbValues(r, g, b) {
-    r = Math.round(clamp(r, 0, 255));
-    g = Math.round(clamp(g, 0, 255));
-    b = Math.round(clamp(b, 0, 255));
+export function setDetailRgbValues(
+    r,
+    g,
+    b
+) {
+    r = Math.round(
+        clamp(r, 0, 255)
+    );
 
-    const hex = rgbToHex(r, g, b);
+    g = Math.round(
+        clamp(g, 0, 255)
+    );
 
-    const redSlider = getElement('detailRedSlider');
-    const greenSlider = getElement('detailGreenSlider');
-    const blueSlider = getElement('detailBlueSlider');
+    b = Math.round(
+        clamp(b, 0, 255)
+    );
 
-    if (redSlider) redSlider.value = r;
-    if (greenSlider) greenSlider.value = g;
-    if (blueSlider) blueSlider.value = b;
+    const hex =
+        rgbToHex(r, g, b);
 
-    getElement('detailRedValue') && (getElement('detailRedValue').textContent = r);
-    getElement('detailGreenValue') && (getElement('detailGreenValue').textContent = g);
-    getElement('detailBlueValue') && (getElement('detailBlueValue').textContent = b);
+    const redSlider =
+        getElement('detailRedSlider');
 
-    const hexElement = getElement('detailHexValue');
-    if (hexElement) {
-        if ('value' in hexElement) hexElement.value = hex;
-        else hexElement.textContent = hex;
+    const greenSlider =
+        getElement('detailGreenSlider');
+
+    const blueSlider =
+        getElement('detailBlueSlider');
+
+    const redInput =
+        getElement(
+            'detailRedValueInput'
+        );
+
+    const greenInput =
+        getElement(
+            'detailGreenValueInput'
+        );
+
+    const blueInput =
+        getElement(
+            'detailBlueValueInput'
+        );
+
+    if (redSlider) {
+        redSlider.value = r;
     }
 
-    const preview = getElement('detailColorPreview');
-    if (preview) preview.style.background = hex;
+    if (greenSlider) {
+        greenSlider.value = g;
+    }
 
-    updateDetailRgbWheelHandle(r, g, b);
+    if (blueSlider) {
+        blueSlider.value = b;
+    }
 
-    redSlider?.dispatchEvent(new Event('input', { bubbles: true }));
+    if (redInput) {
+        redInput.value =
+            String(r);
+    }
+
+    if (greenInput) {
+        greenInput.value =
+            String(g);
+    }
+
+    if (blueInput) {
+        blueInput.value =
+            String(b);
+    }
+
+    const hexElement =
+        getElement(
+            'detailHexValue'
+        );
+
+    if (hexElement) {
+        if ('value' in hexElement) {
+            hexElement.value = hex;
+        } else {
+            hexElement.textContent =
+                hex;
+        }
+    }
+
+    const preview =
+        getElement(
+            'detailColorPreview'
+        );
+
+    if (preview) {
+        preview.style.background =
+            hex;
+    }
+
+    updateDetailRgbWheelHandle(
+        r,
+        g,
+        b
+    );
+
+    redSlider?.dispatchEvent(
+        new Event(
+            'input',
+            { bubbles: true }
+        )
+    );
 }
 
 export function updateDetailRgbWheelHandle(r, g, b) {
@@ -142,6 +261,105 @@ export function updateDetailRgbWheelHandle(r, g, b) {
 
     handle.style.left = `${center + Math.cos(angle) * radius}px`;
     handle.style.top = `${center + Math.sin(angle) * radius}px`;
+}
+
+export function bindDetailRgbValueInputs() {
+    const bindings = [
+        {
+            inputId:
+                'detailRedValueInput',
+            sliderId:
+                'detailRedSlider'
+        },
+        {
+            inputId:
+                'detailGreenValueInput',
+            sliderId:
+                'detailGreenSlider'
+        },
+        {
+            inputId:
+                'detailBlueValueInput',
+            sliderId:
+                'detailBlueSlider'
+        }
+    ];
+
+    bindings.forEach(
+        ({
+            inputId,
+            sliderId
+        }) => {
+            const input =
+                getElement(inputId);
+
+            const slider =
+                getElement(sliderId);
+
+            if (!input || !slider) {
+                return;
+            }
+
+            input.addEventListener(
+                'change',
+                () => {
+                    if (
+                        String(input.value).trim() === ''
+                    ) {
+                        input.value =
+                            slider.value;
+
+                        return;
+                    }
+
+                    const raw =
+                        Number(
+                            input.value
+                        );
+
+                    if (
+                        !Number.isFinite(raw)
+                    ) {
+                        input.value =
+                            slider.value;
+
+                        return;
+                    }
+
+                    const value =
+                        Math.round(
+                            clamp(
+                                raw,
+                                0,
+                                255
+                            )
+                        );
+
+                    slider.value =
+                        String(value);
+
+                    input.value =
+                        String(value);
+
+                    slider.dispatchEvent(
+                        new Event(
+                            'input',
+                            {
+                                bubbles: true
+                            }
+                        )
+                    );
+                }
+            );
+
+            input.addEventListener(
+                'focus',
+                () => {
+                    input.select();
+                }
+            );
+        }
+    );
 }
 
 function updateDetailRgbFromWheel(event) {

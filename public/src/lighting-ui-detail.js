@@ -22,7 +22,8 @@ import {
     renderDetailRgbBlock,
     updateDetailRGBUI,
     updateDetailRgbWheelHandle,
-    bindDetailRgbColorWheel
+    bindDetailRgbColorWheel,
+    bindDetailRgbValueInputs
 } from './lighting-ui-rgb.js';
 
 import {
@@ -188,6 +189,7 @@ export function renderDetailLightingPanel(fixture, state = {}) {
     `;
 
     bindDetailRgbColorWheel();
+    bindDetailRgbValueInputs();
     const renderedR = Number(
         getElement('detailRedSlider')?.value ?? r
     );
@@ -594,6 +596,19 @@ function getClampedDetailInputValue(
         String(input.value).trim() === ''
     ) {
         return null;
+    }
+
+    if (
+        String(target.value).trim() === ''
+    ) {
+        target.value =
+            String(
+                Math.round(
+                    Number(slider.value) * 100
+                )
+            );
+
+        return;
     }
 
     const raw =
