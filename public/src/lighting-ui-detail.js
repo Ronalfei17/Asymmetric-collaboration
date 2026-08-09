@@ -241,7 +241,22 @@ function renderDetailIntensityBlock(state) {
                 <span>0%</span>
                 <span>100%</span>
             </div>
-            <div id="detailIntensityValue" class="mx-auto mt-2 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">${value}%</div>
+            <div class="mx-auto mt-2 flex h-8 items-center justify-center">
+                <input
+                    id="detailIntensityValueInput"
+                    type="number"
+                    inputmode="numeric"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value="${value}"
+                    aria-label="Detail intensity percentage"
+                    class="lighting-value-input h-8 w-14 select-text rounded-l border border-r-0 border-gray-700 bg-white/5 px-1 text-center text-xs text-gray-200 outline-none focus:border-blue-500"
+                >
+                <span class="flex h-8 items-center rounded-r border border-l-0 border-gray-700 bg-white/5 pr-2 text-xs text-gray-300">
+                    %
+                </span>
+            </div>
         </section>
     `;
 }
@@ -269,7 +284,22 @@ function renderDetailStrobeBlock(state) {
                 <span>0 Hz</span>
                 <span>20 Hz</span>
             </div>
-            <div id="detailStrobeHzValue" class="mx-auto mt-3 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">${strobeHz} Hz</div>
+            <div class="mx-auto mt-3 flex h-8 items-center justify-center">
+                <input
+                    id="detailStrobeHzValueInput"
+                    type="number"
+                    inputmode="decimal"
+                    min="0"
+                    max="20"
+                    step="1"
+                    value="${strobeHz}"
+                    aria-label="Detail strobe frequency"
+                    class="lighting-value-input h-8 w-14 select-text rounded-l border border-r-0 border-gray-700 bg-white/5 px-1 text-center text-xs text-gray-200 outline-none focus:border-blue-500"
+                >
+                <span class="flex h-8 items-center rounded-r border border-l-0 border-gray-700 bg-white/5 pr-2 text-xs text-gray-300">
+                    Hz
+                </span>
+            </div>
         </section>
     `;
 }
@@ -334,7 +364,22 @@ function renderDetailAngleBlock(fixture, preset, state, title) {
                     <span>${formatAngle(min)}&deg;</span>
                     <span>${formatAngle(max)}&deg;</span>
                 </div>
-                <div id="detailFieldAngleValue" class="mx-auto mt-3 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">${formatAngle(value)}&deg;</div>
+                <div class="mx-auto mt-3 flex h-8 items-center justify-center">
+                    <input
+                        id="detailFieldAngleValueInput"
+                        type="number"
+                        inputmode="decimal"
+                        min="${min}"
+                        max="${max}"
+                        step="0.1"
+                        value="${formatAngle(value)}"
+                        aria-label="Detail field or beam angle"
+                        class="lighting-value-input h-8 w-14 select-text rounded-l border border-r-0 border-gray-700 bg-white/5 px-1 text-center text-xs text-gray-200 outline-none focus:border-blue-500"
+                    >
+                    <span class="flex h-8 items-center rounded-r border border-l-0 border-gray-700 bg-white/5 pr-2 text-xs text-gray-300">
+                        &deg;
+                    </span>
+                </div>
             `}
         </section>
     `;
@@ -426,11 +471,21 @@ function renderDetailAimBlock(
                         <span>${formatPanTilt(panMax)}&deg;</span>
                     </div>
 
-                    <div
-                        id="detailPanValue"
-                        class="mx-auto mt-2 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs"
-                    >
-                        ${formatPanTilt(pan)}&deg;
+                    <div class="mx-auto mt-2 flex h-8 items-center justify-center">
+                        <input
+                            id="detailPanValueInput"
+                            type="number"
+                            inputmode="decimal"
+                            min="${panMin}"
+                            max="${panMax}"
+                            step="0.5"
+                            value="${formatPanTilt(pan)}"
+                            aria-label="Detail pan angle"
+                            class="lighting-value-input h-8 w-16 select-text rounded-l border border-r-0 border-gray-700 bg-white/5 px-1 text-center text-xs text-gray-200 outline-none focus:border-blue-500"
+                        >
+                        <span class="flex h-8 items-center rounded-r border border-l-0 border-gray-700 bg-white/5 pr-2 text-xs text-gray-300">
+                            &deg;
+                        </span>
                     </div>
                 </div>
 
@@ -455,11 +510,21 @@ function renderDetailAimBlock(
                         <span>${formatPanTilt(tiltMax)}&deg;</span>
                     </div>
 
-                    <div
-                        id="detailTiltValue"
-                        class="mx-auto mt-2 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs"
-                    >
-                        ${formatPanTilt(tilt)}&deg;
+                    <div class="mx-auto mt-2 flex h-8 items-center justify-center">
+                        <input
+                            id="detailTiltValueInput"
+                            type="number"
+                            inputmode="decimal"
+                            min="${tiltMin}"
+                            max="${tiltMax}"
+                            step="0.5"
+                            value="${formatPanTilt(tilt)}"
+                            aria-label="Detail tilt angle"
+                            class="lighting-value-input h-8 w-16 select-text rounded-l border border-r-0 border-gray-700 bg-white/5 px-1 text-center text-xs text-gray-200 outline-none focus:border-blue-500"
+                        >
+                        <span class="flex h-8 items-center rounded-r border border-l-0 border-gray-700 bg-white/5 pr-2 text-xs text-gray-300">
+                            &deg;
+                        </span>
                     </div>
                 </div>
             </div>
@@ -485,8 +550,21 @@ function renderDetailFresnelBlock(state) {
                     value="${softness}"
                     class="w-full accent-purple-500"
                 >
-                <div id="detailSoftnessValue" class="mx-auto mt-2 w-16 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">
-                    ${Math.round(softness * 100)}%
+                <div class="mx-auto mt-2 flex h-8 items-center justify-center">
+                    <input
+                        id="detailSoftnessValueInput"
+                        type="number"
+                        inputmode="decimal"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value="${Math.round(softness * 100)}"
+                        aria-label="Detail softness percentage"
+                        class="lighting-value-input h-8 w-14 select-text rounded-l border border-r-0 border-gray-700 bg-white/5 px-1 text-center text-xs text-gray-200 outline-none focus:border-blue-500"
+                    >
+                    <span class="flex h-8 items-center rounded-r border border-l-0 border-gray-700 bg-white/5 pr-2 text-xs text-gray-300">
+                        %
+                    </span>
                 </div>
             </div>
         </section>
@@ -504,6 +582,42 @@ function renderDetailMovingBlock() {
     `;
 }
 
+function getClampedDetailInputValue(
+    input,
+    slider
+) {
+    if (!input || !slider) {
+        return null;
+    }
+
+    if (
+        String(input.value).trim() === ''
+    ) {
+        return null;
+    }
+
+    const raw =
+        Number(input.value);
+
+    if (!Number.isFinite(raw)) {
+        return null;
+    }
+
+    const min =
+        Number(slider.min);
+
+    const max =
+        Number(slider.max);
+
+    return Math.min(
+        max,
+        Math.max(
+            min,
+            raw
+        )
+    );
+}
+
 export function setupDetailLightingListeners({
     onInput,
     setPowerState,
@@ -517,6 +631,22 @@ export function setupDetailLightingListeners({
     if (!detailPanel) {
         return;
     }
+
+    detailPanel.addEventListener(
+        'focusin',
+        event => {
+            const target =
+                event.target;
+
+            if (
+                target.matches(
+                    'input[type="number"].lighting-value-input'
+                )
+            ) {
+                target.select();
+            }
+        }
+    );
 
     detailPanel.addEventListener(
         'input',
@@ -541,18 +671,22 @@ export function setupDetailLightingListeners({
                 return;
             }
 
+            /*
+            * Intensity slider
+            * → Detail 数字输入框
+            */
             if (
                 target.id ===
                 'detailIntensitySlider'
             ) {
-                const value =
+                const input =
                     getElement(
-                        'detailIntensityValue'
+                        'detailIntensityValueInput'
                     );
 
-                if (value) {
-                    value.textContent =
-                        `${target.value}%`;
+                if (input) {
+                    input.value =
+                        String(target.value);
                 }
             }
 
@@ -570,29 +704,37 @@ export function setupDetailLightingListeners({
                 updateDetailRGBUI();
             }
 
-            // 普通灯具 Strobe
+            /*
+            * 普通灯具 Strobe slider
+            * → Detail 数字输入框
+            */
             if (
                 target.id ===
                 'detailStrobeHzSlider'
             ) {
-                const value =
+                const input =
                     getElement(
-                        'detailStrobeHzValue'
+                        'detailStrobeHzValueInput'
                     );
 
-                if (value) {
-                    value.textContent =
-                        `${target.value} Hz`;
+                if (input) {
+                    input.value =
+                        String(target.value);
                 }
             }
 
+            /*
+            * Field / Beam Angle slider
+            * → Detail 数字输入框
+            * → 同步 Quick Panel slider
+            */
             if (
                 target.id ===
                 'detailFieldAngleSlider'
             ) {
-                const value =
+                const input =
                     getElement(
-                        'detailFieldAngleValue'
+                        'detailFieldAngleValueInput'
                     );
 
                 const quick =
@@ -600,9 +742,9 @@ export function setupDetailLightingListeners({
                         'fieldAngleSlider'
                     );
 
-                if (value) {
-                    value.innerHTML =
-                        `${target.value}&deg;`;
+                if (input) {
+                    input.value =
+                        String(target.value);
                 }
 
                 if (quick) {
@@ -613,13 +755,18 @@ export function setupDetailLightingListeners({
                 }
             }
 
+            /*
+            * Pan slider
+            * → Detail 数字输入框
+            * → 同步 Quick Panel
+            */
             if (
                 target.id ===
                 'detailPanSlider'
             ) {
-                const value =
+                const input =
                     getElement(
-                        'detailPanValue'
+                        'detailPanValueInput'
                     );
 
                 const quick =
@@ -627,11 +774,11 @@ export function setupDetailLightingListeners({
                         'panSlider'
                     );
 
-                if (value) {
-                    value.innerHTML =
-                        `${formatPanTilt(
+                if (input) {
+                    input.value =
+                        formatPanTilt(
                             target.value
-                        )}&deg;`;
+                        );
                 }
 
                 if (quick) {
@@ -642,13 +789,18 @@ export function setupDetailLightingListeners({
                 }
             }
 
+            /*
+            * Tilt slider
+            * → Detail 数字输入框
+            * → 同步 Quick Panel
+            */
             if (
                 target.id ===
                 'detailTiltSlider'
             ) {
-                const value =
+                const input =
                     getElement(
-                        'detailTiltValue'
+                        'detailTiltValueInput'
                     );
 
                 const quick =
@@ -656,11 +808,11 @@ export function setupDetailLightingListeners({
                         'tiltSlider'
                     );
 
-                if (value) {
-                    value.innerHTML =
-                        `${formatPanTilt(
+                if (input) {
+                    input.value =
+                        formatPanTilt(
                             target.value
-                        )}&deg;`;
+                        );
                 }
 
                 if (quick) {
@@ -671,7 +823,307 @@ export function setupDetailLightingListeners({
                 }
             }
 
+            /*
+            * Fresnel Softness slider
+            * 内部值是 0–1，
+            * 输入框显示为 0–100 %
+            */
+            if (
+                target.id ===
+                'detailSoftnessSlider'
+            ) {
+                const input =
+                    getElement(
+                        'detailSoftnessValueInput'
+                    );
+
+                if (input) {
+                    input.value =
+                        String(
+                            Math.round(
+                                Number(target.value) *
+                                100
+                            )
+                        );
+                }
+            }
+
             onInput();
+        }
+    );
+
+    detailPanel.addEventListener(
+        'change',
+        event => {
+            const target =
+                event.target;
+
+            // Intensity
+            if (
+                target.id ===
+                'detailIntensityValueInput'
+            ) {
+                const slider =
+                    getElement(
+                        'detailIntensitySlider'
+                    );
+
+                const value =
+                    getClampedDetailInputValue(
+                        target,
+                        slider
+                    );
+
+                if (value === null) {
+                    if (slider) {
+                        target.value =
+                            slider.value;
+                    }
+
+                    return;
+                }
+
+                slider.value =
+                    String(value);
+
+                target.value =
+                    String(value);
+
+                onInput();
+                return;
+            }
+
+            // Strobe
+            if (
+                target.id ===
+                'detailStrobeHzValueInput'
+            ) {
+                const slider =
+                    getElement(
+                        'detailStrobeHzSlider'
+                    );
+
+                const value =
+                    getClampedDetailInputValue(
+                        target,
+                        slider
+                    );
+
+                if (value === null) {
+                    if (slider) {
+                        target.value =
+                            slider.value;
+                    }
+
+                    return;
+                }
+
+                slider.value =
+                    String(value);
+
+                target.value =
+                    String(value);
+
+                onInput();
+                return;
+            }
+
+            // Field / Beam Angle
+            if (
+                target.id ===
+                'detailFieldAngleValueInput'
+            ) {
+                const slider =
+                    getElement(
+                        'detailFieldAngleSlider'
+                    );
+
+                const value =
+                    getClampedDetailInputValue(
+                        target,
+                        slider
+                    );
+
+                if (value === null) {
+                    if (slider) {
+                        target.value =
+                            slider.value;
+                    }
+
+                    return;
+                }
+
+                slider.value =
+                    String(value);
+
+                target.value =
+                    String(value);
+
+                const quick =
+                    getElement(
+                        'fieldAngleSlider'
+                    );
+
+                if (quick) {
+                    quick.value =
+                        String(value);
+
+                    updateFieldAngleUI();
+                }
+
+                onInput();
+                return;
+            }
+
+            // Pan
+            if (
+                target.id ===
+                'detailPanValueInput'
+            ) {
+                const slider =
+                    getElement(
+                        'detailPanSlider'
+                    );
+
+                const value =
+                    getClampedDetailInputValue(
+                        target,
+                        slider
+                    );
+
+                if (value === null) {
+                    if (slider) {
+                        target.value =
+                            formatPanTilt(
+                                slider.value
+                            );
+                    }
+
+                    return;
+                }
+
+                slider.value =
+                    String(value);
+
+                target.value =
+                    formatPanTilt(value);
+
+                const quick =
+                    getElement(
+                        'panSlider'
+                    );
+
+                if (quick) {
+                    quick.value =
+                        String(value);
+
+                    updatePanTiltUI();
+                }
+
+                onInput();
+                return;
+            }
+
+            // Tilt
+            if (
+                target.id ===
+                'detailTiltValueInput'
+            ) {
+                const slider =
+                    getElement(
+                        'detailTiltSlider'
+                    );
+
+                const value =
+                    getClampedDetailInputValue(
+                        target,
+                        slider
+                    );
+
+                if (value === null) {
+                    if (slider) {
+                        target.value =
+                            formatPanTilt(
+                                slider.value
+                            );
+                    }
+
+                    return;
+                }
+
+                slider.value =
+                    String(value);
+
+                target.value =
+                    formatPanTilt(value);
+
+                const quick =
+                    getElement(
+                        'tiltSlider'
+                    );
+
+                if (quick) {
+                    quick.value =
+                        String(value);
+
+                    updatePanTiltUI();
+                }
+
+                onInput();
+                return;
+            }
+
+            // Fresnel Softness
+            if (
+                target.id ===
+                'detailSoftnessValueInput'
+            ) {
+                const slider =
+                    getElement(
+                        'detailSoftnessSlider'
+                    );
+
+                if (!slider) {
+                    return;
+                }
+
+                const raw =
+                    Number(target.value);
+
+                if (!Number.isFinite(raw)) {
+                    target.value =
+                        String(
+                            Math.round(
+                                Number(
+                                    slider.value
+                                ) * 100
+                            )
+                        );
+
+                    return;
+                }
+
+                const percent =
+                    Math.min(
+                        100,
+                        Math.max(
+                            0,
+                            raw
+                        )
+                    );
+
+                slider.value =
+                    String(
+                        percent / 100
+                    );
+
+                target.value =
+                    String(
+                        Math.round(percent)
+                    );
+
+                onInput();
+            }
         }
     );
 
