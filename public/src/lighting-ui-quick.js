@@ -27,13 +27,18 @@ export function updatePanelVisibility(fixtureType) {
     quickAimTag?.classList.toggle('hidden', isMoving);
 
     if (quickAngleTitle) {
-        quickAngleTitle.textContent = isMoving || isFresnel ? 'BEAM ANGLE' : 'FIELD ANGLE';
+        quickAngleTitle.textContent =
+            isMoving || isFresnel
+                ? 'BEAM ANGLE'
+                : 'FIELD ANGLE';
     }
 
     if (quickAngleLabel) {
-        quickAngleLabel.textContent = isMoving || isFresnel ? 'Beam Angle' : 'Angle';
+        quickAngleLabel.textContent =
+            isMoving || isFresnel
+                ? 'Beam Angle'
+                : 'Angle';
     }
-
 }
 
 export function applyFixturePresetToUI(fixture) {
@@ -46,15 +51,32 @@ export function applyFixturePresetToUI(fixture) {
 }
 
 function applyQuickAnglePreset(fixture, preset) {
-    const sliderWrap = getElement('quickAngleSliderWrap');
-    const fixedWrap = getElement('quickAngleFixedWrap');
-    const fixedValue = getElement('quickAngleFixedValue');
-    const optionsWrap = getElement('quickAngleOptionsWrap');
-    const slider = getElement('fieldAngleSlider');
-    const value = getElement('fieldAngleValue');
+    const sliderWrap =
+        getElement('quickAngleSliderWrap');
 
-    const minLabel = getElement('fieldAngleMinLabel');
-    const maxLabel = getElement('fieldAngleMaxLabel');
+    const fixedWrap =
+        getElement('quickAngleFixedWrap');
+
+    const fixedValue =
+        getElement('quickAngleFixedValue');
+
+    const optionsWrap =
+        getElement('quickAngleOptionsWrap');
+
+    const slider =
+        getElement('fieldAngleSlider');
+
+    const valueWrap =
+        getElement('fieldAngleValueWrap');
+
+    const valueInput =
+        getElement('fieldAngleValueInput');
+
+    const minLabel =
+        getElement('fieldAngleMinLabel');
+
+    const maxLabel =
+        getElement('fieldAngleMaxLabel');
 
     if (!preset) return;
 
@@ -67,39 +89,71 @@ function applyQuickAnglePreset(fixture, preset) {
         isFixed
     } = getAngleConfig(fixture);
 
-    sliderWrap?.classList.toggle('hidden', hasOptions || isFixed);
-    fixedWrap?.classList.toggle('hidden', !isFixed);
-    fixedWrap?.classList.toggle('flex', isFixed);
-    optionsWrap?.classList.toggle('hidden', !hasOptions);
-    optionsWrap?.classList.toggle('flex', hasOptions);
+    sliderWrap?.classList.toggle(
+        'hidden',
+        hasOptions || isFixed
+    );
 
-    value?.classList.toggle('hidden', hasOptions || isFixed);
+    fixedWrap?.classList.toggle(
+        'hidden',
+        !isFixed
+    );
+
+    fixedWrap?.classList.toggle(
+        'flex',
+        isFixed
+    );
+
+    optionsWrap?.classList.toggle(
+        'hidden',
+        !hasOptions
+    );
+
+    optionsWrap?.classList.toggle(
+        'flex',
+        hasOptions
+    );
+
+    valueWrap?.classList.toggle(
+        'hidden',
+        hasOptions || isFixed
+    );
 
     if (hasOptions) {
-        const selectedAngle = angleOptions.some(angle =>
-            Math.abs(Number(angle) - Number(defaultAngle)) < 0.01
-        )
-            ? Number(defaultAngle)
-            : Number(angleOptions[0]);
+        const selectedAngle =
+            angleOptions.some(angle =>
+                Math.abs(
+                    Number(angle) -
+                    Number(defaultAngle)
+                ) < 0.01
+            )
+                ? Number(defaultAngle)
+                : Number(angleOptions[0]);
 
         if (slider) {
             slider.value = selectedAngle;
         }
 
-        updateQuickAngleOptionActive(selectedAngle);
+        updateQuickAngleOptionActive(
+            selectedAngle
+        );
+
         updateFieldAngleUI();
         return;
     }
 
     if (isFixed) {
-        const fixedAngle = Number(defaultAngle);
+        const fixedAngle =
+            Number(defaultAngle);
 
         if (slider) {
-            slider.value = fixedAngle;
+            slider.value =
+                fixedAngle;
         }
 
         if (fixedValue) {
-            fixedValue.innerHTML = `${fixedAngle}&deg;`;
+            fixedValue.innerHTML =
+                `${fixedAngle}&deg;`;
         }
 
         updateFieldAngleUI();
@@ -107,90 +161,270 @@ function applyQuickAnglePreset(fixture, preset) {
     }
 
     if (slider) {
-        slider.min = angleMin ?? 10;
-        slider.max = angleMax ?? 60;
-        slider.step = 0.1;
-        slider.value = defaultAngle;
+        slider.min =
+            angleMin ?? 10;
+
+        slider.max =
+            angleMax ?? 60;
+
+        slider.step =
+            0.1;
+
+        slider.value =
+            defaultAngle;
     }
 
-    if (minLabel) minLabel.innerHTML = `${angleMin ?? 10}&deg;`;
-    if (maxLabel) maxLabel.innerHTML = `${angleMax ?? 60}&deg;`;
+    /*
+     * Keep the editable value field in sync
+     * with the actual fixture angle range.
+     */
+    if (valueInput) {
+        valueInput.min =
+            String(angleMin ?? 10);
+
+        valueInput.max =
+            String(angleMax ?? 60);
+
+        valueInput.step =
+            '0.1';
+
+        valueInput.value =
+            String(defaultAngle);
+    }
+
+    if (minLabel) {
+        minLabel.innerHTML =
+            `${angleMin ?? 10}&deg;`;
+    }
+
+    if (maxLabel) {
+        maxLabel.innerHTML =
+            `${angleMax ?? 60}&deg;`;
+    }
 
     updateFieldAngleUI();
 }
 
 function applyQuickAimPreset(fixture, preset) {
-    const panSlider = getElement('panSlider');
-    const tiltSlider = getElement('tiltSlider');
+    const panSlider =
+        getElement('panSlider');
 
-    const panMinLabel = getElement('panMinLabel');
-    const panMaxLabel = getElement('panMaxLabel');
-    const tiltMinLabel = getElement('tiltMinLabel');
-    const tiltMaxLabel = getElement('tiltMaxLabel');
+    const tiltSlider =
+        getElement('tiltSlider');
 
-    const isMoving = fixture.fixtureType === FIXTURE_TYPES.MOVING;
+    const panValueInput =
+        getElement('panValueInput');
 
-    const panMin = isMoving ? preset?.panMin : preset?.aimPanMin ?? -180;
-    const panMax = isMoving ? preset?.panMax : preset?.aimPanMax ?? 180;
-    const tiltMin = isMoving ? preset?.tiltMin : preset?.aimTiltMin ?? -90;
-    const tiltMax = isMoving ? preset?.tiltMax : preset?.aimTiltMax ?? 90;
+    const tiltValueInput =
+        getElement('tiltValueInput');
+
+    const panMinLabel =
+        getElement('panMinLabel');
+
+    const panMaxLabel =
+        getElement('panMaxLabel');
+
+    const tiltMinLabel =
+        getElement('tiltMinLabel');
+
+    const tiltMaxLabel =
+        getElement('tiltMaxLabel');
+
+    const isMoving =
+        fixture.fixtureType ===
+        FIXTURE_TYPES.MOVING;
+
+    const panMin =
+        isMoving
+            ? preset?.panMin
+            : preset?.aimPanMin ?? -180;
+
+    const panMax =
+        isMoving
+            ? preset?.panMax
+            : preset?.aimPanMax ?? 180;
+
+    const tiltMin =
+        isMoving
+            ? preset?.tiltMin
+            : preset?.aimTiltMin ?? -90;
+
+    const tiltMax =
+        isMoving
+            ? preset?.tiltMax
+            : preset?.aimTiltMax ?? 90;
 
     if (panSlider) {
-        panSlider.min = panMin;
-        panSlider.max = panMax;
+        panSlider.min =
+            panMin;
+
+        panSlider.max =
+            panMax;
     }
 
     if (tiltSlider) {
-        tiltSlider.min = tiltMin;
-        tiltSlider.max = tiltMax;
+        tiltSlider.min =
+            tiltMin;
+
+        tiltSlider.max =
+            tiltMax;
     }
 
-    if (panMinLabel) panMinLabel.innerHTML = `${panMin}&deg;`;
-    if (panMaxLabel) panMaxLabel.innerHTML = `${panMax}&deg;`;
-    if (tiltMinLabel) tiltMinLabel.innerHTML = `${tiltMin}&deg;`;
-    if (tiltMaxLabel) tiltMaxLabel.innerHTML = `${tiltMax}&deg;`;
+    /*
+     * Keep editable Pan / Tilt fields
+     * using the same fixture-specific range.
+     */
+    if (panValueInput) {
+        panValueInput.min =
+            String(panMin);
+
+        panValueInput.max =
+            String(panMax);
+
+        panValueInput.step =
+            '0.5';
+    }
+
+    if (tiltValueInput) {
+        tiltValueInput.min =
+            String(tiltMin);
+
+        tiltValueInput.max =
+            String(tiltMax);
+
+        tiltValueInput.step =
+            '0.5';
+    }
+
+    if (panMinLabel) {
+        panMinLabel.innerHTML =
+            `${panMin}&deg;`;
+    }
+
+    if (panMaxLabel) {
+        panMaxLabel.innerHTML =
+            `${panMax}&deg;`;
+    }
+
+    if (tiltMinLabel) {
+        tiltMinLabel.innerHTML =
+            `${tiltMin}&deg;`;
+    }
+
+    if (tiltMaxLabel) {
+        tiltMaxLabel.innerHTML =
+            `${tiltMax}&deg;`;
+    }
 }
 
 export function updateQuickAngleOptionActive(angle) {
-    document.querySelectorAll('.quick-angle-option').forEach(option => {
-        const isActive = Math.abs(Number(option.dataset.angle) - Number(angle)) < 0.01;
-        const dot = option.querySelector('.quick-angle-dot');
+    document
+        .querySelectorAll(
+            '.quick-angle-option'
+        )
+        .forEach(option => {
+            const isActive =
+                Math.abs(
+                    Number(
+                        option.dataset.angle
+                    ) -
+                    Number(angle)
+                ) < 0.01;
 
-        option.classList.toggle('border-blue-500', isActive);
-        option.classList.toggle('bg-blue-500/20', isActive);
-        option.classList.toggle('text-blue-100', isActive);
+            const dot =
+                option.querySelector(
+                    '.quick-angle-dot'
+                );
 
-        option.classList.toggle('border-gray-700', !isActive);
-        option.classList.toggle('bg-white/5', !isActive);
-        option.classList.toggle('text-gray-300', !isActive);
+            option.classList.toggle(
+                'border-blue-500',
+                isActive
+            );
 
-        if (dot) {
-            dot.classList.toggle('border-blue-400', isActive);
-            dot.classList.toggle('after:block', isActive);
+            option.classList.toggle(
+                'bg-blue-500/20',
+                isActive
+            );
 
-            dot.classList.toggle('border-gray-500', !isActive);
-            dot.classList.toggle('after:hidden', !isActive);
-        }
-    });
+            option.classList.toggle(
+                'text-blue-100',
+                isActive
+            );
+
+            option.classList.toggle(
+                'border-gray-700',
+                !isActive
+            );
+
+            option.classList.toggle(
+                'bg-white/5',
+                !isActive
+            );
+
+            option.classList.toggle(
+                'text-gray-300',
+                !isActive
+            );
+
+            if (dot) {
+                dot.classList.toggle(
+                    'border-blue-400',
+                    isActive
+                );
+
+                dot.classList.toggle(
+                    'after:block',
+                    isActive
+                );
+
+                dot.classList.toggle(
+                    'border-gray-500',
+                    !isActive
+                );
+
+                dot.classList.toggle(
+                    'after:hidden',
+                    !isActive
+                );
+            }
+        });
 }
 
 function getCurrentAngleFromUI(fixture) {
-    const { angleOptions, defaultAngle, hasOptions, isFixed } = getAngleConfig(fixture);
-    const slider = getElement('fieldAngleSlider');
+    const {
+        angleOptions,
+        defaultAngle,
+        hasOptions,
+        isFixed
+    } = getAngleConfig(fixture);
 
-    if (isFixed) return defaultAngle;
+    const slider =
+        getElement('fieldAngleSlider');
 
-    const value = Number(slider?.value);
-
-    if (hasOptions) {
-        const isValidOption = angleOptions.some(angle =>
-            Math.abs(Number(angle) - value) < 0.01
-        );
-
-        return isValidOption ? value : defaultAngle;
+    if (isFixed) {
+        return defaultAngle;
     }
 
-    return Number.isFinite(value) ? value : defaultAngle;
+    const value =
+        Number(slider?.value);
+
+    if (hasOptions) {
+        const isValidOption =
+            angleOptions.some(angle =>
+                Math.abs(
+                    Number(angle) -
+                    value
+                ) < 0.01
+            );
+
+        return isValidOption
+            ? value
+            : defaultAngle;
+    }
+
+    return Number.isFinite(value)
+        ? value
+        : defaultAngle;
 }
 
 export function readQuickLightingValuesFromUI(
@@ -228,11 +462,15 @@ export function readQuickLightingValuesFromUI(
             ),
 
         pan: panSlider
-            ? Number(panSlider.value)
+            ? Number(
+                panSlider.value
+            )
             : 0,
 
         tilt: tiltSlider
-            ? Number(tiltSlider.value)
+            ? Number(
+                tiltSlider.value
+            )
             : 0
     };
 }
@@ -253,7 +491,9 @@ export function writeQuickLightingValuesToUI(
     );
 
     const intensitySlider =
-        getElement('intensitySlider');
+        getElement(
+            'intensitySlider'
+        );
 
     if (
         intensitySlider &&
@@ -315,45 +555,74 @@ export function writeQuickLightingValuesToUI(
 }
 
 export function setPowerState(isOn) {
-    isOn = toBoolean(isOn, true);
-    const powerToggle = getElement('powerToggle');
-    const powerKnob = getElement('powerKnob');
-    const powerLamp = getElement('powerLamp');
-    const powerStatusLabel = getElement('powerStatusLabel');
+    isOn =
+        toBoolean(
+            isOn,
+            true
+        );
 
-    if (!powerToggle) return;
+    const powerToggle =
+        getElement('powerToggle');
 
-    powerToggle.dataset.on = String(isOn);
+    const powerKnob =
+        getElement('powerKnob');
+
+    const powerLamp =
+        getElement('powerLamp');
+
+    const powerStatusLabel =
+        getElement(
+            'powerStatusLabel'
+        );
+
+    if (!powerToggle) {
+        return;
+    }
+
+    powerToggle.dataset.on =
+        String(isOn);
 
     if (isOn) {
-        powerToggle.className = 'w-14 h-8 rounded-full bg-green-500 relative shadow-[0_0_14px_rgba(34,197,94,0.35)] transition-all';
+        powerToggle.className =
+            'w-14 h-8 rounded-full bg-green-500 relative shadow-[0_0_14px_rgba(34,197,94,0.35)] transition-all';
 
         if (powerKnob) {
-            powerKnob.className = 'absolute right-1 top-1 w-6 h-6 rounded-full bg-white shadow transition-all';
+            powerKnob.className =
+                'absolute right-1 top-1 w-6 h-6 rounded-full bg-white shadow transition-all';
         }
 
         if (powerLamp) {
-            powerLamp.className = 'w-12 h-12 rounded-full bg-green-500/15 border border-green-400/30 flex items-center justify-center text-green-300 transition-all shadow-[0_0_18px_rgba(34,197,94,0.2)]';
+            powerLamp.className =
+                'w-12 h-12 rounded-full bg-green-500/15 border border-green-400/30 flex items-center justify-center text-green-300 transition-all shadow-[0_0_18px_rgba(34,197,94,0.2)]';
         }
 
         if (powerStatusLabel) {
-            powerStatusLabel.textContent = 'Lamp On';
-            powerStatusLabel.className = 'text-[11px] text-green-400';
+            powerStatusLabel.textContent =
+                'Lamp On';
+
+            powerStatusLabel.className =
+                'text-[11px] text-green-400';
         }
     } else {
-        powerToggle.className = 'w-14 h-8 rounded-full bg-gray-700 relative shadow-none transition-all';
+        powerToggle.className =
+            'w-14 h-8 rounded-full bg-gray-700 relative shadow-none transition-all';
 
         if (powerKnob) {
-            powerKnob.className = 'absolute left-1 top-1 w-6 h-6 rounded-full bg-white shadow transition-all';
+            powerKnob.className =
+                'absolute left-1 top-1 w-6 h-6 rounded-full bg-white shadow transition-all';
         }
 
         if (powerLamp) {
-            powerLamp.className = 'w-12 h-12 rounded-full bg-white/10 border border-white/5 flex items-center justify-center text-gray-500 transition-all';
+            powerLamp.className =
+                'w-12 h-12 rounded-full bg-white/10 border border-white/5 flex items-center justify-center text-gray-500 transition-all';
         }
 
         if (powerStatusLabel) {
-            powerStatusLabel.textContent = 'Lamp Off';
-            powerStatusLabel.className = 'text-[11px] text-gray-500';
+            powerStatusLabel.textContent =
+                'Lamp Off';
+
+            powerStatusLabel.className =
+                'text-[11px] text-gray-500';
         }
     }
 }
@@ -365,50 +634,148 @@ export function updatePanTiltUI() {
     const tiltSlider =
         getElement('tiltSlider');
 
-    const panValue =
-        getElement('panValue');
+    const panInput =
+        getElement(
+            'panValueInput'
+        );
 
-    const tiltValue =
-        getElement('tiltValue');
+    const tiltInput =
+        getElement(
+            'tiltValueInput'
+        );
 
-    if (panSlider && panValue) {
-        panValue.innerHTML =
-            `${formatPanTilt(
+    if (
+        panSlider &&
+        panInput
+    ) {
+        panInput.value =
+            formatPanTilt(
                 panSlider.value
-            )}&deg;`;
+            );
     }
 
-    if (tiltSlider && tiltValue) {
-        tiltValue.innerHTML =
-            `${formatPanTilt(
+    if (
+        tiltSlider &&
+        tiltInput
+    ) {
+        tiltInput.value =
+            formatPanTilt(
                 tiltSlider.value
-            )}&deg;`;
+            );
     }
 }
 
 export function updateFieldAngleUI() {
-    const slider = getElement('fieldAngleSlider');
-    const value = getElement('fieldAngleValue');
+    const slider =
+        getElement(
+            'fieldAngleSlider'
+        );
 
-    if (slider && value) {
-        value.innerText = `${slider.value}°`;
+    const input =
+        getElement(
+            'fieldAngleValueInput'
+        );
+
+    if (
+        slider &&
+        input
+    ) {
+        input.value =
+            String(
+                Number(
+                    slider.value
+                )
+            );
     }
 }
 
 function updateIntensityUI() {
-    const intensitySlider = getElement('intensitySlider');
-    const intensityValue = getElement('intensityValue');
+    const intensitySlider =
+        getElement(
+            'intensitySlider'
+        );
 
-    if (intensitySlider && intensityValue) {
-        intensityValue.innerText = `${intensitySlider.value}%`;
+    const intensityInput =
+        getElement(
+            'intensityValueInput'
+        );
+
+    if (
+        intensitySlider &&
+        intensityInput
+    ) {
+        intensityInput.value =
+            String(
+                Math.round(
+                    Number(
+                        intensitySlider.value
+                    )
+                )
+            );
     }
+}
+
+/*
+ * Converts a numeric value entered by the user
+ * into a value inside the corresponding slider range.
+ *
+ * This is used only by the editable Quick Panel
+ * numeric fields.
+ */
+function getClampedInputValue(
+    input,
+    slider
+) {
+    if (
+        !input ||
+        !slider
+    ) {
+        return null;
+    }
+
+    if (
+        String(
+            input.value
+        ).trim() === ''
+    ) {
+        return null;
+    }
+
+    const raw =
+        Number(
+            input.value
+        );
+
+    if (!Number.isFinite(raw)) {
+        return null;
+    }
+
+    const min =
+        Number(
+            slider.min
+        );
+
+    const max =
+        Number(
+            slider.max
+        );
+
+    return Math.min(
+        max,
+        Math.max(
+            min,
+            raw
+        )
+    );
 }
 
 export function setupQuickLightingListeners(
     onInput
 ) {
     const powerToggle =
-        getElement('powerToggle');
+        getElement(
+            'powerToggle'
+        );
 
     if (powerToggle) {
         powerToggle.addEventListener(
@@ -447,11 +814,47 @@ export function setupQuickLightingListeners(
         );
     }
 
+    /*
+     * Editable Intensity value
+     * → Intensity slider
+     */
+    const intensityValueInput =
+        getElement(
+            'intensityValueInput'
+        );
+
+    intensityValueInput
+        ?.addEventListener(
+            'change',
+            () => {
+                const value =
+                    getClampedInputValue(
+                        intensityValueInput,
+                        intensitySlider
+                    );
+
+                if (value === null) {
+                    updateIntensityUI();
+                    return;
+                }
+
+                intensitySlider.value =
+                    String(value);
+
+                updateIntensityUI();
+                onInput();
+            }
+        );
+
     const panSlider =
-        getElement('panSlider');
+        getElement(
+            'panSlider'
+        );
 
     const tiltSlider =
-        getElement('tiltSlider');
+        getElement(
+            'tiltSlider'
+        );
 
     if (panSlider) {
         panSlider.addEventListener(
@@ -472,6 +875,70 @@ export function setupQuickLightingListeners(
             }
         );
     }
+
+    /*
+     * Editable Pan value
+     * → Pan slider
+     */
+    const panValueInput =
+        getElement(
+            'panValueInput'
+        );
+
+    panValueInput
+        ?.addEventListener(
+            'change',
+            () => {
+                const value =
+                    getClampedInputValue(
+                        panValueInput,
+                        panSlider
+                    );
+
+                if (value === null) {
+                    updatePanTiltUI();
+                    return;
+                }
+
+                panSlider.value =
+                    String(value);
+
+                updatePanTiltUI();
+                onInput();
+            }
+        );
+
+    /*
+     * Editable Tilt value
+     * → Tilt slider
+     */
+    const tiltValueInput =
+        getElement(
+            'tiltValueInput'
+        );
+
+    tiltValueInput
+        ?.addEventListener(
+            'change',
+            () => {
+                const value =
+                    getClampedInputValue(
+                        tiltValueInput,
+                        tiltSlider
+                    );
+
+                if (value === null) {
+                    updatePanTiltUI();
+                    return;
+                }
+
+                tiltSlider.value =
+                    String(value);
+
+                updatePanTiltUI();
+                onInput();
+            }
+        );
 
     const resetAnglesBtn =
         getElement(
@@ -500,13 +967,46 @@ export function setupQuickLightingListeners(
             'fieldAngleSlider'
         );
 
-    fieldAngleSlider?.addEventListener(
-        'input',
-        () => {
-            updateFieldAngleUI();
-            onInput();
-        }
-    );
+    fieldAngleSlider
+        ?.addEventListener(
+            'input',
+            () => {
+                updateFieldAngleUI();
+                onInput();
+            }
+        );
+
+    /*
+     * Editable Field / Beam Angle value
+     * → angle slider
+     */
+    const fieldAngleValueInput =
+        getElement(
+            'fieldAngleValueInput'
+        );
+
+    fieldAngleValueInput
+        ?.addEventListener(
+            'change',
+            () => {
+                const value =
+                    getClampedInputValue(
+                        fieldAngleValueInput,
+                        fieldAngleSlider
+                    );
+
+                if (value === null) {
+                    updateFieldAngleUI();
+                    return;
+                }
+
+                fieldAngleSlider.value =
+                    String(value);
+
+                updateFieldAngleUI();
+                onInput();
+            }
+        );
 
     document
         .querySelectorAll(
@@ -541,6 +1041,29 @@ export function setupQuickLightingListeners(
                 }
             );
         });
+
+    /*
+     * Desktop:
+     * clicking the numeric value selects it
+     * for quick replacement.
+     *
+     * Tablet:
+     * focusing the number input opens the
+     * device numeric / decimal keyboard.
+     */
+    [
+        intensityValueInput,
+        fieldAngleValueInput,
+        panValueInput,
+        tiltValueInput
+    ].forEach(input => {
+        input?.addEventListener(
+            'focus',
+            () => {
+                input.select();
+            }
+        );
+    });
 
     updateIntensityUI();
     updatePanTiltUI();
