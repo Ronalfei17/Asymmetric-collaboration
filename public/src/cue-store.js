@@ -743,15 +743,12 @@ export function getCuesContainingFixture(lightId) {
 
     return deepClone(
         state.cueList.cues
-            .filter(cue => {
-                const hasSnapshot = Object.prototype.hasOwnProperty.call(
+            .filter(cue => (
+                Object.prototype.hasOwnProperty.call(
                     cue.fixtures,
                     fixtureKey
-                );
-                if (!hasSnapshot) return false;
-                if (Number(cue.cueNumber) === 0) return isSnapshotOn(cue.fixtures[fixtureKey]);
-            return true;
-            })
+                )
+            ))
             .sort((a, b) => a.cueNumber - b.cueNumber)
     );
 }
