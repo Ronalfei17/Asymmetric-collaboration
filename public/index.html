@@ -88,6 +88,7 @@
 
         /* Editable numeric value fields */
         input[type="number"].lighting-value-input {
+            appearance: textfield;
             -moz-appearance: textfield;
             touch-action: manipulation;
         }
@@ -320,43 +321,106 @@
                         </div>
                     </div>
                     <div class="min-h-0 overflow-hidden grid grid-cols-12 gap-3">
-                        <div class="col-span-3 bg-[#11141c] border border-gray-800/40 rounded-xl p-3 flex flex-col min-h-0 overflow-hidden">
-                            <span class="text-xs font-bold tracking-wider text-gray-400 block mb-2">SELECTED INFO</span>
-                            <div class="flex-grow bg-[#06080c]/30 rounded-lg p-4 text-xs flex flex-col justify-between">
-                                <span id="selectedId" class="hidden">--</span>
-                                <div class="grid grid-cols-[72px_1fr] gap-y-4">
-                                    <span class="text-gray-400">Name:</span>
-                                    <span id="selectedName" class="text-gray-100">No teleport point selected</span>
-
-                                    <span class="text-gray-400">Type:</span>
-                                    <span id="selectedType" class="text-gray-100">--</span>
-
-                                    <span class="text-gray-400">Position:</span>
-                                    <span id="selectedPosition" class="text-gray-100 font-mono">--</span>
-
-                                    <span class="text-gray-400">VR View Direction:</span>
-                                    <span id="selectedDirection" class="text-gray-100 font-mono">--</span>
-
-                                </div>
-
-                                <div class="flex items-center justify-between gap-3 pt-3">
-                                    <div class="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
-                                        <i data-lucide="map-pin" class="w-5 h-5 fill-blue-500/40"></i>
+                        <div
+                            class="col-span-3 bg-[#11141c] border border-gray-800/40 rounded-xl p-3 flex flex-col min-h-0 overflow-hidden"
+                        >
+                            <span
+                                class="text-xs font-bold tracking-wider text-gray-400 block mb-2"
+                            >SELECTED INFO</span>
+                            <div
+                                class="flex-grow min-h-0 bg-[#06080c]/30 rounded-lg p-4 text-xs"
+                            >
+                                <!-- THEATRE MAP SELECTED INFO -->
+                                <div
+                                    id="theatreSelectedInfo" class="h-full flex flex-col justify-between"
+                                >
+                                    <div
+                                        class="grid grid-cols-[72px_1fr] gap-y-4"
+                                    >
+                                        <span class="text-gray-400">Name:</span>
+                                        <span
+                                            id="selectedTeleportName" class="text-gray-100"
+                                        >No teleport point selected</span>
+                                        <span class="text-gray-400">Type:</span>
+                                        <span
+                                            id="selectedTeleportType" class="text-gray-100"
+                                        >--</span>
+                                        <span class="text-gray-400">Position:</span>
+                                        <span
+                                            id="selectedTeleportPosition" class="text-gray-100 font-mono"
+                                        >--</span>
+                                        <span class="text-gray-400">VR View Direction:</span>
+                                        <span
+                                            id="selectedTeleportDirection" class="text-gray-100 font-mono"
+                                        >--</span>
                                     </div>
 
-                                    <button
-                                        id="requestTeleportButton"
-                                        type="button"
-                                        disabled
-                                        class="min-w-[150px] px-3 py-2 rounded-md border border-blue-500/40 bg-blue-500/15 text-blue-300 text-[11px] font-semibold transition enabled:hover:bg-blue-500/25 disabled:cursor-not-allowed disabled:opacity-40">
-                                        Select a Teleprt Point
-                                    </button>
+
+                                    <!-- Theatre Map bottom action -->
+                                    <div
+                                        class="flex items-center justify-between gap-3 pt-3"
+                                    >
+                                        <div
+                                            class="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500"
+                                        >
+                                            <i
+                                                data-lucide="map-pin" class="w-5 h-5 fill-blue-500/40"
+                                            ></i>
+                                        </div>
+
+                                        <button
+                                            id="requestTeleportButton" type="button" disabled class="min-w-[150px] px-3 py-2 rounded-md border border-blue-500/40 bg-blue-500/15 text-blue-300 text-[11px] font-semibold transition enabled:hover:bg-blue-500/25 disabled:cursor-not-allowed disabled:opacity-40"
+                                        >Select a Teleport Point</button>
+                                    </div>
                                 </div>
+
+
+                                 <!---LIGHTING MAP SELECTED INFO--->
+                                <div
+                                    id="lightingSelectedInfo" class="hidden h-full flex-col justify-between"
+                                >
+                                    <!-- Hidden ID for JS state -->
+                                    <span
+                                        id="selectedLightingId" class="hidden"
+                                    >--</span>
+                                    <div
+                                        class="grid grid-cols-[72px_1fr] gap-y-4"
+                                    >
+                                        <span class="text-gray-400">Name:</span>                                        
+                                        <span
+                                            id="selectedLightingName" class="text-gray-100"
+                                        >No fixture selected</span>
+                                        <span class="text-gray-400">Type:</span>
+                                        <span
+                                            id="selectedLightingType" class="text-gray-100"
+                                        >--</span>
+                                        <span class="text-gray-400">Applied Cue:</span>
+                                        <span
+                                            id="selectedCue" class="text-blue-300 font-medium"
+                                        >--</span>
+                                    </div>
+                                    <!-- Lighting Map bottom status -->
+                                    <div
+                                        class="flex items-center gap-2 pt-3 text-[11px] text-gray-500"
+                                    >
+                                        <i
+                                            data-lucide="lightbulb" class="w-4 h-4 text-blue-400"
+                                        ></i>
+                                        <span>Selected lighting fixture</span>
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
                         <div class="col-span-3 bg-[#11141c] border border-gray-800/40 rounded-xl p-3 flex flex-col min-h-0 overflow-hidden">
-                            <span class="text-xs font-bold tracking-wider text-gray-400 block mb-2">CUE LIST</span>
-                            <div class="flex-grow bg-[#06080c]/30 rounded-lg p-3 space-y-2">
+                            <div class="mb-2 flex items-center justify-between gap-2">
+                                <span class="text-xs font-bold tracking-wider text-gray-400">CUE LIST</span>
+                                <span
+                                    id="homeCueRuntimeStatus"
+                                    class="hidden rounded-md border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold text-blue-300"
+                                >Live Control</span>
+                            </div>
+                            <div id="homeCueList" class="flex-grow bg-[#06080c]/30 rounded-lg p-3 space-y-2">
                                 <button
                                     class="cue-btn w-full px-4 py-3 rounded-lg border border-blue-500/70 bg-blue-500/10 text-left text-blue-400 transition shadow-[0_0_12px_rgba(59,130,246,0.15)]"
                                     data-cue="default"
@@ -916,8 +980,59 @@
         </div>
     </div>
 
+    <!-- Rename Cue Modal -->
+    <div id="renameCueModal" class="hidden fixed inset-0 z-[120] items-center justify-center bg-black/70 p-6" role="dialog" aria-modal="true" aria-labelledby="renameCueTitle">
+        <div class="w-full max-w-[420px] rounded-xl border border-gray-700 bg-[#11141c] p-5 shadow-2xl">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <div id="renameCueTitle" class="text-sm font-semibold text-white">Rename Cue</div>
+                    <p class="mt-1 text-[11px] leading-5 text-gray-500">
+                        Change the display name of this Cue.
+                    </p>
+                </div>
+
+                <div id="renameCueNumberLabel" class="shrink-0 rounded-md border border-blue-500/30 bg-blue-500/10 px-2.5 py-1 text-[11px] font-semibold text-blue-300">Cue 1</div>
+            </div>
+
+            <div class="mt-5">
+                <label for="renameCueNameInput" class="mb-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500">Cue Name</label>
+                <input
+                    id="renameCueNameInput"
+                    type="text"
+                    maxlength="40"
+                    autocomplete="off"
+                    class="h-10 w-full select-text rounded-md border border-gray-700 bg-[#06080c] px-3 text-sm text-gray-100 outline-none transition focus:border-blue-500/70 focus:ring-1 focus:ring-blue-500/30"
+                >
+            </div>
+
+            <div class="mt-6 flex justify-end gap-2">
+                <button id="cancelRenameCueButton" type="button" class="rounded-md border border-gray-700 bg-white/5 px-4 py-2 text-xs text-gray-300 transition hover:bg-white/10">Cancel</button>
+                <button id="confirmRenameCueButton" type="button" class="rounded-md border border-blue-500/60 bg-blue-500/20 px-4 py-2 text-xs font-semibold text-blue-200 transition hover:bg-blue-500/30 disabled:cursor-not-allowed disabled:opacity-50">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Cue Modal -->
+    <div id="deleteCueModal" class="hidden fixed inset-0 z-[120] items-center justify-center bg-black/70 p-6" role="dialog" aria-modal="true" aria-labelledby="deleteCueTitle">
+        <div class="w-full max-w-[420px] rounded-xl border border-gray-700 bg-[#11141c] p-5 shadow-2xl">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <div id="deleteCueTitle" class="text-sm font-semibold text-white">Delete Cue?</div>
+                    <p id="deleteCueMessage" class="mt-3 text-sm leading-6 text-gray-300">
+                        This Cue and its saved fixture settings will be removed.
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-2">
+                <button id="cancelDeleteCueButton" type="button" class="rounded-md border border-gray-700 bg-white/5 px-4 py-2 text-xs text-gray-300 transition hover:bg-white/10">Cancel</button>
+                <button id="confirmDeleteCueButton" type="button" class="rounded-md border border-blue-500/60 bg-blue-500/20 px-4 py-2 text-xs font-semibold text-blue-200 transition hover:bg-blue-500/30 disabled:cursor-not-allowed disabled:opacity-50">Delete Cue</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Remove Fixture from Cue Modal -->
-    <div id="removeFixtureFromCueModal" class="hidden fixed inset-0 z-[120] items-center justify-center bg-black/70 p-6" role="dialog" aria-modal="true" aria-labelledby="createCueTitle">
+    <div id="removeFixtureFromCueModal" class="hidden fixed inset-0 z-[120] items-center justify-center bg-black/70 p-6" role="dialog" aria-modal="true" aria-labelledby="removeFixtureCueTitle">
         <div class="w-full max-w-[420px] rounded-xl border border-gray-700 bg-[#11141c] p-5 shadow-2xl">
             <div class="flex items-start justify-between gap-4">
                 <div>

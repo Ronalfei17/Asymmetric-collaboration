@@ -56,7 +56,8 @@ function createInitialState() {
         },
         fixtureCueSavedAt: {},
         runtime: {
-            editingCueId: null
+            editingCueId: null,
+            appliedCueId: null
         }
     };
 }
@@ -205,7 +206,8 @@ function normalizePersistedState(rawValue) {
             cues
         ),
         runtime: {
-            editingCueId: null
+            editingCueId: null,
+            appliedCueId: null
         }
     };
 }
@@ -387,6 +389,49 @@ export function setEditingCueId(cueId) {
     return normalizedCueId;
 }
 
+export function getAppliedCueId() {
+    ensureInitialized();
+    return state.runtime.appliedCueId;
+}
+
+export function setAppliedCueId(cueId) {
+    ensureInitialized();
+
+    const normalizedCueId =
+        cueId == null || cueId === ''
+            ? null
+            : String(cueId);
+
+    if (
+        normalizedCueId &&
+        !getMutableCue(normalizedCueId)
+    ) {
+        throw new Error(
+            `Cue not found: ${normalizedCueId}`
+        );
+    }
+
+    if (
+        state.runtime.appliedCueId ===
+        normalizedCueId
+    ) {
+        return normalizedCueId;
+    }
+
+    state.runtime.appliedCueId =
+        normalizedCueId;
+
+    emit(
+        'applied-cue-changed',
+        {
+            cueId:
+                normalizedCueId
+        }
+    );
+
+    return normalizedCueId;
+}
+
 export function createCue({
     name,
     lightId = null,
@@ -429,6 +474,130 @@ export function createCue({
     emit('cue-created', { cueId: cue.id });
 
     return deepClone(cue);
+}
+
+export function renameCue(cueId, nextName) {
+    ensureInitialized();
+
+    const cue =
+        getMutableCue(cueId);
+
+    if (!cue) {
+        throw new Error(
+            `Cue not found: ${cueId}`
+        );
+    }
+
+    // Cue 0 is the system baseline and cannot be renamed.
+    if (Number(cue.cueNumber) === 0) {
+        throw new Error(
+            'Cue 0 cannot be renamed.'
+        );
+    }
+
+    const normalizedName =
+        String(nextName || '')
+            .trim();
+
+    if (!normalizedName) {
+        throw new Error(
+            'Cue name cannot be empty.'
+        );
+    }
+
+    if (normalizedName.length > 40) {
+        throw new Error(
+            'Cue name must be 40 characters or fewer.'
+        );
+    }
+
+    if (cue.name === normalizedName) {
+        return deepClone(cue);
+    }
+
+    cue.name = normalizedName;
+
+    persist();
+
+    emit(
+        'cue-renamed',
+        {
+            cueId: cue.id,
+            cueNumber: cue.cueNumber,
+            name: cue.name
+        }
+    );
+
+    return deepClone(cue);
+}
+
+export function deleteCue(cueId) {
+    ensureInitialized();
+
+    const cueIndex =
+        findCueIndex(cueId);
+
+    if (cueIndex < 0) {
+        return false;
+    }
+
+    const cue =
+        state.cueList.cues[
+            cueIndex
+        ];
+
+    // Cue 0 is the system baseline and must always exist.
+    if (Number(cue.cueNumber) === 0) {
+        throw new Error(
+            'Cue 0 cannot be deleted.'
+        );
+    }
+
+    const normalizedCueId =
+        String(cue.id);
+
+    Object.keys(
+        state.fixtureCueSavedAt
+    ).forEach(lightId => {
+        forgetFixtureCueSaved(
+            normalizedCueId,
+            lightId
+        );
+    });
+
+    state.cueList.cues.splice(
+        cueIndex,
+        1
+    );
+
+    if (
+        String(
+            state.runtime.editingCueId
+        ) === normalizedCueId
+    ) {
+        state.runtime.editingCueId = null;
+    }
+
+    if (
+        String(
+            state.runtime.appliedCueId
+        ) === normalizedCueId
+    ) {
+        state.runtime.appliedCueId = null;
+    }
+
+    persist();
+
+    emit(
+        'cue-deleted',
+        {
+            cueId: normalizedCueId,
+            cueNumber: cue.cueNumber,
+            name: cue.name
+        }
+    );
+
+    return true;
 }
 
 export function getFixtureSnapshot(cueId, lightId) {

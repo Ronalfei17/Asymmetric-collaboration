@@ -267,7 +267,7 @@ export function setupCueEditorUI({
 
         const shouldShow = Boolean(
             viewState.selectedFixture &&
-            viewState.editingCueId
+            viewState.includedCues.length > 0
         );
 
         includedCuesSection.classList.toggle('hidden', !shouldShow);

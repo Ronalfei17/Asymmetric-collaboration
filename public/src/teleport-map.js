@@ -363,17 +363,17 @@ export function setupTeleportMap({
     const resetView =
         document.getElementById('mapResetView');
 
-    const selectedName =
-        document.getElementById('selectedName');
+    const selectedTeleportName =
+        document.getElementById('selectedTeleportName');
 
-    const selectedType =
-        document.getElementById('selectedType');
+    const selectedTeleportType =
+        document.getElementById('selectedTeleportType');
 
-    const selectedPosition =
-        document.getElementById('selectedPosition');
+    const selectedTeleportPosition =
+        document.getElementById('selectedTeleportPosition');
 
-    const selectedDirection =
-        document.getElementById('selectedDirection');
+    const selectedTeleportDirection =
+        document.getElementById('selectedTeleportDirection');
 
     const selectedTeleportStatus =
         document.getElementById(
@@ -514,17 +514,17 @@ export function setupTeleportMap({
     }
 
     function clearSelectedInfo() {
-        if (selectedName) {
-            selectedName.textContent =
+        if (selectedTeleportName) {
+            selectedTeleportName.textContent =
                 'No teleport point selected';
         }
 
-        if (selectedType) {
-            selectedType.textContent = '--';
+        if (selectedTeleportType) {
+            selectedTeleportType.textContent = '--';
         }
 
-        if (selectedPosition) {
-            selectedPosition.textContent = '--';
+        if (selectedTeleportPosition) {
+            selectedTeleportPosition.textContent = '--';
         }
 
         updateDirectionText();
@@ -533,12 +533,12 @@ export function setupTeleportMap({
     }
 
     function updateDirectionText() {
-        if (!selectedDirection) return;
+        if (!selectedTeleportDirection) return;
 
         const yaw =
             normalizeYaw(state.vrPose?.yaw);
 
-        selectedDirection.textContent =
+        selectedTeleportDirection.textContent =
             yaw === null
                 ? '--'
                 : `${yaw.toFixed(1)}°`;
@@ -560,16 +560,16 @@ export function setupTeleportMap({
             return;
         }
 
-        if (selectedName) {
-            selectedName.textContent = point.name;
+        if (selectedTeleportName) {
+            selectedTeleportName.textContent = point.name;
         }
 
-        if (selectedType) {
-            selectedType.textContent = point.type;
+        if (selectedTeleportType) {
+            selectedTeleportType.textContent = point.type;
         }
 
-        if (selectedPosition) {
-            selectedPosition.textContent =
+        if (selectedTeleportPosition) {
+            selectedTeleportPosition.textContent =
                 formatWorldPosition(point.position);
         }
 

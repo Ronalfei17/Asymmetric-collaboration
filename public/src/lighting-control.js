@@ -33,12 +33,13 @@ import {
     getCueById,
     getEditingCueId,
     setEditingCueId,
+    getAppliedCueId,
+    setAppliedCueId,
     createCue,
     getFixtureSnapshot,
     upsertFixtureSnapshot,
     removeFixtureFromCue,
     getCuesContainingFixture,
-    getLastSavedCueIdForFixture,
     replaceCueFixtures,
     subscribeCueStore
 } from './cue-store.js';
@@ -81,6 +82,38 @@ export function setupLightingControl(sendControlMessage) {
     function getFixtureLabel(fixture = selectedFixture) {
         if (!fixture) return 'Selected fixture';
         return fixture.displayId || `CH ${fixture.lightId}`;
+    }
+
+    function isDetailLightingPageActive() {
+        const detailPage =
+            document.getElementById(
+                'page-light'
+            );
+
+        return Boolean(
+            detailPage &&
+            !detailPage.classList.contains(
+                'hidden'
+            )
+        );
+    }
+
+    function enterLiveControlScene() {
+        setAppliedCueId(null);
+    }
+
+    function exitDetailCueEditing({
+        flush = true
+    } = {}) {
+        if (flush) {
+            flushPendingCueSave({
+                showStatus: false
+            });
+        }
+
+        if (getEditingCueId()) {
+            setEditingCueId(null);
+        }
     }
 
     function renderActiveLightTags(){
@@ -223,50 +256,6 @@ export function setupLightingControl(sendControlMessage) {
         return state;
     }
 
-    function restoreLastSavedCueForFixture(fixture) {
-        if (!fixture) return null;
-
-        const includedCues = getCuesContainingFixture(fixture.lightId);
-
-        if (includedCues.length === 0) {
-            setEditingCueId(null);
-            return null;
-        }
-
-        let preferredCueId = getLastSavedCueIdForFixture(fixture.lightId);
-
-        if (!preferredCueId) {
-            preferredCueId = [...includedCues]
-                .sort((a, b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0))[0]
-                ?.id || null;
-        }
-
-        const preferredCue = preferredCueId
-            ? getCueById(preferredCueId)
-            : null;
-
-        const savedSnapshot = preferredCue
-            ? getFixtureSnapshot(preferredCue.id, fixture.lightId)
-            : null;
-
-        if (!preferredCue || !savedSnapshot) {
-            setEditingCueId(null);
-            return null;
-        }
-
-        const nextState = updateFixtureState(
-            fixture,
-            snapshotToFixtureState(savedSnapshot)
-        );
-
-        setEditingCueId(preferredCue.id);
-
-        return {
-            cue: preferredCue,
-            nextState,
-            payload: buildPayloadFromFixtureState(fixture, nextState)
-        };
-    }
 
     function renderAll() {
         renderFixtureTypeCapsules({
@@ -361,7 +350,7 @@ export function setupLightingControl(sendControlMessage) {
     function scheduleCueSnapshotSave(nextState) {
         const editingCueId = getEditingCueId();
 
-        if (!editingCueId || !selectedFixture || !nextState) {
+        if (!isDetailLightingPageActive() || !editingCueId || !selectedFixture || !nextState) {
             return;
         }
 
@@ -473,10 +462,12 @@ export function setupLightingControl(sendControlMessage) {
             return;
         }
 
-        const savedSnapshot = getFixtureSnapshot(
+        setEditingCueId(
             cue.id,
-            selectedFixture.lightId
         );
+        enterLiveControlScene();
+
+        const savedSnapshot = getFixtureSnapshot(cue.id, selectedFixture.lightId);
 
         if (!savedSnapshot) {
             const currentSnapshot = captureCurrentFixtureSnapshot();
@@ -487,7 +478,6 @@ export function setupLightingControl(sendControlMessage) {
                 currentSnapshot
             );
 
-            setEditingCueId(cue.id);
             renderAll();
 
             cueEditorUi.setStatus(
@@ -502,7 +492,6 @@ export function setupLightingControl(sendControlMessage) {
             snapshotToFixtureState(savedSnapshot)
         );
 
-        setEditingCueId(cue.id);
         renderAll();
 
         sendLightingPayload(
@@ -510,7 +499,7 @@ export function setupLightingControl(sendControlMessage) {
         );
 
         cueEditorUi.setStatus(
-            `Editing Cue ${cue.cueNumber} — ${cue.name}.`,
+            `Editing Cue ${cue.cueNumber} — ${cue.name}. Live preview is active.`,
             { tone: 'neutral', duration: 1800 }
         );
     }
@@ -530,6 +519,7 @@ export function setupLightingControl(sendControlMessage) {
         });
 
         setEditingCueId(cue.id);
+        enterLiveControlScene();
         renderAll();
 
         cueEditorUi.setStatus(
@@ -546,6 +536,13 @@ export function setupLightingControl(sendControlMessage) {
         flushPendingCueSave({ showStatus: false });
 
         const cue = getCueById(cueId);
+
+        if (Number(cue.cueNumber) === 0) {
+            throw new Error(
+                'Fixtures cannot be removed from Cue 0.'
+            );
+        }
+
         if (!cue) {
             throw new Error('The selected Cue no longer exists.');
         }
@@ -608,24 +605,7 @@ export function setupLightingControl(sendControlMessage) {
         );
     }
 
-    function isUnityFixtureOk(item) {
-        const value =
-            hasOwn(item || {}, 'isOk')
-                ? item.isOk
-                : item?.isOK;
-
-        return (
-            value === true ||
-            value === 'true' ||
-            value === 1 ||
-            value === '1'
-        );
-    }
-
     function getCueZeroInitializationFixtures(fixtures) {
-        // Cue 0 must be a complete Unity baseline snapshot.
-        // Keep ON and OFF fixtures so returning from another Cue can
-        // restore both states.
         const uniqueFixturesById = new Map();
         const unknownUnityIds = [];
         const invalidUnityIds = [];
@@ -889,8 +869,6 @@ export function setupLightingControl(sendControlMessage) {
                 appliedCount
             );
 
-            // Keep both the homepage Cue selection and the detail-page
-            // Editing Cue while the Cue playback window is active.
             renderAll();
             return;
         }
@@ -900,16 +878,12 @@ export function setupLightingControl(sendControlMessage) {
                 showStatus: false
             });
 
-            setEditingCueId(null);
-
-            // The live Web state follows the complete Unity snapshot.
             const appliedCount =
                 applyLightingStateSnapshot(
                     fixtures,
                     FIXTURES
                 );
 
-            // Cue 0 stores the complete unique, Web-known Unity baseline.
             const cueZeroResult =
                 refreshCueZeroFromUnity(
                     fixtures,
@@ -918,6 +892,8 @@ export function setupLightingControl(sendControlMessage) {
                     }
                 );
 
+            setEditingCueId(null);
+            
             awaitingUnityBaselineSnapshot =
                 false;
 
@@ -933,11 +909,22 @@ export function setupLightingControl(sendControlMessage) {
             );
 
             renderAll();
+
+            if(cueZeroResult?.cueId){
+                window.dispatchEvent(
+                    new CustomEvent(
+                        'cue-zero-ready-for-initial-apply', 
+                        {
+                            detail: {
+                                cueId: cueZeroResult.cueId
+                            }
+                        }
+                    )
+                );
+            }
             return;
         }
 
-        // A normal live snapshot updates the controls only.
-        // It must not clear Editing Cue or force the homepage back to Cue 0.
         const appliedCount =
             applyLightingStateSnapshot(
                 fixtures,
@@ -999,29 +986,16 @@ export function setupLightingControl(sendControlMessage) {
         const isDifferentFixture = !selectedFixture ||
             Number(selectedFixture.lightId) !== Number(fixture.lightId);
 
-        let restoredCueContext = null;
-
         if (isDifferentFixture) {
             flushPendingCueSave({ showStatus: false });
-            selectedFixture = fixture;
-            selectedFixtureType = fixture.fixtureType;
-            restoredCueContext = restoreLastSavedCueForFixture(fixture);
-        } else {
-            selectedFixture = fixture;
-            selectedFixtureType = fixture.fixtureType;
+            setEditingCueId(null);
         }
+
+        selectedFixture = fixture;
+        selectedFixtureType = fixture.fixtureType;
         renderAll();
 
         if(emit) dispatchSelectedFixture(fixture, source);
-        if (restoredCueContext) {
-            sendLightingPayload(restoredCueContext.payload);
-            cueEditorUi.setStatus(
-                `Restored Cue ${restoredCueContext.cue.cueNumber} — ${restoredCueContext.cue.name} for ${getFixtureLabel(fixture)}.`,
-                { tone: 'neutral', duration: 1800 }
-            );
-            return;
-        }
-
         if(send) sendCurrentFixtureState();
     }
 
@@ -1048,6 +1022,7 @@ export function setupLightingControl(sendControlMessage) {
             uiState
         );
 
+        enterLiveControlScene();
         scheduleCueSnapshotSave(nextState);
         scheduleSendFixtureState(nextState);
 
@@ -1061,8 +1036,6 @@ export function setupLightingControl(sendControlMessage) {
     window.addEventListener(
         'cue-playback-state-requested',
         event => {
-            // Cue 0 can contain many snapshots, so keep the playback
-            // confirmation window open until queued sends settle.
             const expectedDurationMs =
                 Number(
                     event.detail?.expectedDurationMs
@@ -1115,6 +1088,29 @@ export function setupLightingControl(sendControlMessage) {
             );
         }
     }, 800);
+    
+    document.addEventListener(
+        'click',
+        event => {
+            const navigationButton =
+                event.target.closest(
+                    '[data-target]'
+                );
+
+            const targetPage =
+                navigationButton?.dataset
+                    ?.target;
+
+            if (
+                targetPage &&
+                targetPage !== 'page-light'
+            ) {
+                exitDetailCueEditing({
+                    flush: true
+                });
+            }
+        }
+    );
 
     window.addEventListener('beforeunload', () => {
         flushPendingCueSave({ showStatus: false });
@@ -1125,6 +1121,7 @@ export function setupLightingControl(sendControlMessage) {
         getSelectedFixture: () => selectedFixture,
         getSelectedFixtureType: () => selectedFixtureType,
         getEditingCueId,
+        getAppliedCueId,
         flushPendingCueSave
     };
 

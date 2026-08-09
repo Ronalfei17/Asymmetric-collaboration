@@ -1,4 +1,5 @@
-import { getCues, subscribeCueStore } from './cue-store.js';
+import { getCues, getCueById, getAppliedCueId, setAppliedCueId, renameCue, deleteCue, subscribeCueStore } from './cue-store.js';
+import { flushLightingCueEdits } from './lighting-control.js';
 
 const CUE_FIXTURE_SEND_INTERVAL_MS = 20;
 const CUE_PLAYBACK_SETTLE_MS = 250;
@@ -44,8 +45,6 @@ function getFixtureCount(cue) {
     const snapshots =
         Object.values(cue?.fixtures || {});
 
-    // Cue 0 stores the complete Unity baseline, including OFF fixtures.
-    // Only the homepage count is based on isOn=true.
     if (Number(cue?.cueNumber) === 0) {
         return snapshots.filter(
             isSnapshotOn
@@ -70,16 +69,258 @@ function getFixtureCountLabel(cue, fixtureCount) {
 }
 
 export function setupCueList(sendControlMessage) {
-    const initialCueButtons = document.querySelectorAll('.cue-btn');
-    const cueListContainer = initialCueButtons[0]?.parentElement || document.getElementById('homeCueList');
+    const cueListContainer = document.getElementById('homeCueList') || document.querySelector('.cue-btn')?.parentElement;
+    const runtimeStatus = document.getElementById('homeCueRuntimeStatus');
 
-    let selectedCueId = 'cue-0';
     if (!cueListContainer) {
         console.warn(
             '[CueList] Cue List container not found.'
         );
         return;
     }
+
+    const renameCueModal =
+            document.getElementById(
+                'renameCueModal'
+            );
+    
+        const renameCueNumberLabel =
+            document.getElementById(
+                'renameCueNumberLabel'
+            );
+    
+        const renameCueNameInput =
+            document.getElementById(
+                'renameCueNameInput'
+            );
+    
+        const cancelRenameCueButton =
+            document.getElementById(
+                'cancelRenameCueButton'
+            );
+    
+        const confirmRenameCueButton =
+            document.getElementById(
+                'confirmRenameCueButton'
+            );
+    
+        const deleteCueModal =
+            document.getElementById(
+                'deleteCueModal'
+            );
+    
+        const deleteCueTitle =
+            document.getElementById(
+                'deleteCueTitle'
+            );
+    
+        const deleteCueMessage =
+            document.getElementById(
+                'deleteCueMessage'
+            );
+    
+        const cancelDeleteCueButton =
+            document.getElementById(
+                'cancelDeleteCueButton'
+            );
+    
+        const confirmDeleteCueButton =
+            document.getElementById(
+                'confirmDeleteCueButton'
+            );
+    
+        let pendingRenameCueId = null;
+        let pendingDeleteCueId = null;
+    
+        function isProtectedCue(cue) {
+            return (
+                Number(cue?.cueNumber) === 0
+            );
+        }
+    
+        function showModal(modal) {
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    
+        function hideModal(modal) {
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    
+        function renderRuntimeStatus() {
+            if (!runtimeStatus) return;
+    
+            const appliedCueId =
+                getAppliedCueId();
+    
+            const isLiveControl =
+                !appliedCueId;
+    
+            runtimeStatus.classList.toggle(
+                'hidden',
+                !isLiveControl
+            );
+    
+            runtimeStatus.textContent =
+                'Live Control';
+        }
+    
+        function openRenameCueModal(cue) {
+            if (
+                !cue ||
+                isProtectedCue(cue)
+            ) {
+                return;
+            }
+    
+            pendingRenameCueId =
+                String(cue.id);
+    
+            if (renameCueNumberLabel) {
+                renameCueNumberLabel.textContent =
+                    `Cue ${cue.cueNumber}`;
+            }
+    
+            if (renameCueNameInput) {
+                renameCueNameInput.value =
+                    String(cue.name || '');
+            }
+    
+            showModal(renameCueModal);
+    
+            requestAnimationFrame(() => {
+                renameCueNameInput?.focus();
+                renameCueNameInput?.select();
+            });
+        }
+    
+        function closeRenameCueModal() {
+            pendingRenameCueId = null;
+            hideModal(renameCueModal);
+        }
+    
+        function confirmRenameCue() {
+            if (!pendingRenameCueId) {
+                return;
+            }
+    
+            const cue =
+                getCueById(
+                    pendingRenameCueId
+                );
+    
+            if (
+                !cue ||
+                isProtectedCue(cue)
+            ) {
+                closeRenameCueModal();
+                return;
+            }
+    
+            const nextName =
+                String(
+                    renameCueNameInput?.value ||
+                    ''
+                ).trim();
+    
+            if (!nextName) {
+                renameCueNameInput?.focus();
+                return;
+            }
+    
+            try {
+                renameCue(
+                    cue.id,
+                    nextName
+                );
+    
+                closeRenameCueModal();
+            } catch (error) {
+                console.error(
+                    '[CueList] Rename Cue failed:',
+                    error
+                );
+            }
+        }
+    
+        function openDeleteCueModal(cue) {
+            if (
+                !cue ||
+                isProtectedCue(cue)
+            ) {
+                return;
+            }
+    
+            pendingDeleteCueId =
+                String(cue.id);
+    
+            if (deleteCueTitle) {
+                deleteCueTitle.textContent =
+                    `Delete Cue ${cue.cueNumber}?`;
+            }
+    
+            if (deleteCueMessage) {
+                deleteCueMessage.textContent =
+                    `Cue ${cue.cueNumber} — ${cue.name} and its saved fixture settings will be removed. ` +
+                    'The current live lighting state will not be changed.';
+            }
+    
+            showModal(deleteCueModal);
+        }
+    
+        function closeDeleteCueModal() {
+            pendingDeleteCueId = null;
+            hideModal(deleteCueModal);
+            confirmDeleteCueButton?.removeAttribute(
+                'disabled'
+            );
+        }
+    
+        function confirmDeleteCue() {
+            if (!pendingDeleteCueId) {
+                return;
+            }
+    
+            const cue =
+                getCueById(
+                    pendingDeleteCueId
+                );
+    
+            if (
+                !cue ||
+                isProtectedCue(cue)
+            ) {
+                closeDeleteCueModal();
+                return;
+            }
+    
+            confirmDeleteCueButton?.setAttribute(
+                'disabled',
+                'true'
+            );
+    
+            try {
+                flushLightingCueEdits();
+    
+                deleteCue(
+                    cue.id
+                );
+    
+                closeDeleteCueModal();
+            } catch (error) {
+                console.error(
+                    '[CueList] Delete Cue failed:',
+                    error
+                );
+    
+                confirmDeleteCueButton?.removeAttribute(
+                    'disabled'
+                );
+            }
+        }
 
     function applyCueToQuest(cue) {
         if (
@@ -91,9 +332,9 @@ export function setupCueList(sendControlMessage) {
 
         const fixtureEntries =
             Object.entries(cue.fixtures || {});
+        
+        setAppliedCueId(cue.id);
 
-        // Mark the whole playback window before sending any fixture payload.
-        // Unity may emit one or more snapshots while the Cue is being applied.
         window.dispatchEvent(
             new CustomEvent(
                 'cue-playback-state-requested',
@@ -164,13 +405,24 @@ export function setupCueList(sendControlMessage) {
         }, playbackDurationMs + CUE_PLAYBACK_SETTLE_MS);
     }
 
-    function createCueButton(cue) {
+    function createCueRow(cue) {
+        const appliedCueId = getAppliedCueId();
         const isSelected =
             String(cue.id) ===
-            String(selectedCueId);
+            String(appliedCueId);
+        
+        const protectedCue =
+             isProtectedCue(cue);
 
         const fixtureCount =
             getFixtureCount(cue);
+        
+        const row =
+            document.createElement('div');
+
+        row.className = 'relative';
+        row.dataset.cueRowId =
+            String(cue.id);
 
         const button =
             document.createElement('button');
@@ -179,7 +431,12 @@ export function setupCueList(sendControlMessage) {
         button.dataset.cueId =
             String(cue.id);
         button.className =
-            getCueButtonClass(isSelected);
+            getCueButtonClass(isSelected)+
+            (
+                protectedCue
+                    ? ''
+                    : ' pr-20'
+            );
 
         const cueLabel =
             document.createElement('span');
@@ -222,80 +479,206 @@ export function setupCueList(sendControlMessage) {
         button.addEventListener(
             'click',
             () => {
-                selectedCueId = cue.id;
-
-                renderCueList();
                 applyCueToQuest(cue);
             }
         );
 
-        return button;
+        row.appendChild(button);
+
+        // Cue 0 is system-managed: no Rename and no Delete action.
+        if (!protectedCue) {
+            const actions =
+                document.createElement('div');
+
+            actions.className = [
+                'absolute',
+                'right-2',
+                'top-1/2',
+                '-translate-y-1/2',
+                'flex',
+                'items-center',
+                'gap-1'
+            ].join(' ');
+
+            const renameButton =
+                document.createElement('button');
+
+            renameButton.type = 'button';
+            renameButton.title =
+                `Rename Cue ${cue.cueNumber}`;
+            renameButton.setAttribute(
+                'aria-label',
+                `Rename Cue ${cue.cueNumber}`
+            );
+            renameButton.className = [
+                'w-7',
+                'h-7',
+                'rounded-md',
+                'flex',
+                'items-center',
+                'justify-center',
+                'text-gray-500',
+                'hover:text-blue-300',
+                'hover:bg-blue-500/10',
+                'transition'
+            ].join(' ');
+            renameButton.innerHTML =
+                '<i data-lucide="pencil" class="w-3.5 h-3.5"></i>';
+
+            renameButton.addEventListener(
+                'click',
+                event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    openRenameCueModal(cue);
+                }
+            );
+
+            const deleteButton =
+                document.createElement('button');
+
+            deleteButton.type = 'button';
+            deleteButton.title =
+                `Delete Cue ${cue.cueNumber}`;
+            deleteButton.setAttribute(
+                'aria-label',
+                `Delete Cue ${cue.cueNumber}`
+            );
+            deleteButton.className = [
+                'w-7',
+                'h-7',
+                'rounded-md',
+                'flex',
+                'items-center',
+                'justify-center',
+                'text-gray-500',
+                'hover:text-blue-300',
+                'hover:bg-blue-500/10',
+                'transition'
+            ].join(' ');
+            deleteButton.innerHTML =
+                '<i data-lucide="trash-2" class="w-3.5 h-3.5"></i>';
+
+            deleteButton.addEventListener(
+                'click',
+                event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    openDeleteCueModal(cue);
+                }
+            );
+
+            actions.append(
+                renameButton,
+                deleteButton
+            );
+
+            row.appendChild(actions);
+        }
+
+        return row;
     }
 
     function renderCueList() {
         const cues = getCues();
 
-        if (
-            !selectedCueId ||
-            !cues.some(
-                cue =>
-                    String(cue.id) ===
-                    String(selectedCueId)
-            )
-        ) {
-            selectedCueId =
-                cues.find(
-                    cue =>
-                        Number(cue.cueNumber) === 0
-                )?.id ??
-                cues[0]?.id ??
-                null;
-        }
-
         cueListContainer.innerHTML = '';
 
-        if (cues.length === 0) {
-            const emptyState =
-                document.createElement('div');
-
-            emptyState.className =
-                'rounded-lg border border-dashed border-gray-700 p-4 text-center text-[11px] text-gray-500';
-
-            emptyState.textContent =
-                'No Cues created yet.';
-
-            cueListContainer.appendChild(
-                emptyState
-            );
-
-            return;
-        }
+        renderRuntimeStatus();
 
         cues.forEach(cue => {
             cueListContainer.appendChild(
-                createCueButton(cue)
+                createCueRow(cue)
             );
         });
+
+        window.lucide?.createIcons();
     }
 
-    window.addEventListener(
-        'cue-zero-refreshed',
+    cancelRenameCueButton?.addEventListener(
+        'click',
+        closeRenameCueModal
+    );
+
+    confirmRenameCueButton?.addEventListener(
+        'click',
+        confirmRenameCue
+    );
+
+    renameCueNameInput?.addEventListener(
+        'keydown',
         event => {
-            // Rebuilding Cue 0 should not override a Cue the user just selected.
-            // Only an explicit initial/reconnect baseline may reset the selection.
-            if (event.detail?.resetSelection === true) {
-                selectedCueId =
-                    event.detail?.cueId ||
-                    getCues().find(
-                        cue =>
-                            Number(cue.cueNumber) === 0
-                    )?.id ||
-                    null;
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                confirmRenameCue();
             }
 
-            renderCueList();
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                closeRenameCueModal();
+            }
         }
     );
+
+    cancelDeleteCueButton?.addEventListener(
+        'click',
+        closeDeleteCueModal
+    );
+
+    confirmDeleteCueButton?.addEventListener(
+        'click',
+        confirmDeleteCue
+    );
+
+    [renameCueModal, deleteCueModal].forEach(
+        modal => {
+            modal?.addEventListener(
+                'click',
+                event => {
+                    if (event.target !== modal) {
+                        return;
+                    }
+
+                    if (modal === renameCueModal) {
+                        closeRenameCueModal();
+                    } else {
+                        closeDeleteCueModal();
+                    }
+                }
+            );
+        }
+    );
+
+    window.addEventListener(
+        'cue-zero-ready-for-initial-apply',
+        event => {
+            const cueId =
+                event.detail?.cueId;
+
+            const cue =
+                cueId
+                    ? getCueById(cueId)
+                    : null;
+
+            if (cue) {
+                applyCueToQuest(cue);
+            }
+        }
+    );
+
+    if (!getAppliedCueId()) {
+        const cueZero =
+            getCues().find(
+                cue =>
+                    Number(cue.cueNumber) === 0
+            );
+
+        if (cueZero) {
+            setAppliedCueId(
+                cueZero.id
+            );
+        }
+    }
 
     subscribeCueStore(
         renderCueList,

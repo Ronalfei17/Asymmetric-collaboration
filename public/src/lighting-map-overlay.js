@@ -10,6 +10,12 @@ import {
     getSelectedLightingFixture
 } from './lighting-control.js';
 
+import {
+    getAppliedCueId,
+    getCueById,
+    subscribeCueStore
+} from './cue-store.js';
+
 let activeMapType = 'theatre';
 let selectedLightId = null;
 
@@ -107,8 +113,6 @@ function createMarkerElement(marker) {
 
     button.style.touchAction = 'none';
 
-    let isPointerDownOnMarker = false;
-
     function stopMapInteraction(event) {
         event.preventDefault();
         event.stopPropagation();
@@ -117,18 +121,6 @@ function createMarkerElement(marker) {
     button.addEventListener('pointerdown', event => {
         isPointerDownOnMarker = true;
         stopMapInteraction(event);
-    });
-
-    button.addEventListener('pointerup', event => {
-        stopMapInteraction(event);
-
-        if (!isPointerDownOnMarker) return;
-
-        isPointerDownOnMarker = false;
-
-        selectMarker(marker.lightId, {
-            source: 'lighting-map'
-        });
     });
 
     button.addEventListener('pointercancel', event => {
@@ -192,6 +184,51 @@ function refreshMarkerVisuals() {
     });
 }
 
+function updateAppliedCueInfo() {
+    const selectedCue =
+        document.getElementById(
+            'selectedCue'
+        );
+
+    if (!selectedCue) {
+        return;
+    }
+
+    const appliedCueId =
+        getAppliedCueId();
+
+    if (!appliedCueId) {
+        selectedCue.textContent =
+            'Live Control';
+
+        selectedCue.className =
+            'text-gray-400 font-medium';
+
+        return;
+    }
+
+    const cue =
+        getCueById(
+            appliedCueId
+        );
+
+    if (!cue) {
+        selectedCue.textContent =
+            'Live Control';
+
+        selectedCue.className =
+            'text-gray-400 font-medium';
+
+        return;
+    }
+
+    selectedCue.textContent =
+        `Cue ${cue.cueNumber} — ${cue.name}`;
+
+    selectedCue.className =
+        'text-blue-300 font-medium';
+}
+
 function updateSelectedInfoFromFixture(lightId) {
     const fixture = getFixtureById(lightId);
 
@@ -200,9 +237,9 @@ function updateSelectedInfoFromFixture(lightId) {
         return;
     }
 
-    const selectedId = document.getElementById('selectedId');
-    const selectedName = document.getElementById('selectedName');
-    const selectedType = document.getElementById('selectedType');
+    const selectedId = document.getElementById('selectedLightingId');
+    const selectedName = document.getElementById('selectedLightingName');
+    const selectedType = document.getElementById('selectedLightingType');
 
     if (selectedId) {
         selectedId.textContent = fixture.displayId || `CH ${fixture.lightId}`;
@@ -214,12 +251,8 @@ function updateSelectedInfoFromFixture(lightId) {
         selectedType.textContent =
             fixture.fixtureTypeLabel || fixture.fixtureType || '--';
     }
-}
 
-function hasMarkerForLight(lightId) {
-    return LIGHTING_MAP_MARKERS.some(marker =>
-        Number(marker.lightId) === Number(lightId)
-    );
+    updateAppliedCueInfo();
 }
 
 function syncSelectedMarkerFromLightingControl() {
@@ -285,6 +318,7 @@ export function setupLightingMapOverlay() {
 
         if (activeMapType === 'lighting') {
             syncSelectedMarkerFromLightingControl();
+            updateAppliedCueInfo();
         }
     });
 
@@ -300,6 +334,15 @@ export function setupLightingMapOverlay() {
 
         if (activeMapType === 'lighting') {
             updateSelectedInfoFromFixture(selectedLightId);
+        }
+    });
+
+    subscribeCueStore(() => {
+        if (
+            activeMapType ===
+            'lighting'
+        ) {
+            updateAppliedCueInfo();
         }
     });
 }

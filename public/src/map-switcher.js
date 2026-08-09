@@ -16,6 +16,45 @@ const MAPS = {
 
 let activeMapType = 'theatre';
 
+function updateSelectedInfoMode(mapType) {
+    const theatreInfo =
+        document.getElementById(
+            'theatreSelectedInfo'
+        );
+
+    const lightingInfo =
+        document.getElementById(
+            'lightingSelectedInfo'
+        );
+
+    const isLighting =
+        mapType === 'lighting';
+
+    if (theatreInfo) {
+        theatreInfo.classList.toggle(
+            'hidden',
+            isLighting
+        );
+
+        theatreInfo.classList.toggle(
+            'flex',
+            !isLighting
+        );
+    }
+
+    if (lightingInfo) {
+        lightingInfo.classList.toggle(
+            'hidden',
+            !isLighting
+        );
+
+        lightingInfo.classList.toggle(
+            'flex',
+            isLighting
+        );
+    }
+}
+
 function setButtonState(activeType){
     const theatreButton = document.getElementById('theatreMapButton');
     const lightingButton = document.getElementById('lightingMapButton');
@@ -77,6 +116,7 @@ function setActiveMap(mapType) {
     selectedMapPin?.classList.toggle('hidden', !shouldShowQuestPin);
 
     setButtonState(mapType);
+    updateSelectedInfoMode(mapType);
 
     image.style.visibility = 'hidden';
 
