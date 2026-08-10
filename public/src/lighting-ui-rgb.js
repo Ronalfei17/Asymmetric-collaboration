@@ -64,7 +64,15 @@ export function renderDetailRgbBlock(r, g, b, hex) {
                         >
                     </label>
 
-                    <div id="detailHexValue" class="w-28 py-1 rounded border border-gray-700 bg-white/5 text-center text-xs">${hex}</div>
+                    <input
+                        id="detailHexValueInput"
+                        type="text"
+                        inputmode="text"
+                        value="${hex}"
+                        maxlength="7"
+                        aria-label="HEX color value"
+                        class="h-8 w-28 select-text rounded border border-gray-700 bg-white/5 px-2 text-center text-xs text-gray-200 uppercase outline-none focus:border-blue-500"
+                    >
                 </div>
 
                 <div class="detail-rgb-visual flex min-w-0 items-center justify-center gap-3">
@@ -108,15 +116,12 @@ export function updateDetailRGBUI() {
 
     const hex = rgbToHex(r, g, b);
 
-    const rInput =
-        getElement('detailRedValueInput');
+    const rInput = getElement('detailRedValueInput');
 
-    const gInput =
-        getElement('detailGreenValueInput');
+    const gInput = getElement('detailGreenValueInput');
 
-    const bInput =
-        getElement('detailBlueValueInput');
-    const hexValue = getElement('detailHexValue');
+    const bInput = getElement('detailBlueValueInput');
+    const hexInput = getElement('detailHexValueInput');
     const preview = getElement('detailColorPreview');
 
     if (rInput) {
@@ -130,7 +135,9 @@ export function updateDetailRGBUI() {
     if (bInput) {
         bInput.value = String(b);
     }
-    if (hexValue) hexValue.textContent = hex;
+    if (hexInput) {
+        hexInput.value = hex;
+    }
 
     if (preview) {
         preview.style.background = hex;
@@ -210,18 +217,13 @@ export function setDetailRgbValues(
             String(b);
     }
 
-    const hexElement =
+    const hexInput =
         getElement(
-            'detailHexValue'
+            'detailHexValueInput'
         );
 
-    if (hexElement) {
-        if ('value' in hexElement) {
-            hexElement.value = hex;
-        } else {
-            hexElement.textContent =
-                hex;
-        }
+    if (hexInput) {
+        hexInput.value = hex;
     }
 
     const preview =
@@ -246,6 +248,36 @@ export function setDetailRgbValues(
             { bubbles: true }
         )
     );
+}
+
+function hexToRgb(hex) {
+    const normalized =
+        String(hex)
+            .trim()
+            .replace(/^#/, '');
+
+    if (
+        !/^[0-9A-Fa-f]{6}$/.test(
+            normalized
+        )
+    ) {
+        return null;
+    }
+
+    return {
+        r: parseInt(
+            normalized.slice(0, 2),
+            16
+        ),
+        g: parseInt(
+            normalized.slice(2, 4),
+            16
+        ),
+        b: parseInt(
+            normalized.slice(4, 6),
+            16
+        )
+    };
 }
 
 export function updateDetailRgbWheelHandle(r, g, b) {
@@ -360,7 +392,63 @@ export function bindDetailRgbValueInputs() {
             );
         }
     );
+
+    const hexInput =
+        getElement(
+            'detailHexValueInput'
+        );
+
+    hexInput?.addEventListener(
+        'change',
+        () => {
+            const rgb =
+                hexToRgb(
+                    hexInput.value
+                );
+
+            if (!rgb) {
+                const currentHex =
+                    rgbToHex(
+                        Number(
+                            getElement(
+                                'detailRedSlider'
+                            )?.value ?? 255
+                        ),
+                        Number(
+                            getElement(
+                                'detailGreenSlider'
+                            )?.value ?? 128
+                        ),
+                        Number(
+                            getElement(
+                                'detailBlueSlider'
+                            )?.value ?? 64
+                        )
+                    );
+
+                hexInput.value =
+                    currentHex;
+
+                return;
+            }
+
+            setDetailRgbValues(
+                rgb.r,
+                rgb.g,
+                rgb.b
+            );
+        }
+    );
+
+    hexInput?.addEventListener(
+        'focus',
+        () => {
+            hexInput.select();
+        }
+    );
 }
+
+
 
 function updateDetailRgbFromWheel(event) {
     const wheel = getElement('detailRgbColorWheel');
