@@ -807,10 +807,16 @@ export function getFixtureCountForCue(cueId) {
     ensureInitialized();
 
     const cue = getMutableCue(cueId);
+    if (!cue) return 0;
+    const snapshots = Object.values(cue.fixtures) || {};
 
-    return cue
-        ? Object.keys(cue.fixtures).length
-        : 0;
+    if (Number(cue.cueNumber) === 0) {
+        return snapshots.filter(
+            isSnapshotOn
+        ).length;
+    }
+
+    return snapshots.length;
 }
 
 export function subscribeCueStore(listener, { emitImmediately = false } = {}) {

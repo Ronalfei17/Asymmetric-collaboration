@@ -815,28 +815,28 @@ export const LIGHTING_MAP_MARKERS = [
     }),
 
     createSeleconAcclaimCondenser1832Marker({
-        lightId: 7,
+        lightId: 9,
         x: 6891,
         y: 7035,
         rotation: 180
     }),
 
     createSeleconAcclaimCondenser1832Marker({
-        lightId: 8,
+        lightId: 10,
         x: 5335,
         y: 7035,
         rotation: 180
     }),
 
     createSeleconAcclaimCondenser1832Marker({
-        lightId: 9,
+        lightId: 7,
         x: 7423,
         y: 6312,
         rotation: 180
     }),
 
     createSeleconAcclaimCondenser1832Marker({
-        lightId: 10,
+        lightId: 8,
         x: 5640,
         y: 6306,
         rotation: 180

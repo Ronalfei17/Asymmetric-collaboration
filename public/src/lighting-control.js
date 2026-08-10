@@ -116,6 +116,39 @@ export function setupLightingControl(sendControlMessage) {
         }
     }
 
+    function openFixtureFromActiveLightTag(
+        fixture
+    ) {
+        if (!fixture) {
+            return;
+        }
+
+        selectFixture(
+            fixture,
+            {
+                emit: true,
+                source:
+                    'footer-active-light',
+                send: false
+            }
+        );
+
+        const lightingPageButton =
+            document.querySelector(
+                '[data-target="page-light"]'
+            );
+
+        if (!lightingPageButton) {
+            console.warn(
+                '[LightingControl] Lighting Control navigation button not found.'
+            );
+
+            return;
+        }
+
+        lightingPageButton.click();
+    }
+
     function renderActiveLightTags(){
         const tagContainer = document.getElementById('activeLightTags');
         const countElement = document.getElementById('activeLightCount');
@@ -148,11 +181,14 @@ export function setupLightingControl(sendControlMessage) {
             return;
         }
 
-        activeFixtures.forEach(fixture => {const tag = document.createElement('span');
+        activeFixtures.sort((a, b) => Number(a.lightId) - Number(b.lightId)).forEach(fixture => {const tag = document.createElement('button');
+            tag.type = 'button';
+            tag.dataset.lightId = String(fixture.lightId);
             tag.className = [
                 'shrink-0',
                 'inline-flex',
                 'items-center',
+                'justify-center',
                 'rounded-full',
                 'border',
                 'border-emerald-400/40',
@@ -161,10 +197,30 @@ export function setupLightingControl(sendControlMessage) {
                 'py-0.5',
                 'text-[11px]',
                 'font-semibold',
+                'font-mono',
                 'text-emerald-300',
-                'cursor-default'
+
+                'cursor-pointer',
+                'transition',
+                'hover:border-blue-400/60',
+                'hover:bg-blue-500/15',
+                'hover:text-blue-200',
+                'active:scale-[0.96]'
             ].join(' ');
-            tag.textContent = fixture.displayId || `CH ${fixture.lightId}`;
+            tag.textContent = String(fixture.lightId);
+            tag.title = `Open Light ${fixture.lightId}`;
+            tag.setAttribute('aria-label', `Open lighting control for Light ${fixture.lightId}`);
+            tag.addEventListener(
+                'click',
+                event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    openFixtureFromActiveLightTag(
+                        fixture
+                    );
+                }
+            );
             tagContainer.appendChild(tag);
         });
     }
@@ -1004,7 +1060,7 @@ export function setupLightingControl(sendControlMessage) {
         const source = event.detail?.source;
 
         if (lightId == null) return;
-        if (source === 'lighting-control') return;
+        if (source === 'lighting-control' || source === 'footer-active-light') return;
 
         selectFixtureById(lightId, {
             emit: false,
