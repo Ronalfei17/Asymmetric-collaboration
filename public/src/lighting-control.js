@@ -1117,7 +1117,7 @@ export function setupLightingControl(sendControlMessage) {
         requestUnityLightingState(
             'control-channel-open',
             {
-                baseline: true
+                baseline: !hasReceivedUnityLightingSnapshot
             }
         );
     });
