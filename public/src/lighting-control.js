@@ -41,6 +41,8 @@ import {
     removeFixtureFromCue,
     getCuesContainingFixture,
     replaceCueFixtures,
+    getCueZeroMeta,
+    setCueZeroMeta,
     subscribeCueStore
 } from './cue-store.js';
 
@@ -68,7 +70,8 @@ export function setupLightingControl(sendControlMessage) {
     let selectedFixture = getFixturesByType(selectedFixtureType)[0] || null;
     let sendTimer = null;
     let hasReceivedUnityLightingSnapshot = false;
-    let awaitingUnityBaselineSnapshot = true;
+    let currentUnitySessionId = null;
+    let pendingBaselineRequestId = null;
     let cuePlaybackConfirmationDeadline = 0;
     let cueSaveTimer = null;
     let pendingCueSave = null;
@@ -593,15 +596,15 @@ export function setupLightingControl(sendControlMessage) {
 
         const cue = getCueById(cueId);
 
+        if (!cue) {
+            throw new Error('The selected Cue no longer exists.');
+        }
+
         if (Number(cue.cueNumber) === 0) {
             throw new Error(
                 'Fixtures cannot be removed from Cue 0.'
             );
-        }
-
-        if (!cue) {
-            throw new Error('The selected Cue no longer exists.');
-        }
+        }        
 
         const wasEditingCue = String(getEditingCueId()) === String(cue.id);
         const removed = removeFixtureFromCue(
@@ -631,26 +634,189 @@ export function setupLightingControl(sendControlMessage) {
     }
 
     function requestUnityLightingState(
-        reason = 'manual',
-        {
-            baseline = false
-        } = {}
+        reason = 'manual'
     ) {
-        if (baseline) {
-            awaitingUnityBaselineSnapshot = true;
-        }
-
         sendControlMessage('request-lighting-state', {
             reason,
             requestedAt: Date.now()
         });
 
         console.log(
-            '[LightingControl] Requested Unity lighting state:',
+            '[LightingControl] Requested Unity live lighting state:',
             {
-                reason,
-                baseline
+                reason
             }
+        );
+    }
+
+    function requestUnityLightingSession(reason = 'manual') {
+        sendControlMessage('request-lighting-session', {
+            reason,
+            requestedAt: Date.now()
+        });
+
+        console.log(
+            '[LightingControl] Requested Unity lighting session:',
+            {
+                reason
+            }
+        );
+    }
+
+    function createBaselineRequestId() {
+        if (
+            typeof globalThis.crypto
+                ?.randomUUID ===
+            'function'
+        ) {
+            return globalThis.crypto
+                .randomUUID();
+        }
+
+        return (
+            'baseline-' +
+            Date.now() +
+            '-' +
+            Math.random()
+                .toString(36)
+                .slice(2)
+        );
+    }
+
+    function requestUnityLightingBaseline(
+        sessionId
+    ) {
+        const normalizedSessionId =
+            String(
+                sessionId || ''
+            );
+
+        if (!normalizedSessionId) {
+            console.warn(
+                '[LightingBaseline] Cannot request baseline without sessionId.'
+            );
+
+            return;
+        }
+
+        const requestId =
+            createBaselineRequestId();
+
+        pendingBaselineRequestId =
+            requestId;
+
+        sendControlMessage(
+            'request-lighting-baseline',
+            {
+                sessionId:
+                    normalizedSessionId,
+
+                requestId,
+
+                requestedAt:
+                    Date.now()
+            }
+        );
+
+        console.log(
+            '[LightingBaseline] Requested startup baseline:',
+            {
+                sessionId:
+                    normalizedSessionId,
+
+                requestId
+            }
+        );
+    }
+
+    function handleLightingSession(
+        message
+    ) {
+        const payload =
+            message?.payload;
+
+        const sessionId =
+            String(
+                payload?.sessionId ||
+                ''
+            );
+
+        const baselineReady =
+            payload?.baselineReady ===
+            true;
+
+        if (!sessionId) {
+            console.warn(
+                '[LightingSession] Invalid lighting-session message:',
+                message
+            );
+
+            return;
+        }
+
+        currentUnitySessionId =
+            sessionId;
+
+        const cueZeroMeta =
+            getCueZeroMeta();
+
+        const storedSessionId =
+            cueZeroMeta
+                ?.sourceSessionId
+                ? String(
+                    cueZeroMeta
+                        .sourceSessionId
+                )
+                : null;
+
+        console.log(
+            '[LightingSession] Unity session received:',
+            {
+                currentSessionId:
+                    sessionId,
+
+                storedCueZeroSessionId:
+                    storedSessionId,
+
+                baselineReady
+            }
+        );
+
+        if (
+            storedSessionId ===
+            sessionId
+        ) {
+            pendingBaselineRequestId =
+                null;
+
+            requestUnityLightingState(
+                'same-unity-session'
+            );
+
+            return;
+        }
+
+        if (baselineReady) {
+            requestUnityLightingBaseline(
+                sessionId
+            );
+
+            return;
+        }
+
+        window.setTimeout(
+            () => {
+                if (
+                    currentUnitySessionId ===
+                    sessionId &&
+                    !pendingBaselineRequestId
+                ) {
+                    requestUnityLightingSession(
+                        'baseline-not-ready-retry'
+                    );
+                }
+            },
+            250
         );
     }
 
@@ -893,6 +1059,144 @@ export function setupLightingControl(sendControlMessage) {
         };
     }
 
+    function handleUnityLightingBaselineSnapshot(
+        message
+    ) {
+        const payload =
+            message?.payload;
+
+        const fixtures =
+            payload?.fixtures;
+
+        const sessionId =
+            String(
+                payload?.sessionId ||
+                ''
+            );
+
+        const requestId =
+            String(
+                payload?.requestId ||
+                ''
+            );
+
+        if (!Array.isArray(fixtures)) {
+            console.warn(
+                '[LightingBaseline] Invalid baseline snapshot:',
+                message
+            );
+
+            return;
+        }
+
+        if (
+            !sessionId ||
+            sessionId !==
+                currentUnitySessionId
+        ) {
+            console.warn(
+                '[LightingBaseline] Ignored baseline from stale Unity session:',
+                {
+                    responseSessionId:
+                        sessionId,
+
+                    currentUnitySessionId
+                }
+            );
+
+            return;
+        }
+
+        if (
+            !pendingBaselineRequestId ||
+            requestId !==
+                pendingBaselineRequestId
+        ) {
+            console.warn(
+                '[LightingBaseline] Ignored stale baseline response:',
+                {
+                    responseRequestId:
+                        requestId,
+
+                    pendingRequestId:
+                        pendingBaselineRequestId
+                }
+            );
+
+            return;
+        }
+
+        pendingBaselineRequestId =
+            null;
+
+        flushPendingCueSave({
+            showStatus: false
+        });
+
+        const appliedCount =
+            applyLightingStateSnapshot(
+                fixtures,
+                FIXTURES
+            );
+
+        const cueZeroResult =
+            refreshCueZeroFromUnity(
+                fixtures,
+                {
+                    resetSelection:
+                        true
+                }
+            );
+
+        if (!cueZeroResult?.refreshed) {
+            console.warn(
+                '[LightingBaseline] Cue 0 was not refreshed. Session metadata was not saved.'
+            );
+
+            return;
+        }
+
+        setCueZeroMeta({
+            sourceSessionId:
+                sessionId,
+
+            capturedAt:
+                Date.now()
+        });
+
+        setEditingCueId(null);
+
+        hasReceivedUnityLightingSnapshot =
+            true;
+
+        console.log(
+            '[LightingBaseline] Startup baseline applied:',
+            {
+                sessionId,
+                requestId,
+                appliedCount,
+                cueZero:
+                    cueZeroResult
+            }
+        );
+
+        renderAll();
+
+        window.dispatchEvent(
+            new CustomEvent(
+                'cue-zero-ready-for-initial-apply',
+                {
+                    detail: {
+                        cueId:
+                            cueZeroResult.cueId,
+
+                        sessionId
+                    }
+                }
+            )
+        );
+    }
+
     function handleUnityLightingStateSnapshot(message) {
         const fixtures =
             message?.payload?.fixtures;
@@ -926,58 +1230,6 @@ export function setupLightingControl(sendControlMessage) {
             );
 
             renderAll();
-            return;
-        }
-
-        if (awaitingUnityBaselineSnapshot) {
-            flushPendingCueSave({
-                showStatus: false
-            });
-
-            const appliedCount =
-                applyLightingStateSnapshot(
-                    fixtures,
-                    FIXTURES
-                );
-
-            const cueZeroResult =
-                refreshCueZeroFromUnity(
-                    fixtures,
-                    {
-                        resetSelection: true
-                    }
-                );
-
-            setEditingCueId(null);
-            
-            awaitingUnityBaselineSnapshot =
-                false;
-
-            hasReceivedUnityLightingSnapshot =
-                true;
-
-            console.log(
-                '[LightingControl] Unity baseline applied:',
-                {
-                    appliedCount,
-                    cueZero: cueZeroResult
-                }
-            );
-
-            renderAll();
-
-            if(cueZeroResult?.cueId){
-                window.dispatchEvent(
-                    new CustomEvent(
-                        'cue-zero-ready-for-initial-apply', 
-                        {
-                            detail: {
-                                cueId: cueZeroResult.cueId
-                            }
-                        }
-                    )
-                );
-            }
             return;
         }
 
@@ -1114,20 +1366,38 @@ export function setupLightingControl(sendControlMessage) {
     );
 
     subscribeControlOpen(() => {
-        requestUnityLightingState(
-            'control-channel-open',
-            {
-                baseline: !hasReceivedUnityLightingSnapshot
-            }
+        requestUnityLightingSession(
+            'control-channel-open'
         );
     });
 
     subscribeControlMessages(message => {
-        if (!message || message.type !== 'lighting-state-snapshot') {
+        if (!message) {
             return;
         }
 
-        handleUnityLightingStateSnapshot(message);
+        switch (message.type) {
+            case 'lighting-session':
+                handleLightingSession(
+                    message
+                );
+                return;
+
+            case 'lighting-baseline-snapshot':
+                handleUnityLightingBaselineSnapshot(
+                    message
+                );
+                return;
+
+            case 'lighting-state-snapshot':
+                handleUnityLightingStateSnapshot(
+                    message
+                );
+                return;
+
+            default:
+                return;
+            }
     });
 
     subscribeCueStore(() => {
@@ -1135,12 +1405,9 @@ export function setupLightingControl(sendControlMessage) {
     });
 
     setTimeout(() => {
-        if (!hasReceivedUnityLightingSnapshot) {
-            requestUnityLightingState(
-                'setup-delayed',
-                {
-                    baseline: true
-                }
+        if (!currentUnitySessionId) {
+            requestUnityLightingSession(
+                'setup-delayed'
             );
         }
     }, 800);

@@ -1,5 +1,5 @@
 const STORAGE_KEY = 'theatre-cue-list-v1';
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 const INITIAL_CUES = [
     {
@@ -55,6 +55,10 @@ function createInitialState() {
             }))
         },
         fixtureCueSavedAt: {},
+        cueZeroMeta: {
+            sourceSessionId: null,
+            capturedAt: null
+        },
         runtime: {
             editingCueId: null,
             appliedCueId: null
@@ -181,6 +185,41 @@ function normalizeFixtureCueSavedAt(rawValue, cues) {
     return result;
 }
 
+function normalizeCueZeroMeta(
+    rawValue
+) {
+    if (
+        !rawValue ||
+        typeof rawValue !== 'object' ||
+        Array.isArray(rawValue)
+    ) {
+        return {
+            sourceSessionId: null,
+            capturedAt: null
+        };
+    }
+
+    const sourceSessionId =
+        rawValue.sourceSessionId == null ||
+        rawValue.sourceSessionId === ''
+            ? null
+            : String(
+                rawValue.sourceSessionId
+            );
+
+    return {
+        sourceSessionId,
+
+        capturedAt:
+            sourceSessionId
+                ? toFiniteNumber(
+                    rawValue.capturedAt,
+                    null
+                )
+                : null
+    };
+}
+
 function normalizePersistedState(rawValue) {
     const rawCueList = rawValue?.cueList || rawValue;
 
@@ -204,6 +243,9 @@ function normalizePersistedState(rawValue) {
         fixtureCueSavedAt: normalizeFixtureCueSavedAt(
             rawValue?.fixtureCueSavedAt,
             cues
+        ),
+        cueZeroMeta: normalizeCueZeroMeta(
+            rawValue?.cueZeroMeta
         ),
         runtime: {
             editingCueId: null,
@@ -229,7 +271,8 @@ function persist() {
         const persistableState = {
             schemaVersion: SCHEMA_VERSION,
             cueList: state.cueList,
-            fixtureCueSavedAt: state.fixtureCueSavedAt
+            fixtureCueSavedAt: state.fixtureCueSavedAt,
+            cueZeroMeta: state.cueZeroMeta
         };
 
         globalThis.localStorage?.setItem(
@@ -392,6 +435,61 @@ export function setEditingCueId(cueId) {
 export function getAppliedCueId() {
     ensureInitialized();
     return state.runtime.appliedCueId;
+}
+
+export function getCueZeroMeta() {
+    ensureInitialized();
+
+    return deepClone(
+        state.cueZeroMeta
+    );
+}
+
+export function setCueZeroMeta({
+    sourceSessionId = null,
+    capturedAt = null
+} = {}) {
+    ensureInitialized();
+
+    const normalizedSessionId =
+        sourceSessionId == null ||
+        sourceSessionId === ''
+            ? null
+            : String(
+                sourceSessionId
+            );
+
+    state.cueZeroMeta = {
+        sourceSessionId:
+            normalizedSessionId,
+
+        capturedAt:
+            normalizedSessionId
+                ? toFiniteNumber(
+                    capturedAt,
+                    Date.now()
+                )
+                : null
+    };
+
+    persist();
+
+    emit(
+        'cue-zero-meta-changed',
+        {
+            sourceSessionId:
+                state.cueZeroMeta
+                    .sourceSessionId,
+
+            capturedAt:
+                state.cueZeroMeta
+                    .capturedAt
+        }
+    );
+
+    return deepClone(
+        state.cueZeroMeta
+    );
 }
 
 export function setAppliedCueId(cueId) {

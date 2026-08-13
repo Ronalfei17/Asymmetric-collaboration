@@ -666,20 +666,6 @@ export function setupCueList(sendControlMessage) {
         }
     );
 
-    if (!getAppliedCueId()) {
-        const cueZero =
-            getCues().find(
-                cue =>
-                    Number(cue.cueNumber) === 0
-            );
-
-        if (cueZero) {
-            setAppliedCueId(
-                cueZero.id
-            );
-        }
-    }
-
     subscribeCueStore(
         renderCueList,
         {
