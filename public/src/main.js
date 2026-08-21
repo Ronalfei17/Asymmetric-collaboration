@@ -10,6 +10,7 @@ import { CONTROL_CONFIG } from './config.js';
 import { setupFixtureLibrary } from './fixture-library.js';
 import { setupMapSwitcher } from './map-switcher.js';
 import { setupLightingMapOverlay } from './lighting-map-overlay.js';
+import { setupRealDmxControl } from './real-dmx-control.js';
 
 console.log('[MAIN] loaded');
 
@@ -30,6 +31,7 @@ setupTeleportMap({sendRawControlMessage, subscribeControlMessages, subscribeCont
 setupCueList(sendControlMessage);
 setupMapSwitcher();
 setupLightingMapOverlay();
+setupRealDmxControl();
 
 connectControlServer();
 connectVideoRelay();

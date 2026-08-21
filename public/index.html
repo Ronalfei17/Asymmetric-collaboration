@@ -154,6 +154,11 @@
                     <i data-lucide="lightbulb" class="pointer-events-none transition-colors"></i>
                     <span class="pointer-events-none block px-1">Lighting Control</span>
                 </button>
+                <button data-target="page-real-dmx" class="nav-btn w-full py-2.5 flex flex-col items-center justify-center relative transition-all duration-200">
+                    <div class="indicator absolute left-0 top-0 bottom-0 w-[3px] bg-transparent"></div>
+                    <i data-lucide="radio-tower" class="pointer-events-none transition-colors"></i>
+                    <span class="pointer-events-none block px-1">Real DMX</span>
+                </button>
             </nav>
 
             <div class="w-full">
@@ -892,6 +897,75 @@
                             </div>
                         </aside>
 
+                    </div>
+                </div>
+
+                <div id="page-real-dmx" class="page-view w-full h-full hidden">
+                    <div class="h-full min-h-0 grid place-items-center overflow-y-auto rounded-xl border border-gray-800/40 bg-[#11141c] p-5">
+                        <section class="w-full max-w-3xl rounded-2xl border border-gray-700/70 bg-[#0b0f16] p-6 shadow-2xl">
+                            <div class="flex flex-wrap items-start justify-between gap-4">
+                                <div>
+                                    <div class="text-[11px] font-bold uppercase tracking-[0.2em] text-cyan-400">Gadget II · Real output</div>
+                                    <h2 class="mt-2 text-3xl font-black tracking-tight text-white">Real DMX Channel</h2>
+                                    <p id="realDmxRoute" class="mt-2 text-xs text-gray-500">Connecting to Gadget…</p>
+                                </div>
+                                <div class="flex items-center gap-2 rounded-full border border-gray-700 bg-black/30 px-3 py-2 text-xs font-semibold">
+                                    <span id="realDmxStatusDot" class="h-2.5 w-2.5 rounded-full bg-gray-600"></span>
+                                    <span id="realDmxStatus" class="text-gray-400">Connecting…</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-8 grid gap-3 sm:grid-cols-3">
+                                <div class="rounded-xl border border-gray-800 bg-white/[0.03] p-4">
+                                    <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Fixture</div>
+                                    <div class="mt-2 text-lg font-bold text-gray-100">Channel 8</div>
+                                </div>
+                                <div class="rounded-xl border border-gray-800 bg-white/[0.03] p-4">
+                                    <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Gadget Port</div>
+                                    <div class="mt-2 text-lg font-bold text-gray-100">Port 1</div>
+                                </div>
+                                <div class="rounded-xl border border-cyan-500/30 bg-cyan-500/[0.06] p-4">
+                                    <div class="text-[10px] font-bold uppercase tracking-widest text-cyan-500/80">DMX Address</div>
+                                    <div class="mt-2 text-lg font-bold text-cyan-300">94</div>
+                                </div>
+                            </div>
+
+                            <div class="mt-10 flex items-end justify-between gap-4">
+                                <div>
+                                    <div class="text-xs font-bold uppercase tracking-widest text-gray-500">Intensity</div>
+                                    <div class="mt-2 flex items-end gap-2 text-white">
+                                        <span id="realDmxLevelValue" class="text-6xl font-black leading-none">0</span>
+                                        <span class="pb-1 text-lg font-bold text-gray-500">%</span>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-[10px] font-bold uppercase tracking-widest text-gray-600">Raw DMX</div>
+                                    <div class="mt-1 font-mono text-xl font-bold text-gray-300"><span id="realDmxRawValue">0</span> / 255</div>
+                                </div>
+                            </div>
+
+                            <input
+                                id="realDmxLevel"
+                                type="range"
+                                min="0"
+                                max="100"
+                                step="1"
+                                value="0"
+                                class="mt-8 h-3 w-full cursor-pointer accent-cyan-400"
+                                aria-label="Real DMX intensity"
+                            >
+                            <div class="mt-2 flex justify-between font-mono text-[10px] text-gray-600">
+                                <span>OUT</span><span>50</span><span>FULL</span>
+                            </div>
+
+                            <button
+                                id="realDmxOut"
+                                type="button"
+                                class="mt-8 w-full rounded-xl border border-red-500/40 bg-red-500/10 px-5 py-3 text-sm font-black tracking-widest text-red-300 transition hover:bg-red-500/20 active:translate-y-px"
+                            >
+                                OUT
+                            </button>
+                        </section>
                     </div>
                 </div>
 
