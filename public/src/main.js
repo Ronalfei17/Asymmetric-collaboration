@@ -1,4 +1,4 @@
-import { connectControlServer, closeControlServer, sendControlMessage, sendRawControlMessage, subscribeControlMessages, subscribeControlOpen } from './control-channel.js';
+import { connectControlServer, closeControlServer, sendControlMessage, sendRawControlMessage, subscribeControlMessages, subscribeControlOpen, subscribeControlState } from './control-channel.js';
 import { connectVideoRelay, closeVideoRelay, startVideoStream, stopVideoStream } from './video-stream.js';
 import { initializeCueStore } from './cue-store.js';
 import { setupLightingControl } from './lighting-control.js';
@@ -31,7 +31,12 @@ setupTeleportMap({sendRawControlMessage, subscribeControlMessages, subscribeCont
 setupCueList(sendControlMessage);
 setupMapSwitcher();
 setupLightingMapOverlay();
-setupRealDmxControl();
+setupRealDmxControl({
+    sendControlMessage,
+    subscribeControlMessages,
+    subscribeControlOpen,
+    subscribeControlState
+});
 
 connectControlServer();
 connectVideoRelay();

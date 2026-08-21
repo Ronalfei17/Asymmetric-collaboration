@@ -901,70 +901,49 @@
                 </div>
 
                 <div id="page-real-dmx" class="page-view w-full h-full hidden">
-                    <div class="h-full min-h-0 grid place-items-center overflow-y-auto rounded-xl border border-gray-800/40 bg-[#11141c] p-5">
-                        <section class="w-full max-w-3xl rounded-2xl border border-gray-700/70 bg-[#0b0f16] p-6 shadow-2xl">
+                    <div class="h-full min-h-0 overflow-y-auto rounded-xl border border-gray-800/40 bg-[#11141c] p-4 sm:p-6">
+                        <section class="mx-auto w-full max-w-5xl rounded-2xl border border-gray-700/70 bg-[#0b0f16] p-5 shadow-2xl sm:p-7">
                             <div class="flex flex-wrap items-start justify-between gap-4">
                                 <div>
-                                    <div class="text-[11px] font-bold uppercase tracking-[0.2em] text-cyan-400">Gadget II · Real output</div>
-                                    <h2 class="mt-2 text-3xl font-black tracking-tight text-white">Real DMX Channel</h2>
-                                    <p id="realDmxRoute" class="mt-2 text-xs text-gray-500">Connecting to Gadget…</p>
+                                    <div class="text-[11px] font-bold uppercase tracking-[0.2em] text-cyan-400">Gadget II · Real DMX Output</div>
+                                    <h2 class="mt-2 text-3xl font-black tracking-tight text-white">DMX 属性地址</h2>
+                                    <p id="realDmxRoute" class="mt-2 text-xs text-gray-500">正在连接灯光控制电脑…</p>
                                 </div>
                                 <div class="flex items-center gap-2 rounded-full border border-gray-700 bg-black/30 px-3 py-2 text-xs font-semibold">
                                     <span id="realDmxStatusDot" class="h-2.5 w-2.5 rounded-full bg-gray-600"></span>
-                                    <span id="realDmxStatus" class="text-gray-400">Connecting…</span>
+                                    <span id="realDmxStatus" class="text-gray-400">连接中…</span>
                                 </div>
                             </div>
 
-                            <div class="mt-8 grid gap-3 sm:grid-cols-3">
-                                <div class="rounded-xl border border-gray-800 bg-white/[0.03] p-4">
-                                    <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Fixture</div>
-                                    <div class="mt-2 text-lg font-bold text-gray-100">Channel 8</div>
-                                </div>
-                                <div class="rounded-xl border border-gray-800 bg-white/[0.03] p-4">
-                                    <div class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Gadget Port</div>
-                                    <div class="mt-2 text-lg font-bold text-gray-100">Port 1</div>
-                                </div>
-                                <div class="rounded-xl border border-cyan-500/30 bg-cyan-500/[0.06] p-4">
-                                    <div class="text-[10px] font-bold uppercase tracking-widest text-cyan-500/80">DMX Address</div>
-                                    <div class="mt-2 text-lg font-bold text-cyan-300">94</div>
-                                </div>
+                            <div class="mt-7 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+                                <label class="text-xs font-bold tracking-wide text-gray-400">
+                                    起始地址（键盘输入）
+                                    <input id="realDmxStartAddress" type="number" min="1" max="512" step="1" value="94" inputmode="numeric" class="mt-2 w-full rounded-xl border border-gray-700 bg-black/30 px-4 py-3 font-mono text-lg font-bold text-cyan-300 outline-none focus:border-cyan-400">
+                                </label>
+                                <label class="text-xs font-bold tracking-wide text-gray-400">
+                                    结束地址（键盘输入）
+                                    <input id="realDmxEndAddress" type="number" min="1" max="512" step="1" value="94" inputmode="numeric" class="mt-2 w-full rounded-xl border border-gray-700 bg-black/30 px-4 py-3 font-mono text-lg font-bold text-cyan-300 outline-none focus:border-cyan-400">
+                                </label>
+                                <button id="realDmxLoadRange" type="button" class="self-end rounded-xl bg-cyan-500 px-5 py-3.5 text-sm font-black text-black transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-40">载入属性地址</button>
                             </div>
 
-                            <div class="mt-10 flex items-end justify-between gap-4">
-                                <div>
-                                    <div class="text-xs font-bold uppercase tracking-widest text-gray-500">Intensity</div>
-                                    <div class="mt-2 flex items-end gap-2 text-white">
-                                        <span id="realDmxLevelValue" class="text-6xl font-black leading-none">0</span>
-                                        <span class="pb-1 text-lg font-bold text-gray-500">%</span>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <div class="text-[10px] font-bold uppercase tracking-widest text-gray-600">Raw DMX</div>
-                                    <div class="mt-1 font-mono text-xl font-bold text-gray-300"><span id="realDmxRawValue">0</span> / 255</div>
-                                </div>
+                            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                                <button id="realDmxRangeOut" type="button" class="rounded-xl border border-gray-600 bg-white/[0.04] px-5 py-3 text-sm font-black text-gray-200 transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-40">当前地址范围 OUT</button>
+                                <button id="realDmxBlackout" type="button" class="rounded-xl border border-red-500/40 bg-red-500/10 px-5 py-3 text-sm font-black text-red-300 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40">全部 BLACKOUT</button>
                             </div>
 
-                            <input
-                                id="realDmxLevel"
-                                type="range"
-                                min="0"
-                                max="100"
-                                step="1"
-                                value="0"
-                                class="mt-8 h-3 w-full cursor-pointer accent-cyan-400"
-                                aria-label="Real DMX intensity"
-                            >
-                            <div class="mt-2 flex justify-between font-mono text-[10px] text-gray-600">
-                                <span>OUT</span><span>50</span><span>FULL</span>
+                            <div id="realDmxAddressPanel" class="mt-6 space-y-3 rounded-xl border border-gray-800 bg-black/20 p-3 sm:p-4">
+                                <div class="py-8 text-center text-sm text-gray-500">输入地址范围，例如 201–210</div>
                             </div>
-
-                            <button
-                                id="realDmxOut"
-                                type="button"
-                                class="mt-8 w-full rounded-xl border border-red-500/40 bg-red-500/10 px-5 py-3 text-sm font-black tracking-widest text-red-300 transition hover:bg-red-500/20 active:translate-y-px"
-                            >
-                                OUT
-                            </button>
+                            <template id="realDmxRowTemplate">
+                                <div class="grid grid-cols-[56px_minmax(0,1fr)_78px] items-center gap-2 rounded-xl border border-gray-800 bg-white/[0.03] p-3 sm:grid-cols-[64px_170px_minmax(0,1fr)_86px_54px] sm:gap-3">
+                                    <div data-role="address" class="font-mono text-base font-black text-cyan-300"></div>
+                                    <input data-role="name" type="text" placeholder="属性名称" class="min-w-0 rounded-lg border border-gray-700 bg-black/30 px-3 py-2 text-sm text-gray-200 outline-none focus:border-cyan-500">
+                                    <input data-role="slider" type="range" min="0" max="255" step="1" value="0" class="col-span-2 h-2 w-full cursor-pointer accent-cyan-400 sm:col-span-1">
+                                    <input data-role="value" type="number" min="0" max="255" step="1" value="0" inputmode="numeric" class="row-start-1 col-start-3 w-full rounded-lg border border-gray-700 bg-black/30 px-2 py-2 text-right font-mono text-sm font-bold text-white outline-none focus:border-cyan-500 sm:row-auto sm:col-auto">
+                                    <div data-role="percent" class="text-right font-mono text-xs text-gray-500">0%</div>
+                                </div>
+                            </template>
                         </section>
                     </div>
                 </div>

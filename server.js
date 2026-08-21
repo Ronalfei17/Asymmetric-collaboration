@@ -9,7 +9,7 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server, path: "/ws" });
 
 const PORT = process.env.PORT || 3000;
-const VERSION = "relay-webrtc-v5-dmx";
+const VERSION = "relay-webrtc-v7-dmx-range-agent";
 
 const DMX_BRIDGE_PORT = Number(process.env.DMX_BRIDGE_PORT || 31808);
 const DMX_BRIDGE_URL = process.env.DMX_BRIDGE_URL || "";
@@ -181,7 +181,8 @@ app.get("/health", (req, res) => {
     presenceCheckMs: PRESENCE_CHECK_MS,
     realDmx: {
       port: REAL_DMX_PORT,
-      address: REAL_DMX_ADDRESS
+      transport: "dmx-agent",
+      addressRange: [1, 512]
     },
     rooms: rooms.size
   });
@@ -194,6 +195,7 @@ function getRoom(roomId) {
       streamer: null,
       lastHeadsetSeen: 0,
       publishedHeadsetOnline: false,
+      dmxAgent: null,
       controllers: new Set(),
       viewers: new Set(),
       viewersByConnectionId: new Map()
@@ -235,6 +237,40 @@ function isStreamerOnline(room) {
 
 function isHeadsetAvailable(room) {
   return isPresenceOnline(room) || isStreamerOnline(room);
+}
+
+function isDmxAgentOnline(room) {
+  return isOpen(room.dmxAgent);
+}
+
+function broadcastDmxAgentStatus(room, connected = isDmxAgentOnline(room), extra = {}) {
+  const payload = {
+    type: "dmx-agent-status",
+    connected,
+    ...extra
+  };
+
+  room.controllers.forEach((controller) => sendJson(controller, payload));
+}
+
+function removeDmxAgent(room, ws) {
+  if (room.dmxAgent !== ws) {
+    return;
+  }
+
+  room.dmxAgent = null;
+  broadcastDmxAgentStatus(room, false);
+  console.log(`[${VERSION}] DMX agent offline`);
+}
+
+function isDmxMessage(parsed) {
+  return parsed && (
+    parsed.type === "dmx-output" ||
+    parsed.type === "dmx-status-request" ||
+    parsed.type === "dmx-range-status-request" ||
+    parsed.type === "dmx-range-out" ||
+    parsed.type === "dmx-blackout"
+  );
 }
 
 function broadcastHeadsetStatus(room, force = false) {
@@ -442,6 +478,22 @@ wss.on("connection", (ws, req) => {
       type: "stream-status",
       connected: isStreamerOnline(room)
     });
+  } else if (role === "dmx-agent") {
+    if (isOpen(room.dmxAgent)) {
+      closeQuietly(room.dmxAgent);
+    }
+
+    room.dmxAgent = ws;
+
+    sendJson(ws, {
+      type: "relay-ready",
+      role: "dmx-agent",
+      room: roomId,
+      version: VERSION
+    });
+
+    broadcastDmxAgentStatus(room, true, { gadgetConnected: null });
+    console.log(`[${VERSION}] DMX agent online`);
   } else {
     room.controllers.add(ws);
 
@@ -455,6 +507,12 @@ wss.on("connection", (ws, req) => {
     sendJson(ws, {
       type: "headset-status",
       connected: isHeadsetAvailable(room)
+    });
+
+    sendJson(ws, {
+      type: "dmx-agent-status",
+      connected: isDmxAgentOnline(room),
+      gadgetConnected: null
     });
   }
 
@@ -506,7 +564,45 @@ wss.on("connection", (ws, req) => {
       return;
     }
 
+    if (ws.role === "dmx-agent") {
+      if (parsed && parsed.type === "heartbeat") {
+        return;
+      }
+
+      if (!parsed) {
+        return;
+      }
+
+      if (parsed.type === "dmx-agent-status") {
+        broadcastDmxAgentStatus(room, true, parsed);
+        return;
+      }
+
+      if (parsed.type === "dmx-result" || parsed.type === "dmx-range-status") {
+        room.controllers.forEach((controller) => sendJson(controller, parsed));
+      }
+      return;
+    }
+
     if (ws.role === "controller") {
+      if (isDmxMessage(parsed)) {
+        if (isDmxAgentOnline(room)) {
+          send(room.dmxAgent, message);
+        } else {
+          sendJson(ws, {
+            type: "dmx-result",
+            ok: false,
+            requestId: parsed.requestId || null,
+            error: "DMX control computer is not connected."
+          });
+          sendJson(ws, {
+            type: "dmx-agent-status",
+            connected: false
+          });
+        }
+        return;
+      }
+
       if (isOpen(room.headset)) {
         send(room.headset, message);
       } else {
@@ -534,6 +630,10 @@ wss.on("connection", (ws, req) => {
     if (ws.role === "streamer") {
       removeStreamer(room, ws);
     }
+
+    if (ws.role === "dmx-agent") {
+      removeDmxAgent(room, ws);
+    }
   });
 
   ws.on("error", () => {
@@ -551,6 +651,10 @@ wss.on("connection", (ws, req) => {
 
     if (ws.role === "streamer") {
       removeStreamer(room, ws);
+    }
+
+    if (ws.role === "dmx-agent") {
+      removeDmxAgent(room, ws);
     }
   });
 });

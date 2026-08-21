@@ -6,6 +6,7 @@ let reconnectTimer = null;
 
 const controlMessageListeners = new Set();
 const controlOpenListeners = new Set();
+const controlStateListeners = new Set();
 
 function getControlWsUrl() {
     const params = new URLSearchParams({
@@ -14,6 +15,10 @@ function getControlWsUrl() {
     });
 
     return `${CONTROL_CONFIG.relayUrl}?${params.toString()}`;
+}
+
+function publishControlState(connected) {
+    controlStateListeners.forEach(listener => listener(connected));
 }
 
 export function subscribeControlMessages(listener) {
@@ -36,6 +41,17 @@ export function subscribeControlOpen(listener) {
 
     return () => {
         controlOpenListeners.delete(listener);
+    };
+}
+
+export function subscribeControlState(listener) {
+    controlStateListeners.add(listener);
+    queueMicrotask(() => listener(Boolean(
+        controlSocket && controlSocket.readyState === WebSocket.OPEN
+    )));
+
+    return () => {
+        controlStateListeners.delete(listener);
     };
 }
 
@@ -80,7 +96,7 @@ export function sendControlMessage(type, payload = {}) {
 
     console.log('[CONTROL]', message);
 
-    if (CONTROL_CONFIG.mode === 'mock') return;
+    if (CONTROL_CONFIG.mode === 'mock') return true;
 
     if (
         CONTROL_CONFIG.mode === 'websocket' &&
@@ -88,6 +104,7 @@ export function sendControlMessage(type, payload = {}) {
         controlSocket.readyState === WebSocket.OPEN
     ) {
         controlSocket.send(JSON.stringify(message));
+        return true;
     }
 
     if (
@@ -96,12 +113,16 @@ export function sendControlMessage(type, payload = {}) {
         window.controlDataChannel.readyState === 'open'
     ) {
         window.controlDataChannel.send(JSON.stringify(message));
+        return true;
     }
+
+    return false;
 }
 
 export function connectControlServer() {
     if (CONTROL_CONFIG.mode !== 'websocket') {
         mockConnect(true);
+        publishControlState(true);
         return;
     }
 
@@ -110,17 +131,20 @@ export function connectControlServer() {
     controlSocket.addEventListener('open', () => {
         clearTimeout(reconnectTimer);
         mockConnect(true);
+        publishControlState(true);
         sendControlMessage('heartbeat');
         controlOpenListeners.forEach(listener => listener());
     });
 
     controlSocket.addEventListener('close', () => {
         mockConnect(false);
+        publishControlState(false);
         reconnectTimer = setTimeout(connectControlServer, 1000);
     });
 
     controlSocket.addEventListener('error', () => {
         mockConnect(false);
+        publishControlState(false);
     });
 
     controlSocket.addEventListener('message', event => {
