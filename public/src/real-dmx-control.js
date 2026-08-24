@@ -83,15 +83,15 @@ export function setupRealDmxControl({
 
     function renderConnectionStatus() {
         if (!cloudConnected) {
-            setStatus('云服务器未连接', 'error');
+            setStatus('Cloud server disconnected', 'error');
         } else if (!agentConnected) {
-            setStatus('灯光控制电脑未连接');
+            setStatus('Lighting control computer disconnected');
         } else if (gadgetConnected === null) {
-            setStatus('灯光控制电脑已连接 · 正在检查 Gadget…');
+            setStatus('Lighting control computer connected · Checking Gadget…');
         } else if (!gadgetConnected) {
-            setStatus(lastError || 'Gadget 未连接', 'error');
+            setStatus(lastError || 'Gadget disconnected', 'error');
         } else {
-            setStatus('云服务器 · 灯光电脑 · Gadget 已连接', 'ok');
+            setStatus('Cloud server · Lighting computer · Gadget connected', 'ok');
         }
         updateControls();
     }
@@ -120,7 +120,7 @@ export function setupRealDmxControl({
             renderConnectionStatus();
             return;
         }
-        setStatus(`正在读取 Address ${range.start}–${range.end}…`);
+        setStatus(`Loading Address ${range.start}–${range.end}…`);
         send('dmx-range-status-request', { port: 1, ...range });
     }
 
@@ -217,7 +217,7 @@ export function setupRealDmxControl({
             }
             lastError = message.error || '';
             if (message.serial) {
-                route.textContent = `Cloud → 灯光电脑 → Gadget ${message.serial} · Port ${message.port || 1}`;
+                route.textContent = `Cloud → Lighting computer → Gadget ${message.serial} · Port ${message.port || 1}`;
             }
             renderConnectionStatus();
             if (!wasReady && ready() && !rangeLoaded) loadRange();
@@ -226,7 +226,7 @@ export function setupRealDmxControl({
 
         if (message.type === 'dmx-range-status') {
             if (!message.ok) {
-                lastError = message.error || '读取 DMX 地址失败';
+                lastError = message.error || 'Failed to load DMX addresses';
                 if (message.gadgetConnected === false) gadgetConnected = false;
                 renderConnectionStatus();
                 return;
@@ -236,16 +236,16 @@ export function setupRealDmxControl({
             activeStart = message.start;
             activeEnd = message.end;
             if (message.serial) {
-                route.textContent = `Cloud → 灯光电脑 → Gadget ${message.serial} · Port ${message.port || 1} · Address ${activeStart}–${activeEnd}`;
+                route.textContent = `Cloud → Lighting computer → Gadget ${message.serial} · Port ${message.port || 1} · Address ${activeStart}–${activeEnd}`;
             }
             renderRows(message.values || []);
-            setStatus(`${(message.values || []).length} 个属性地址已载入`, 'ok');
+            setStatus(`${(message.values || []).length} attribute address(es) loaded`, 'ok');
             return;
         }
 
         if (message.type !== 'dmx-result') return;
         if (!message.ok) {
-            lastError = message.error || '真实 DMX 输出失败';
+            lastError = message.error || 'Real DMX output failed';
             if (message.gadgetConnected === false) gadgetConnected = false;
             renderConnectionStatus();
             return;
@@ -253,12 +253,12 @@ export function setupRealDmxControl({
 
         if (message.operation === 'range-out') {
             zeroVisibleRows();
-            setStatus(`Address ${message.start}–${message.end} 已全部归零`, 'ok');
+            setStatus(`Address ${message.start}–${message.end} reset to zero`, 'ok');
         } else if (message.operation === 'blackout') {
             zeroVisibleRows();
-            setStatus('全部 512 个 DMX 地址已归零', 'ok');
+            setStatus('All 512 DMX addresses reset to zero', 'ok');
         } else {
-            setStatus(`真实 DMX 已输出 · Address ${message.address} = ${message.value}`, 'ok');
+            setStatus(`Real DMX output · Address ${message.address} = ${message.value}`, 'ok');
         }
     });
 

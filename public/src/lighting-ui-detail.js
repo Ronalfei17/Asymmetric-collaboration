@@ -94,7 +94,7 @@ export function readDetailLightingValuesFromUI(fixture) {
         state.softness = Number(detailSoftnessSlider.value);
     }
 
-    // 普通灯：读取普通 RGB / Strobe
+    // Standard fixture: read standard RGB and Strobe values.
     if (!isAdvancedLed) {
         if (detailRedSlider) state.r = Number(detailRedSlider.value);
         if (detailGreenSlider) state.g = Number(detailGreenSlider.value);
@@ -102,7 +102,7 @@ export function readDetailLightingValuesFromUI(fixture) {
         if (detailStrobeHzSlider) state.strobeHz = Number(detailStrobeHzSlider.value);
     }
 
-    // ColorBlaze 48：RGB / Strobe / Segment 都从高级模式面板读取
+    // ColorBlaze 48: read RGB, Strobe, and Segment values from the advanced panel.
     if (isAdvancedLed) {
         Object.assign(
             state,
@@ -669,13 +669,12 @@ export function setupDetailLightingListeners({
             const target = event.target;
 
             /*
-            * ColorBlaze 专属输入：
-            * - 高级 Strobe
+     * ColorBlaze-specific inputs:
+     * - Advanced Strobe
             * - Chase Speed
             *
-            * 这两类输入已经在 ColorBlaze 模块中
-            * 调用了 onInput()，因此直接 return，
-            * 避免重复发送。
+     * These inputs already call onInput() in the ColorBlaze module,
+     * so return immediately to avoid duplicate messages.
             */
             if (
                 handleColorBlazeInput(
@@ -688,7 +687,7 @@ export function setupDetailLightingListeners({
 
             /*
             * Intensity slider
-            * → Detail 数字输入框
+     * → Detail numeric input
             */
             if (
                 target.id ===
@@ -706,10 +705,9 @@ export function setupDetailLightingListeners({
             }
 
             /*
-            * RGB 输入：
-            * ColorBlaze 内部状态已经由
-            * handleColorBlazeInput() 更新。
-            * 这里仅更新公共 RGB 界面。
+     * RGB input:
+     * ColorBlaze internal state is already updated by
+     * handleColorBlazeInput(). Only update the shared RGB UI here.
             */
             if (
                 target.id === 'detailRedSlider' ||
@@ -720,8 +718,8 @@ export function setupDetailLightingListeners({
             }
 
             /*
-            * 普通灯具 Strobe slider
-            * → Detail 数字输入框
+     * Standard fixture Strobe slider
+     * → Detail numeric input
             */
             if (
                 target.id ===
@@ -740,8 +738,8 @@ export function setupDetailLightingListeners({
 
             /*
             * Field / Beam Angle slider
-            * → Detail 数字输入框
-            * → 同步 Quick Panel slider
+     * → Detail numeric input
+     * → Synchronize the Quick Panel slider
             */
             if (
                 target.id ===
@@ -772,8 +770,8 @@ export function setupDetailLightingListeners({
 
             /*
             * Pan slider
-            * → Detail 数字输入框
-            * → 同步 Quick Panel
+     * → Detail numeric input
+     * → Synchronize the Quick Panel
             */
             if (
                 target.id ===
@@ -806,8 +804,8 @@ export function setupDetailLightingListeners({
 
             /*
             * Tilt slider
-            * → Detail 数字输入框
-            * → 同步 Quick Panel
+     * → Detail numeric input
+     * → Synchronize the Quick Panel
             */
             if (
                 target.id ===
@@ -840,8 +838,8 @@ export function setupDetailLightingListeners({
 
             /*
             * Fresnel Softness slider
-            * 内部值是 0–1，
-            * 输入框显示为 0–100 %
+     * Internal values use 0–1;
+     * the input displays 0–100%.
             */
             if (
                 target.id ===

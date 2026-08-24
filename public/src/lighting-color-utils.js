@@ -70,12 +70,12 @@ export function normalizeRgbChannel255(value, fallback = 0) {
         return fallback;
     }
 
-    // Unity 返回的 0–1 转成网页使用的 0–255
+    // Convert Unity's 0–1 range to the web UI's 0–255 range.
     if (number >= 0 && number <= 1) {
         return Math.round(number * 255);
     }
 
-    // 已经是 0–255
+  // The value is already in the 0–255 range.
     return Math.round(
         clamp(number, 0, 255)
     );

@@ -721,20 +721,20 @@
                 </div>
 
                 <div id="page-map" class="page-view w-full h-full bg-[#11141c] border border-gray-800/40 rounded-xl p-6 hidden flex-col">
-                    <span class="text-xs font-bold tracking-wider text-gray-400 block mb-2">THEATRE MAP 全屏全景大视图</span>
+                    <span class="text-xs font-bold tracking-wider text-gray-400 block mb-2">THEATRE MAP — FULL-SCREEN PANORAMIC VIEW</span>
                     <div class="flex-grow bg-[#06080c] rounded-xl border border-dashed border-gray-800 flex items-center justify-center text-gray-600">
-                        [ 剧场底图展示区 ]
+                        [ THEATRE FLOOR PLAN ]
                     </div>
                 </div>
 
                 <div id="page-cue" class="page-view w-full h-full bg-[#11141c] border border-gray-800/40 rounded-xl p-6 hidden flex-col">
-                    <span class="text-xs font-bold tracking-wider text-gray-400 block mb-2">CUE LIST 面板</span>
+                    <span class="text-xs font-bold tracking-wider text-gray-400 block mb-2">CUE LIST PANEL</span>
                 </div>
                 <div id="page-vrlive" class="page-view w-full h-full bg-[#11141c] border border-gray-800/40 rounded-xl p-6 hidden flex-col">
-                    <span class="text-xs font-bold tracking-wider text-gray-400 block mb-2">VR LIVE STREAM 面板</span>
+                    <span class="text-xs font-bold tracking-wider text-gray-400 block mb-2">VR LIVE STREAM PANEL</span>
                 </div>
                 <div id="page-targetinfo" class="page-view w-full h-full bg-[#11141c] border border-gray-800/40 rounded-xl p-6 hidden flex-col">
-                    <span class="text-xs font-bold tracking-wider text-gray-400 block mb-2">TARGET INFO 面板</span>
+                    <span class="text-xs font-bold tracking-wider text-gray-400 block mb-2">TARGET INFO PANEL</span>
                 </div>
                 <div id="page-light" class="page-view w-full h-full hidden">
                     <div class="h-full min-h-0 grid grid-cols-[300px_minmax(0,1fr)_320px] gap-3">
@@ -906,39 +906,39 @@
                             <div class="flex flex-wrap items-start justify-between gap-4">
                                 <div>
                                     <div class="text-[11px] font-bold uppercase tracking-[0.2em] text-cyan-400">Gadget II · Real DMX Output</div>
-                                    <h2 class="mt-2 text-3xl font-black tracking-tight text-white">DMX 属性地址</h2>
-                                    <p id="realDmxRoute" class="mt-2 text-xs text-gray-500">正在连接灯光控制电脑…</p>
+                                    <h2 class="mt-2 text-3xl font-black tracking-tight text-white">DMX Attribute Addresses</h2>
+                                    <p id="realDmxRoute" class="mt-2 text-xs text-gray-500">Connecting to the lighting control computer…</p>
                                 </div>
                                 <div class="flex items-center gap-2 rounded-full border border-gray-700 bg-black/30 px-3 py-2 text-xs font-semibold">
                                     <span id="realDmxStatusDot" class="h-2.5 w-2.5 rounded-full bg-gray-600"></span>
-                                    <span id="realDmxStatus" class="text-gray-400">连接中…</span>
+                                    <span id="realDmxStatus" class="text-gray-400">Connecting…</span>
                                 </div>
                             </div>
 
                             <div class="mt-7 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
                                 <label class="text-xs font-bold tracking-wide text-gray-400">
-                                    起始地址（键盘输入）
+                                    Start Address (Keyboard Input)
                                     <input id="realDmxStartAddress" type="number" min="1" max="512" step="1" value="94" inputmode="numeric" class="mt-2 w-full rounded-xl border border-gray-700 bg-black/30 px-4 py-3 font-mono text-lg font-bold text-cyan-300 outline-none focus:border-cyan-400">
                                 </label>
                                 <label class="text-xs font-bold tracking-wide text-gray-400">
-                                    结束地址（键盘输入）
+                                    End Address (Keyboard Input)
                                     <input id="realDmxEndAddress" type="number" min="1" max="512" step="1" value="94" inputmode="numeric" class="mt-2 w-full rounded-xl border border-gray-700 bg-black/30 px-4 py-3 font-mono text-lg font-bold text-cyan-300 outline-none focus:border-cyan-400">
                                 </label>
-                                <button id="realDmxLoadRange" type="button" class="self-end rounded-xl bg-cyan-500 px-5 py-3.5 text-sm font-black text-black transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-40">载入属性地址</button>
+                                <button id="realDmxLoadRange" type="button" class="self-end rounded-xl bg-cyan-500 px-5 py-3.5 text-sm font-black text-black transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-40">Load Attribute Addresses</button>
                             </div>
 
                             <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                                <button id="realDmxRangeOut" type="button" class="rounded-xl border border-gray-600 bg-white/[0.04] px-5 py-3 text-sm font-black text-gray-200 transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-40">当前地址范围 OUT</button>
-                                <button id="realDmxBlackout" type="button" class="rounded-xl border border-red-500/40 bg-red-500/10 px-5 py-3 text-sm font-black text-red-300 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40">全部 BLACKOUT</button>
+                                <button id="realDmxRangeOut" type="button" class="rounded-xl border border-gray-600 bg-white/[0.04] px-5 py-3 text-sm font-black text-gray-200 transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-40">CURRENT RANGE OUT</button>
+                                <button id="realDmxBlackout" type="button" class="rounded-xl border border-red-500/40 bg-red-500/10 px-5 py-3 text-sm font-black text-red-300 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40">BLACKOUT ALL</button>
                             </div>
 
                             <div id="realDmxAddressPanel" class="mt-6 space-y-3 rounded-xl border border-gray-800 bg-black/20 p-3 sm:p-4">
-                                <div class="py-8 text-center text-sm text-gray-500">输入地址范围，例如 201–210</div>
+                                <div class="py-8 text-center text-sm text-gray-500">Enter an address range, for example 201–210</div>
                             </div>
                             <template id="realDmxRowTemplate">
                                 <div class="grid grid-cols-[56px_minmax(0,1fr)_78px] items-center gap-2 rounded-xl border border-gray-800 bg-white/[0.03] p-3 sm:grid-cols-[64px_170px_minmax(0,1fr)_86px_54px] sm:gap-3">
                                     <div data-role="address" class="font-mono text-base font-black text-cyan-300"></div>
-                                    <input data-role="name" type="text" placeholder="属性名称" class="min-w-0 rounded-lg border border-gray-700 bg-black/30 px-3 py-2 text-sm text-gray-200 outline-none focus:border-cyan-500">
+                                    <input data-role="name" type="text" placeholder="Attribute Name" class="min-w-0 rounded-lg border border-gray-700 bg-black/30 px-3 py-2 text-sm text-gray-200 outline-none focus:border-cyan-500">
                                     <input data-role="slider" type="range" min="0" max="255" step="1" value="0" class="col-span-2 h-2 w-full cursor-pointer accent-cyan-400 sm:col-span-1">
                                     <input data-role="value" type="number" min="0" max="255" step="1" value="0" inputmode="numeric" class="row-start-1 col-start-3 w-full rounded-lg border border-gray-700 bg-black/30 px-2 py-2 text-right font-mono text-sm font-bold text-white outline-none focus:border-cyan-500 sm:row-auto sm:col-auto">
                                     <div data-role="percent" class="text-right font-mono text-xs text-gray-500">0%</div>
@@ -949,15 +949,15 @@
                 </div>
 
                 <div id="page-settings" class="page-view w-full h-full bg-[#11141c] border border-gray-800/40 rounded-xl p-6 hidden flex-col space-y-4">
-                    <span class="text-xs font-bold tracking-wider text-gray-400 block mb-2">SETTINGS 系统参数配置</span>
+                    <span class="text-xs font-bold tracking-wider text-gray-400 block mb-2">SETTINGS — SYSTEM CONFIGURATION</span>
                     <div class="p-5 bg-[#06080c] rounded-xl border border-gray-800 max-w-sm space-y-3">
-                        <p class="text-xs text-blue-400 font-bold tracking-wider uppercase">全局网络状态 Mock 联调面板</p>
+                        <p class="text-xs text-blue-400 font-bold tracking-wider uppercase">GLOBAL NETWORK STATUS — MOCK CONTROL PANEL</p>
                         <div class="flex space-x-3 pt-1">
                             <button id="mockConnectBtn" type="button" class="bg-green-600 hover:bg-green-500 text-white text-xs px-4 py-2 rounded-lg font-bold transition-all">
-                                模拟网络连通
+                                SIMULATE CONNECTED
                             </button>
                             <button id="mockDisconnectBtn" type="button" class="bg-red-600 hover:bg-red-500 text-white text-xs px-4 py-2 rounded-lg font-bold transition-all">
-                                模拟网络断开
+                                SIMULATE DISCONNECTED
                             </button>
                         </div>
                     </div>

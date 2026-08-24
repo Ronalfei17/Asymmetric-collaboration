@@ -1,4 +1,4 @@
-// 用于保存每个 lightId 的状态
+// Stores state for each lightId.
 const fixtureStateMap = new Map();
 
 function cloneState(state = {}) {

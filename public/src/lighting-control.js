@@ -251,12 +251,12 @@ export function setupLightingControl(sendControlMessage) {
             return fallback;
         }
 
-        // 网络 Payload 颜色范围。
+        // Network payload color range.
         if (number >= 0 && number <= 1) {
             return Math.round(number * 255);
         }
 
-        // 兼容旧数据中已经是 0–255 的情况。
+        // Support legacy data that is already in the 0–255 range.
         return Math.round(
             Math.max(
                 0,

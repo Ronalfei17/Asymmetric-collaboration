@@ -62,7 +62,7 @@ export function renderFixtureTypeCapsules({
         container.appendChild(button);
     });
 }
-// [新增] Fixture ID 下拉列表
+    // Fixture ID dropdown.
 export function renderFixtureIdDropdown({
     selectedFixtureType,
     selectedFixture,
