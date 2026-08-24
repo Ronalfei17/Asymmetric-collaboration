@@ -50,10 +50,16 @@ export function setupRealDmxControl({
     let rangeLoaded = false;
     let lastError = '';
 
-    const savedStart = Number(localStorage.getItem('realDmxStartAddress'));
-    const savedEnd = Number(localStorage.getItem('realDmxEndAddress'));
-    startInput.value = String(Number.isInteger(savedStart) ? clampInteger(savedStart, 1, 512) : DEFAULT_ADDRESS);
-    endInput.value = String(Number.isInteger(savedEnd) ? clampInteger(savedEnd, 1, 512) : DEFAULT_ADDRESS);
+    const savedStartRaw = localStorage.getItem('realDmxStartAddress');
+    const savedEndRaw = localStorage.getItem('realDmxEndAddress');
+    const savedStart = Number(savedStartRaw);
+    const savedEnd = Number(savedEndRaw);
+    startInput.value = String(savedStartRaw !== null && Number.isInteger(savedStart)
+        ? clampInteger(savedStart, 1, 512)
+        : DEFAULT_ADDRESS);
+    endInput.value = String(savedEndRaw !== null && Number.isInteger(savedEnd)
+        ? clampInteger(savedEnd, 1, 512)
+        : DEFAULT_ADDRESS);
 
     function ready() {
         return cloudConnected && agentConnected && gadgetConnected === true;
@@ -63,12 +69,13 @@ export function setupRealDmxControl({
         status.textContent = text;
         const ok = state === 'ok';
         const error = state === 'error';
-        status.className = ok ? 'text-emerald-400' : error ? 'text-red-400' : 'text-amber-300';
+        const statusColor = ok ? 'text-emerald-400' : error ? 'text-red-400' : 'text-amber-300';
+        status.className = `min-w-0 text-[10px] font-semibold leading-tight ${statusColor}`;
         statusDot.className = ok
-            ? 'h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_#34d399]'
+            ? 'h-2 w-2 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]'
             : error
-                ? 'h-2.5 w-2.5 rounded-full bg-red-400 shadow-[0_0_10px_#f87171]'
-                : 'h-2.5 w-2.5 rounded-full bg-amber-400 shadow-[0_0_10px_#fbbf24]';
+                ? 'h-2 w-2 shrink-0 rounded-full bg-red-400 shadow-[0_0_8px_#f87171]'
+                : 'h-2 w-2 shrink-0 rounded-full bg-amber-400 shadow-[0_0_8px_#fbbf24]';
     }
 
     function updateControls() {

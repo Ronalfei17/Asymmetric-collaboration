@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -103,6 +103,47 @@
             user-select: text;
             -webkit-user-select: text;
         }
+
+        /* Compact Real DMX controls embedded in the Lighting Control sidebar */
+        #realDmxAddressPanel {
+            scrollbar-width: thin;
+            scrollbar-color: rgb(55 65 81) transparent;
+        }
+
+        #realDmxAddressPanel::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #realDmxAddressPanel::-webkit-scrollbar-thumb {
+            border-radius: 999px;
+            background: rgb(55 65 81);
+        }
+
+        @media (max-width: 1400px) {
+            #lightingControlWorkspace {
+                grid-template-columns: 260px minmax(0, 1fr) 300px;
+            }
+        }
+
+        @media (max-width: 1150px) {
+            #lightingControlWorkspace {
+                grid-template-columns: 220px minmax(0, 1fr) 280px;
+            }
+        }
+
+        @container (max-width: 520px) {
+            .detail-summary-content {
+                align-items: stretch !important;
+                flex-direction: column;
+                gap: 12px !important;
+            }
+
+            .detail-cue-summary,
+            .detail-cue-summary > .relative {
+                width: 100% !important;
+                min-width: 0 !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-[#0c0f16] text-gray-200 h-[100dvh] w-screen overflow-hidden flex flex-col font-sans select-none text-[13px]">
@@ -153,11 +194,6 @@
                     <div class="indicator absolute left-0 top-0 bottom-0 w-[3px] bg-transparent"></div>
                     <i data-lucide="lightbulb" class="pointer-events-none transition-colors"></i>
                     <span class="pointer-events-none block px-1">Lighting Control</span>
-                </button>
-                <button data-target="page-real-dmx" class="nav-btn w-full py-2.5 flex flex-col items-center justify-center relative transition-all duration-200">
-                    <div class="indicator absolute left-0 top-0 bottom-0 w-[3px] bg-transparent"></div>
-                    <i data-lucide="radio-tower" class="pointer-events-none transition-colors"></i>
-                    <span class="pointer-events-none block px-1">Real DMX</span>
                 </button>
             </nav>
 
@@ -737,7 +773,7 @@
                     <span class="text-xs font-bold tracking-wider text-gray-400 block mb-2">TARGET INFO PANEL</span>
                 </div>
                 <div id="page-light" class="page-view w-full h-full hidden">
-                    <div class="h-full min-h-0 grid grid-cols-[300px_minmax(0,1fr)_320px] gap-3">
+                    <div id="lightingControlWorkspace" class="h-full min-h-0 grid grid-cols-[300px_minmax(0,1fr)_320px] gap-3">
 
                         <!-- Fixture Library -->
                         <section class="min-h-0 bg-[#11141c] border border-gray-800/40 rounded-xl p-3 flex flex-col overflow-hidden">
@@ -770,7 +806,7 @@
                         </section>
 
                         <!-- Detail Lighting Control -->
-                        <section class="h-full min-h-0 bg-[#11141c] border border-gray-800/40 rounded-xl p-4 flex flex-col overflow-hidden">
+                        <section class="h-full min-h-0 bg-[#11141c] border border-gray-800/40 rounded-xl p-4 flex flex-col overflow-hidden" style="container-type: inline-size;">
                             <div class="flex items-center justify-between mb-3 shrink-0">
                                 <div class="text-xs font-bold tracking-wider text-gray-300">LIGHTING CONTROL</div>
                                 <div id="detailFixtureModeLabel" class="text-[11px] text-gray-500">Select a fixture</div>
@@ -780,7 +816,7 @@
                                 id="detailFixtureSummaryCard"
                                 class="shrink-0 rounded-lg border border-gray-800 bg-[#0b0f16] p-3"
                             >
-                                <div class="flex min-w-0 items-center gap-5">
+                                <div class="detail-summary-content flex min-w-0 items-center gap-5">
                                     <!-- Left: fixture information -->
                                     <div class="min-w-0 flex-1">
                                         <div
@@ -808,7 +844,7 @@
                                     </div>
 
                                     <!-- Right: Cue controls -->
-                                    <div class="min-w-0 w-[320px] shrink-0">
+                                    <div class="detail-cue-summary min-w-0 w-[320px] shrink-0">
                                         <!-- Included Cue tags -->
                                         <div
                                             id="includedCuesSection"
@@ -872,7 +908,7 @@
                             </div>
                         </section>
 
-                        <!-- Selected Fixture Placeholder -->
+                        <!-- Selected fixture and compact Real DMX output -->
                         <aside class="min-h-0 bg-[#11141c] border border-gray-800/40 rounded-xl p-3 flex flex-col overflow-hidden">
                             <div class="flex items-center justify-between mb-3 shrink-0">
                                 <div class="text-xs font-bold tracking-wider text-gray-300">SELECTED FIXTURE</div>
@@ -892,59 +928,69 @@
                                 </div>
                             </div>
 
-                            <div class="mt-3 flex-1 min-h-0 rounded-lg border border-dashed border-gray-700/70 bg-[#06080c]/40 flex items-center justify-center text-gray-500 text-xs">
-                                Preview / DMX info coming soon
-                            </div>
+                            <section class="mt-3 flex min-h-0 flex-1 flex-col rounded-lg border border-gray-800 bg-[#0b0f16] p-3">
+                                <div class="shrink-0">
+                                    <div class="flex items-center gap-2">
+                                        <i data-lucide="radio-tower" class="h-4 w-4 text-blue-400"></i>
+                                        <div class="text-xs font-bold tracking-wider text-gray-300">REAL DMX</div>
+                                    </div>
+                                    <div class="mt-2 flex min-w-0 items-center gap-2 rounded-md border border-gray-800 bg-black/20 px-2.5 py-2">
+                                        <span id="realDmxStatusDot" class="h-2 w-2 shrink-0 rounded-full bg-gray-600"></span>
+                                        <span id="realDmxStatus" class="min-w-0 text-[10px] font-semibold leading-tight text-gray-400">Connecting…</span>
+                                    </div>
+
+                                    <p id="realDmxRoute" class="mt-2 break-words text-[10px] leading-4 text-gray-500">
+                                        Connecting to the lighting control computer…
+                                    </p>
+
+                                    <div class="mt-3 grid grid-cols-2 gap-2">
+                                        <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                                            Start Address
+                                            <input id="realDmxStartAddress" type="number" min="1" max="512" step="1" value="94" inputmode="numeric" class="mt-1 h-9 w-full rounded-md border border-gray-700 bg-[#06080c] px-2.5 font-mono text-sm font-bold text-blue-300 outline-none transition focus:border-blue-500/70 focus:ring-1 focus:ring-blue-500/30">
+                                        </label>
+                                        <label class="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                                            End Address
+                                            <input id="realDmxEndAddress" type="number" min="1" max="512" step="1" value="94" inputmode="numeric" class="mt-1 h-9 w-full rounded-md border border-gray-700 bg-[#06080c] px-2.5 font-mono text-sm font-bold text-blue-300 outline-none transition focus:border-blue-500/70 focus:ring-1 focus:ring-blue-500/30">
+                                        </label>
+                                    </div>
+
+                                    <button id="realDmxLoadRange" type="button" class="mt-2 h-9 w-full rounded-md border border-blue-500/60 bg-blue-500/20 px-3 text-[11px] font-semibold text-blue-200 transition hover:bg-blue-500/30 disabled:cursor-not-allowed disabled:opacity-40">
+                                        Load Addresses
+                                    </button>
+
+                                    <div class="mt-2 grid grid-cols-2 gap-2">
+                                        <button id="realDmxRangeOut" type="button" class="h-9 rounded-md border border-gray-700 bg-white/5 px-2 text-[10px] font-semibold text-gray-300 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40">
+                                            RANGE OUT
+                                        </button>
+                                        <button id="realDmxBlackout" type="button" class="h-9 rounded-md border border-red-500/40 bg-red-500/10 px-2 text-[10px] font-semibold text-red-300 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40">
+                                            BLACKOUT ALL
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div id="realDmxAddressPanel" class="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+                                    <div class="flex h-full min-h-24 items-center justify-center rounded-md border border-dashed border-gray-700/70 px-4 text-center text-[11px] leading-5 text-gray-500">
+                                        Enter an address range, for example 201–210
+                                    </div>
+                                </div>
+
+                                <template id="realDmxRowTemplate">
+                                    <div class="space-y-2 rounded-lg border border-gray-800 bg-[#06080c]/70 p-2.5">
+                                        <div class="grid grid-cols-[42px_minmax(0,1fr)_58px] items-center gap-2">
+                                            <div data-role="address" class="font-mono text-xs font-black text-blue-300"></div>
+                                            <input data-role="name" type="text" placeholder="Attribute Name" class="h-8 min-w-0 rounded-md border border-gray-700 bg-black/20 px-2 text-[11px] text-gray-200 outline-none transition placeholder:text-gray-600 focus:border-blue-500/70">
+                                            <input data-role="value" type="number" min="0" max="255" step="1" value="0" inputmode="numeric" class="lighting-value-input h-8 w-full rounded-md border border-gray-700 bg-black/20 px-2 text-right font-mono text-xs font-bold text-white outline-none transition focus:border-blue-500/70">
+                                        </div>
+                                        <input data-role="slider" type="range" min="0" max="255" step="1" value="0" class="h-2 w-full cursor-pointer accent-blue-500 disabled:cursor-not-allowed disabled:opacity-40">
+                                        <div class="flex items-center justify-between font-mono text-[10px] text-gray-600">
+                                            <span>RAW 0–255</span>
+                                            <span data-role="percent">0%</span>
+                                        </div>
+                                    </div>
+                                </template>
+                            </section>
                         </aside>
 
-                    </div>
-                </div>
-
-                <div id="page-real-dmx" class="page-view w-full h-full hidden">
-                    <div class="h-full min-h-0 overflow-y-auto rounded-xl border border-gray-800/40 bg-[#11141c] p-4 sm:p-6">
-                        <section class="mx-auto w-full max-w-5xl rounded-2xl border border-gray-700/70 bg-[#0b0f16] p-5 shadow-2xl sm:p-7">
-                            <div class="flex flex-wrap items-start justify-between gap-4">
-                                <div>
-                                    <div class="text-[11px] font-bold uppercase tracking-[0.2em] text-cyan-400">Gadget II · Real DMX Output</div>
-                                    <h2 class="mt-2 text-3xl font-black tracking-tight text-white">DMX Attribute Addresses</h2>
-                                    <p id="realDmxRoute" class="mt-2 text-xs text-gray-500">Connecting to the lighting control computer…</p>
-                                </div>
-                                <div class="flex items-center gap-2 rounded-full border border-gray-700 bg-black/30 px-3 py-2 text-xs font-semibold">
-                                    <span id="realDmxStatusDot" class="h-2.5 w-2.5 rounded-full bg-gray-600"></span>
-                                    <span id="realDmxStatus" class="text-gray-400">Connecting…</span>
-                                </div>
-                            </div>
-
-                            <div class="mt-7 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-                                <label class="text-xs font-bold tracking-wide text-gray-400">
-                                    Start Address (Keyboard Input)
-                                    <input id="realDmxStartAddress" type="number" min="1" max="512" step="1" value="94" inputmode="numeric" class="mt-2 w-full rounded-xl border border-gray-700 bg-black/30 px-4 py-3 font-mono text-lg font-bold text-cyan-300 outline-none focus:border-cyan-400">
-                                </label>
-                                <label class="text-xs font-bold tracking-wide text-gray-400">
-                                    End Address (Keyboard Input)
-                                    <input id="realDmxEndAddress" type="number" min="1" max="512" step="1" value="94" inputmode="numeric" class="mt-2 w-full rounded-xl border border-gray-700 bg-black/30 px-4 py-3 font-mono text-lg font-bold text-cyan-300 outline-none focus:border-cyan-400">
-                                </label>
-                                <button id="realDmxLoadRange" type="button" class="self-end rounded-xl bg-cyan-500 px-5 py-3.5 text-sm font-black text-black transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-40">Load Attribute Addresses</button>
-                            </div>
-
-                            <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                                <button id="realDmxRangeOut" type="button" class="rounded-xl border border-gray-600 bg-white/[0.04] px-5 py-3 text-sm font-black text-gray-200 transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-40">CURRENT RANGE OUT</button>
-                                <button id="realDmxBlackout" type="button" class="rounded-xl border border-red-500/40 bg-red-500/10 px-5 py-3 text-sm font-black text-red-300 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40">BLACKOUT ALL</button>
-                            </div>
-
-                            <div id="realDmxAddressPanel" class="mt-6 space-y-3 rounded-xl border border-gray-800 bg-black/20 p-3 sm:p-4">
-                                <div class="py-8 text-center text-sm text-gray-500">Enter an address range, for example 201–210</div>
-                            </div>
-                            <template id="realDmxRowTemplate">
-                                <div class="grid grid-cols-[56px_minmax(0,1fr)_78px] items-center gap-2 rounded-xl border border-gray-800 bg-white/[0.03] p-3 sm:grid-cols-[64px_170px_minmax(0,1fr)_86px_54px] sm:gap-3">
-                                    <div data-role="address" class="font-mono text-base font-black text-cyan-300"></div>
-                                    <input data-role="name" type="text" placeholder="Attribute Name" class="min-w-0 rounded-lg border border-gray-700 bg-black/30 px-3 py-2 text-sm text-gray-200 outline-none focus:border-cyan-500">
-                                    <input data-role="slider" type="range" min="0" max="255" step="1" value="0" class="col-span-2 h-2 w-full cursor-pointer accent-cyan-400 sm:col-span-1">
-                                    <input data-role="value" type="number" min="0" max="255" step="1" value="0" inputmode="numeric" class="row-start-1 col-start-3 w-full rounded-lg border border-gray-700 bg-black/30 px-2 py-2 text-right font-mono text-sm font-bold text-white outline-none focus:border-cyan-500 sm:row-auto sm:col-auto">
-                                    <div data-role="percent" class="text-right font-mono text-xs text-gray-500">0%</div>
-                                </div>
-                            </template>
-                        </section>
                     </div>
                 </div>
 
