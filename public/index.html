@@ -320,32 +320,55 @@
 
                         <div class="bg-[#11141c] border border-gray-800/40 rounded-xl p-3 flex flex-col min-h-0 overflow-hidden">
                             <span class="text-xs font-bold tracking-wider text-gray-400 block mb-2">VR LIVE STREAM</span>
-                            <div class="relative flex-grow bg-black rounded-lg overflow-hidden border border-gray-800">
-                                <video
-                                    id="remoteVideo"
-                                    autoplay
-                                    playsinline
-                                    muted
-                                    class="w-full h-full object-contain bg-black"
-                                ></video>
-
+                            <div
+                                id="vrStreamHomeSlot"
+                                class="relative flex-grow min-h-0 overflow-hidden rounded-lg border border-gray-800 bg-black"
+                            >
                                 <div
-                                    id="videoEmptyState"
-                                    class="absolute inset-0 flex items-center justify-center text-gray-600 text-xs"
+                                    id="vrStreamViewport"
+                                    class="relative w-full h-full bg-black overflow-hidden"
                                 >
-                                    Waiting for Quest video stream...
+                                    <video
+                                        id="remoteVideo"
+                                        autoplay
+                                        playsinline
+                                        muted
+                                        class="w-full h-full object-contain bg-black"
+                                    ></video>
+
+                                    <div
+                                        id="videoEmptyState"
+                                        class="absolute inset-0 flex items-center justify-center text-gray-600 text-xs pointer-events-none"
+                                    >
+                                        Waiting for Quest video stream...
+                                    </div>
+
+                                    <div
+                                        class="absolute right-3 top-3 flex items-center gap-2 text-[11px] pointer-events-none"
+                                    >
+                                        <span
+                                            id="videoStatusDot"
+                                            class="w-2 h-2 rounded-full bg-gray-500"
+                                        ></span>
+
+                                        <span
+                                            id="videoStatusText"
+                                            class="text-gray-400"
+                                        >
+                                            Video offline
+                                        </span>
+                                    </div>
                                 </div>
 
-                                <div class="absolute right-3 top-3 flex items-center gap-2 text-[11px]">
-                                    <span id="videoStatusDot" class="w-2 h-2 rounded-full bg-gray-500"></span>
-                                    <span id="videoStatusText" class="text-gray-400">Video offline</span>
-                                </div>
-
-                                <div class="absolute right-3 bottom-3 flex gap-2">
+                                <!-- Home-only video controls -->
+                                <div
+                                    id="homeVideoControls"
+                                    class="absolute right-3 bottom-3 z-30 flex gap-2"
+                                >
                                     <button
                                         id="startVideoButton"
                                         type="button"
-                                        class="px-3 py-2 rounded-md bg-white/10 border border-white/10 text-xs text-gray-200 hover:bg-white/15 transition"
+                                        class="px-3 py-2 rounded-md bg-[#252525]/90 border border-white/10 text-xs text-gray-200 shadow-lg backdrop-blur-sm hover:bg-[#303030] transition"
                                     >
                                         Start Video
                                     </button>
@@ -353,7 +376,7 @@
                                     <button
                                         id="stopVideoButton"
                                         type="button"
-                                        class="px-3 py-2 rounded-md bg-red-500/15 border border-red-500/30 text-xs text-red-300 hover:bg-red-500/25 transition"
+                                        class="px-3 py-2 rounded-md bg-red-950/90 border border-red-500/40 text-xs text-red-300 shadow-lg backdrop-blur-sm hover:bg-red-900 transition"
                                     >
                                         Stop Video
                                     </button>
@@ -909,7 +932,7 @@
                         </section>
 
                         <!-- Selected fixture and compact Real DMX output -->
-                        <aside class="min-h-0 bg-[#11141c] border border-gray-800/40 rounded-xl p-3 flex flex-col overflow-hidden">
+                        <aside id="lightingDetailRightColumn"class="min-h-0 bg-[#11141c] border border-gray-800/40 rounded-xl p-3 flex flex-col overflow-hidden">
                             <div class="flex items-center justify-between mb-3 shrink-0">
                                 <div class="text-xs font-bold tracking-wider text-gray-300">SELECTED FIXTURE</div>
                                 <span id="detailSelectedFixtureId" class="text-xs text-blue-400">--</span>
@@ -1008,7 +1031,54 @@
                         </div>
                     </div>
                 </div>
+            </div>
 
+            <!-- Lighting Control VR Live Stream PiP -->
+            <div
+                id="lightingVideoPip"
+                class="hidden fixed z-[80]"
+                aria-label="VR Live Stream Picture in Picture"
+            >
+                <div
+                    class="relative w-full overflow-hidden rounded-xl border border-gray-700/80 bg-black shadow-2xl"
+                    style="aspect-ratio: 16 / 9;"
+                >
+                    <div
+                        id="lightingVideoPipSlot"
+                        class="absolute inset-0"
+                    ></div>
+
+                    <button
+                        id="lightingVideoPipClose"
+                        type="button"
+                        aria-label="Close VR live stream"
+                        title="Close live stream preview"
+                        class="
+                            absolute
+                            right-2
+                            top-2
+                            z-[90]
+                            flex
+                            h-7
+                            w-7
+                            items-center
+                            justify-center
+                            rounded-md
+                            border
+                            border-white/10
+                            bg-black/60
+                            text-base
+                            leading-none
+                            text-gray-300
+                            shadow-lg
+                            transition
+                            hover:bg-black/85
+                            hover:text-white
+                        "
+                    >
+                        &times;
+                    </button>
+                </div>
             </div>
         </div>
     </div>

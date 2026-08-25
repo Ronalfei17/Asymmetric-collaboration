@@ -1,5 +1,5 @@
 export function setupSidebar() {
-    const navButtons = document.querySelectorAll('.nav-btn:not([data-sidebar-hidden="true"]');
+    const navButtons = document.querySelectorAll('.nav-btn:not([data-sidebar-hidden="true"])');
     const pageViews = document.querySelectorAll('.page-view');
 
     function renderSidebarUI(activeTargetId) {
@@ -38,6 +38,10 @@ export function setupSidebar() {
             document.getElementById(targetPageId)?.classList.remove('hidden');
 
             renderSidebarUI(targetPageId);
+
+            window.dispatchEvent(new CustomEvent('app-page-changed', {
+                detail: { pageId: targetPageId }
+            }));
         });
     });
 }

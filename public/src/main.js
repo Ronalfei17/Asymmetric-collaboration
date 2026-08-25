@@ -11,6 +11,7 @@ import { setupFixtureLibrary } from './fixture-library.js';
 import { setupMapSwitcher } from './map-switcher.js';
 import { setupLightingMapOverlay } from './lighting-map-overlay.js';
 import { setupRealDmxControl } from './real-dmx-control.js';
+import { setupVideoPip } from './video-pip.js';
 
 console.log('[MAIN] loaded');
 
@@ -25,6 +26,7 @@ function createIcons() {
 initializeCueStore();
 setupStatus();
 setupSidebar();
+setupVideoPip();
 setupLightingControl(sendControlMessage);
 setupFixtureLibrary();
 setupTeleportMap({sendRawControlMessage, subscribeControlMessages, subscribeControlOpen});
