@@ -1,15 +1,17 @@
 const MAPS = {
     theatre: {
-        title: 'THEATRE MAP + INTERACTIVE OVERLAY',
+        label: 'Ground Plan',
+        title: 'GROUND PLAN + INTERACTIVE OVERLAY',
         src: './assets/vandyck-theatre-plan.jpg',
-        alt: 'Theatre Map',
+        alt: 'Ground Plan',
         invert: true
     },
 
     lighting: {
-        title: 'LIGHTING MAP + INTERACTIVE OVERLAY',
+        label: 'Lighting Plan',
+        title: 'LIGHTING PLAN + INTERACTIVE OVERLAY',
         src: './assets/LightingMap-background.png',
-        alt: 'Lighting Map',
+        alt: 'Lighting Plan',
         invert: false
     }
 };
@@ -153,6 +155,8 @@ export function setupMapSwitcher() {
         console.warn('[MapSwitcher] Missing required DOM elements.');
         return;
     }
+    theatreButton.textContent = MAPS.theatre.label;
+    lightingButton.textContent = MAPS.lighting.label;
 
     image.dataset.activeMapType = activeMapType;
 
