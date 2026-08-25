@@ -632,6 +632,126 @@ function getClampedDetailInputValue(
     );
 }
 
+function updateDetailValueInputPreview(
+    input,
+    {
+        updateFieldAngleUI,
+        updatePanTiltUI
+    }
+) {
+    if (
+        !input.matches(
+            'input.lighting-value-input'
+        )
+    ) {
+        return false;
+    }
+
+    const bindings = {
+        detailIntensityValueInput: {
+            sliderId: 'detailIntensitySlider',
+            integer: true
+        },
+        detailStrobeHzValueInput: {
+            sliderId: 'detailStrobeHzSlider',
+            integer: true
+        },
+        detailFieldAngleValueInput: {
+            sliderId: 'detailFieldAngleSlider',
+            quickSliderId: 'fieldAngleSlider',
+            updateQuickUI: updateFieldAngleUI
+        },
+        detailPanValueInput: {
+            sliderId: 'detailPanSlider',
+            quickSliderId: 'panSlider',
+            updateQuickUI: updatePanTiltUI
+        },
+        detailTiltValueInput: {
+            sliderId: 'detailTiltSlider',
+            quickSliderId: 'tiltSlider',
+            updateQuickUI: updatePanTiltUI
+        },
+        detailSoftnessValueInput: {
+            sliderId: 'detailSoftnessSlider',
+            percent: true
+        },
+        detailRedValueInput: {
+            sliderId: 'detailRedSlider',
+            integer: true,
+            rgb: true
+        },
+        detailGreenValueInput: {
+            sliderId: 'detailGreenSlider',
+            integer: true,
+            rgb: true
+        },
+        detailBlueValueInput: {
+            sliderId: 'detailBlueSlider',
+            integer: true,
+            rgb: true
+        }
+    };
+
+    const binding = bindings[input.id];
+
+    if (!binding) {
+        return true;
+    }
+
+    const rawText = String(input.value).trim();
+    const rawValue = Number(rawText);
+
+    if (
+        rawText === '' ||
+        !Number.isFinite(rawValue)
+    ) {
+        return true;
+    }
+
+    const slider = getElement(binding.sliderId);
+
+    if (!slider) {
+        return true;
+    }
+
+    let previewValue;
+
+    if (binding.percent) {
+        previewValue =
+            clamp(rawValue, 0, 100) / 100;
+    } else {
+        previewValue = clamp(
+            rawValue,
+            Number(slider.min),
+            Number(slider.max)
+        );
+    }
+
+    if (binding.integer) {
+        previewValue = Math.round(previewValue);
+    }
+
+    slider.value = String(previewValue);
+
+    if (binding.quickSliderId) {
+        const quickSlider =
+            getElement(binding.quickSliderId);
+
+        if (quickSlider) {
+            quickSlider.value =
+                String(previewValue);
+
+            binding.updateQuickUI?.();
+        }
+    }
+
+    if (binding.rgb) {
+        updateDetailRGBUI();
+    }
+
+    return true;
+}
+
 export function setupDetailLightingListeners({
     onInput,
     setPowerState,
@@ -685,8 +805,12 @@ export function setupDetailLightingListeners({
             }
 
             if (
-                target.matches(
-                    'input.lighting-value-input'
+                updateDetailValueInputPreview(
+                    target,
+                    {
+                        updateFieldAngleUI,
+                        updatePanTiltUI
+                    }
                 )
             ) {
                 return;
