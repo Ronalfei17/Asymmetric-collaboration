@@ -1,3 +1,8 @@
+import {
+    getDmxMappingByAddressRange,
+    getDmxMappingByVirtualLightId
+} from './fixture-dmx-mappings.js';
+
 const OUTPUT_INTERVAL_MS = 35;
 const DEFAULT_ADDRESS = 94;
 
@@ -33,9 +38,11 @@ export function setupRealDmxControl({
     const status = document.getElementById('realDmxStatus');
     const statusDot = document.getElementById('realDmxStatusDot');
     const route = document.getElementById('realDmxRoute');
+    const fixtureLink = document.getElementById('realDmxFixtureLink');
 
     if (!startInput || !endInput || !loadButton || !rangeOutButton ||
-        !blackoutButton || !panel || !rowTemplate || !status || !statusDot || !route) {
+        !blackoutButton || !panel || !rowTemplate || !status || !statusDot ||
+        !route || !fixtureLink) {
         return;
     }
 
@@ -114,6 +121,48 @@ export function setupRealDmxControl({
         return { start: activeStart, end: activeEnd };
     }
 
+    function renderFixtureLink(mapping, selectedLightId = null) {
+        if (mapping) {
+            const addressLabel = mapping.startAddress === mapping.endAddress
+                ? `A${mapping.startAddress}`
+                : `A${mapping.startAddress}–${mapping.endAddress}`;
+
+            fixtureLink.textContent =
+                `${mapping.virtualLabel} ↔ ${mapping.physicalLabel} · ${addressLabel}`;
+            fixtureLink.className =
+                'min-w-0 text-right text-[10px] font-semibold leading-tight text-blue-300';
+            return;
+        }
+
+        fixtureLink.textContent = selectedLightId == null
+            ? 'No virtual fixture mapping'
+            : `CH ${selectedLightId} · No Real DMX Mapping`;
+        fixtureLink.className =
+            'min-w-0 text-right text-[10px] font-semibold leading-tight text-gray-500';
+    }
+
+    function dispatchMappedFixtureSelection(mapping) {
+        if (!mapping) return;
+
+        window.dispatchEvent(new CustomEvent('lighting-fixture-selected', {
+            detail: {
+                lightId: mapping.virtualLightId,
+                source: 'real-dmx'
+            }
+        }));
+    }
+
+    function syncFixtureFromRange(range) {
+        const mapping = getDmxMappingByAddressRange(
+            range.start,
+            range.end,
+            1
+        );
+
+        renderFixtureLink(mapping);
+        dispatchMappedFixtureSelection(mapping);
+    }
+
     function send(type, payload = {}) {
         if (sendControlMessage(type, payload)) return true;
         cloudConnected = false;
@@ -121,14 +170,46 @@ export function setupRealDmxControl({
         return false;
     }
 
-    function loadRange() {
+    function loadRange({ syncVirtualFixture = true } = {}) {
         const range = normalizeRange();
+
+        if (syncVirtualFixture) {
+            syncFixtureFromRange(range);
+        } else {
+            renderFixtureLink(getDmxMappingByAddressRange(
+                range.start,
+                range.end,
+                1
+            ));
+        }
+
         if (!ready()) {
             renderConnectionStatus();
             return;
         }
+
+        rangeLoaded = false;
+        updateControls();
         setStatus(`Loading Address ${range.start}–${range.end}…`);
         send('dmx-range-status-request', { port: 1, ...range });
+    }
+
+    function handleVirtualFixtureSelection(event) {
+        const lightId = Number(event.detail?.lightId);
+        const source = event.detail?.source;
+
+        if (!Number.isFinite(lightId) || source === 'real-dmx') return;
+
+        const mapping = getDmxMappingByVirtualLightId(lightId);
+
+        if (!mapping) {
+            renderFixtureLink(null, lightId);
+            return;
+        }
+
+        startInput.value = String(mapping.startAddress);
+        endInput.value = String(mapping.endAddress);
+        loadRange({ syncVirtualFixture: false });
     }
 
     function updateRow(row, value) {
@@ -227,7 +308,9 @@ export function setupRealDmxControl({
                 route.textContent = `Cloud → Lighting computer → Gadget ${message.serial} · Port ${message.port || 1}`;
             }
             renderConnectionStatus();
-            if (!wasReady && ready() && !rangeLoaded) loadRange();
+            if (!wasReady && ready() && !rangeLoaded) {
+                loadRange({ syncVirtualFixture: false });
+            }
             return;
         }
 
@@ -242,6 +325,11 @@ export function setupRealDmxControl({
             gadgetConnected = true;
             activeStart = message.start;
             activeEnd = message.end;
+            renderFixtureLink(getDmxMappingByAddressRange(
+                activeStart,
+                activeEnd,
+                message.port || 1
+            ));
             if (message.serial) {
                 route.textContent = `Cloud → Lighting computer → Gadget ${message.serial} · Port ${message.port || 1} · Address ${activeStart}–${activeEnd}`;
             }
@@ -269,7 +357,7 @@ export function setupRealDmxControl({
         }
     });
 
-    loadButton.addEventListener('click', loadRange);
+    loadButton.addEventListener('click', () => loadRange());
     [startInput, endInput].forEach(input => input.addEventListener('keydown', event => {
         if (event.key === 'Enter') {
             event.preventDefault();
@@ -285,6 +373,16 @@ export function setupRealDmxControl({
         send('dmx-blackout', { port: 1 });
     });
 
-    normalizeRange();
+    window.addEventListener(
+        'lighting-fixture-selected',
+        handleVirtualFixtureSelection
+    );
+
+    const initialRange = normalizeRange();
+    renderFixtureLink(getDmxMappingByAddressRange(
+        initialRange.start,
+        initialRange.end,
+        1
+    ));
     renderConnectionStatus();
 }
