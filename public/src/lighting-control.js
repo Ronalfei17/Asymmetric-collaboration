@@ -1404,6 +1404,13 @@ export function setupLightingControl(sendControlMessage) {
         renderCurrentCueEditor();
     });
 
+    window.addEventListener(
+        'app-page-changed',
+        () => {
+            renderAll();
+        }
+    );
+
     setTimeout(() => {
         if (!currentUnitySessionId) {
             requestUnityLightingSession(
