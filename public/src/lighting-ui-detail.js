@@ -117,6 +117,18 @@ export function renderDetailLightingPanel(fixture, state = {}) {
     const panel = getElement('detailLightingPanel');
     if (!panel || !fixture) return;
 
+    const activeValueInput = document.activeElement;
+
+    if (
+        activeValueInput &&
+        panel.contains(activeValueInput) &&
+        activeValueInput.matches(
+            'input.lighting-value-input'
+        )
+    ) {
+        return;
+    }
+
     const preset = getFixturePreset(fixture);
     const isAdvancedLed = isAdvancedLedFixture(fixture);
     const isMoving = fixture.fixtureType === FIXTURE_TYPES.MOVING;
@@ -598,19 +610,6 @@ function getClampedDetailInputValue(
         return null;
     }
 
-    if (
-        String(target.value).trim() === ''
-    ) {
-        target.value =
-            String(
-                Math.round(
-                    Number(slider.value) * 100
-                )
-            );
-
-        return;
-    }
-
     const raw =
         Number(input.value);
 
@@ -680,6 +679,14 @@ export function setupDetailLightingListeners({
                 handleColorBlazeInput(
                     target,
                     onInput
+                )
+            ) {
+                return;
+            }
+
+            if (
+                target.matches(
+                    'input.lighting-value-input'
                 )
             ) {
                 return;

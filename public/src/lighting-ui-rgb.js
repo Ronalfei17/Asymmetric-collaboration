@@ -71,7 +71,7 @@ export function renderDetailRgbBlock(r, g, b, hex) {
                         value="${hex}"
                         maxlength="7"
                         aria-label="HEX color value"
-                        class="h-8 w-28 select-text rounded border border-gray-700 bg-white/5 px-2 text-center text-xs text-gray-200 uppercase outline-none focus:border-blue-500"
+                        class="lighting-value-input h-8 w-28 select-text rounded border border-gray-700 bg-white/5 px-2 text-center text-xs text-gray-200 uppercase outline-none focus:border-blue-500"
                     >
                 </div>
 
