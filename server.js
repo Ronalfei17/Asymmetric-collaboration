@@ -25,153 +25,153 @@ const rooms = new Map();
 app.use(express.json({ limit: "16kb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
-function getDmxBridgeOrigins(req) {
-  const origins = [];
+// function getDmxBridgeOrigins(req) {
+//   const origins = [];
 
-  if (DMX_BRIDGE_URL) {
-    origins.push(DMX_BRIDGE_URL);
-  }
+//   if (DMX_BRIDGE_URL) {
+//     origins.push(DMX_BRIDGE_URL);
+//   }
 
-  origins.push(`http://127.0.0.1:${DMX_BRIDGE_PORT}`);
+//   origins.push(`http://127.0.0.1:${DMX_BRIDGE_PORT}`);
 
-  const localAddress = req?.socket?.localAddress?.replace(/^::ffff:/, "");
-  if (localAddress && localAddress !== "127.0.0.1" && localAddress !== "::1") {
-    origins.push(`http://${localAddress}:${DMX_BRIDGE_PORT}`);
-  }
+//   const localAddress = req?.socket?.localAddress?.replace(/^::ffff:/, "");
+//   if (localAddress && localAddress !== "127.0.0.1" && localAddress !== "::1") {
+//     origins.push(`http://${localAddress}:${DMX_BRIDGE_PORT}`);
+//   }
 
-  Object.values(os.networkInterfaces()).flat().forEach((entry) => {
-    if (entry && entry.family === "IPv4" && !entry.internal) {
-      origins.push(`http://${entry.address}:${DMX_BRIDGE_PORT}`);
-    }
-  });
+//   Object.values(os.networkInterfaces()).flat().forEach((entry) => {
+//     if (entry && entry.family === "IPv4" && !entry.internal) {
+//       origins.push(`http://${entry.address}:${DMX_BRIDGE_PORT}`);
+//     }
+//   });
 
-  return [...new Set(origins)];
-}
+//   return [...new Set(origins)];
+// }
 
-function requestDmxOrigin(origin, pathname, { method = "GET", body } = {}) {
-  return new Promise((resolve, reject) => {
-    const url = new URL(pathname, origin);
-    url.searchParams.set("token", DMX_BRIDGE_TOKEN);
-    const payload = body === undefined ? "" : JSON.stringify(body);
+// function requestDmxOrigin(origin, pathname, { method = "GET", body } = {}) {
+//   return new Promise((resolve, reject) => {
+//     const url = new URL(pathname, origin);
+//     url.searchParams.set("token", DMX_BRIDGE_TOKEN);
+//     const payload = body === undefined ? "" : JSON.stringify(body);
 
-    const bridgeRequest = http.request(url, {
-      method,
-      headers: payload ? {
-        "Content-Type": "application/json",
-        "Content-Length": Buffer.byteLength(payload)
-      } : undefined,
-      timeout: 3500
-    }, (bridgeResponse) => {
-      let responseText = "";
+//     const bridgeRequest = http.request(url, {
+//       method,
+//       headers: payload ? {
+//         "Content-Type": "application/json",
+//         "Content-Length": Buffer.byteLength(payload)
+//       } : undefined,
+//       timeout: 3500
+//     }, (bridgeResponse) => {
+//       let responseText = "";
 
-      bridgeResponse.setEncoding("utf8");
-      bridgeResponse.on("data", (chunk) => {
-        responseText += chunk;
-        if (responseText.length > 64 * 1024) {
-          bridgeRequest.destroy(new Error("DMX Bridge response is too large."));
-        }
-      });
-      bridgeResponse.on("end", () => {
-        let data = null;
-        try { data = JSON.parse(responseText); }
-        catch { data = { ok: false, error: responseText || "Invalid DMX Bridge response." }; }
+//       bridgeResponse.setEncoding("utf8");
+//       bridgeResponse.on("data", (chunk) => {
+//         responseText += chunk;
+//         if (responseText.length > 64 * 1024) {
+//           bridgeRequest.destroy(new Error("DMX Bridge response is too large."));
+//         }
+//       });
+//       bridgeResponse.on("end", () => {
+//         let data = null;
+//         try { data = JSON.parse(responseText); }
+//         catch { data = { ok: false, error: responseText || "Invalid DMX Bridge response." }; }
 
-        if (bridgeResponse.statusCode < 200 || bridgeResponse.statusCode >= 300) {
-          const error = new Error(data.error || `DMX Bridge returned ${bridgeResponse.statusCode}.`);
-          error.statusCode = bridgeResponse.statusCode;
-          reject(error);
-          return;
-        }
+//         if (bridgeResponse.statusCode < 200 || bridgeResponse.statusCode >= 300) {
+//           const error = new Error(data.error || `DMX Bridge returned ${bridgeResponse.statusCode}.`);
+//           error.statusCode = bridgeResponse.statusCode;
+//           reject(error);
+//           return;
+//         }
 
-        resolve(data);
-      });
-    });
+//         resolve(data);
+//       });
+//     });
 
-    bridgeRequest.on("timeout", () => bridgeRequest.destroy(new Error("DMX Bridge timed out.")));
-    bridgeRequest.on("error", reject);
-    if (payload) bridgeRequest.write(payload);
-    bridgeRequest.end();
-  });
-}
+//     bridgeRequest.on("timeout", () => bridgeRequest.destroy(new Error("DMX Bridge timed out.")));
+//     bridgeRequest.on("error", reject);
+//     if (payload) bridgeRequest.write(payload);
+//     bridgeRequest.end();
+//   });
+// }
 
-async function requestDmxBridge(req, pathname, options) {
-  let lastError = null;
+// async function requestDmxBridge(req, pathname, options) {
+//   let lastError = null;
 
-  for (const origin of getDmxBridgeOrigins(req)) {
-    try {
-      return await requestDmxOrigin(origin, pathname, options);
-    } catch (error) {
-      lastError = error;
-      if (error.statusCode) break;
-    }
-  }
+//   for (const origin of getDmxBridgeOrigins(req)) {
+//     try {
+//       return await requestDmxOrigin(origin, pathname, options);
+//     } catch (error) {
+//       lastError = error;
+//       if (error.statusCode) break;
+//     }
+//   }
 
-  throw lastError || new Error("DMX Bridge is unavailable.");
-}
+//   throw lastError || new Error("DMX Bridge is unavailable.");
+// }
 
-function sendDmxError(res, error) {
-  res.status(error.statusCode || 503).json({
-    ok: false,
-    error: error.message || "DMX Bridge is unavailable."
-  });
-}
+// function sendDmxError(res, error) {
+//   res.status(error.statusCode || 503).json({
+//     ok: false,
+//     error: error.message || "DMX Bridge is unavailable."
+//   });
+// }
 
-app.get("/api/real-dmx/status", async (req, res) => {
-  try {
-    const status = await requestDmxBridge(
-      req,
-      `/api/status?address=${REAL_DMX_ADDRESS}`
-    );
+// app.get("/api/real-dmx/status", async (req, res) => {
+//   try {
+//     const status = await requestDmxBridge(
+//       req,
+//       `/api/status?address=${REAL_DMX_ADDRESS}`
+//     );
 
-    res.json({
-      ...status,
-      port: REAL_DMX_PORT,
-      address: REAL_DMX_ADDRESS
-    });
-  } catch (error) {
-    sendDmxError(res, error);
-  }
-});
+//     res.json({
+//       ...status,
+//       port: REAL_DMX_PORT,
+//       address: REAL_DMX_ADDRESS
+//     });
+//   } catch (error) {
+//     sendDmxError(res, error);
+//   }
+// });
 
-app.post("/api/real-dmx/level", async (req, res) => {
-  const level = Number(req.body?.level);
-  if (!Number.isFinite(level) || level < 0 || level > 100) {
-    res.status(400).json({ ok: false, error: "Level must be from 0 to 100." });
-    return;
-  }
+// app.post("/api/real-dmx/level", async (req, res) => {
+//   const level = Number(req.body?.level);
+//   if (!Number.isFinite(level) || level < 0 || level > 100) {
+//     res.status(400).json({ ok: false, error: "Level must be from 0 to 100." });
+//     return;
+//   }
 
-  try {
-    const result = await requestDmxBridge(req, "/api/level", {
-      method: "POST",
-      body: { address: REAL_DMX_ADDRESS, level }
-    });
+//   try {
+//     const result = await requestDmxBridge(req, "/api/level", {
+//       method: "POST",
+//       body: { address: REAL_DMX_ADDRESS, level }
+//     });
 
-    res.json({
-      ...result,
-      port: REAL_DMX_PORT,
-      address: REAL_DMX_ADDRESS
-    });
-  } catch (error) {
-    sendDmxError(res, error);
-  }
-});
+//     res.json({
+//       ...result,
+//       port: REAL_DMX_PORT,
+//       address: REAL_DMX_ADDRESS
+//     });
+//   } catch (error) {
+//     sendDmxError(res, error);
+//   }
+// });
 
-app.post("/api/real-dmx/out", async (req, res) => {
-  try {
-    const result = await requestDmxBridge(req, "/api/out", {
-      method: "POST",
-      body: { address: REAL_DMX_ADDRESS }
-    });
+// app.post("/api/real-dmx/out", async (req, res) => {
+//   try {
+//     const result = await requestDmxBridge(req, "/api/out", {
+//       method: "POST",
+//       body: { address: REAL_DMX_ADDRESS }
+//     });
 
-    res.json({
-      ...result,
-      port: REAL_DMX_PORT,
-      address: REAL_DMX_ADDRESS
-    });
-  } catch (error) {
-    sendDmxError(res, error);
-  }
-});
+//     res.json({
+//       ...result,
+//       port: REAL_DMX_PORT,
+//       address: REAL_DMX_ADDRESS
+//     });
+//   } catch (error) {
+//     sendDmxError(res, error);
+//   }
+// });
 
 app.get("/health", (req, res) => {
   res.json({
